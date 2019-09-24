@@ -17,12 +17,17 @@ export default class mdscan extends SfdxCommand {
   private enableDebug = true;
   private showFullInventory = false;
 
-   //messages  = Messages.loadMessages('isvte', 'mdscan');
   public static description =  'scan a package and provide recommendations based on package inventory';
-   //public static description =  messages.getMessage('scanCommandDescription');
-
+ 
   public static examples = [
-`sfdx isvte:enablement:mdscan -d ./mdapi
+`Scan a package and provide inventory of monitored metadata items and enablement messages:
+\t$sfdx isvte:mdscan -d ./mdapi
+Scan a package and provide a complete inventory of package metadata:
+\t$sfdx isvte:mdscan -d ./mdapi -f
+Display this help message:
+\t$sfdx isvte:mdscan -h
+
+For more information, please connect in the Salesforce Partner Community https://partners.salesforce.com/_ui/core/chatter/groups/GroupProfilePage?g=0F9300000001s8iCAA or log an issue in github https://github.com/forcedotcom/isvte-sfdx-plugin
 `
   ];
 
@@ -49,7 +54,6 @@ export default class mdscan extends SfdxCommand {
   public async run(): Promise<any> { // tslint:disable-line:no-any
 
 
-    this.loggit(__dirname);
     this.enableDebug = this.flags.withlogging;
     this.showFullInventory = this.flags.fullinventory;
 

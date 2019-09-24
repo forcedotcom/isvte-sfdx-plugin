@@ -13,10 +13,16 @@ export default class listrules extends SfdxCommand {
   public static description = 'display all enablement rules and edition warnings';
 
   public static examples = [
-`sfdx isvte:enablement:listrules
+`Display the enablement rules and edition warnings which are checked by the isvte plugin:
+\t$sfdx isvte:listrules
+Display this help message:
+\t$sfdx isvte:listrules -h
+
+For more information, please connect in the Salesforce Partner Community https://partners.salesforce.com/_ui/core/chatter/groups/GroupProfilePage?g=0F9300000001s8iCAA or log an issue in github https://github.com/forcedotcom/isvte-sfdx-plugin
 `
   ];
 
+ 
   private enablementRules = rules;
   private editionRules = editions;
 

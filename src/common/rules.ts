@@ -74,7 +74,7 @@ const editions = [
     ]},
     {name: 'Professional Edition', 
     blockingItems: [
-      {metadataType:'ApexClass.ApexSoap', label: 'Classes with Apex Web Services', threshold:0},
+      {metadataType:'ApexClass.ApexSoap', label: 'Classes with SOAP Apex Web Services', threshold:0},
       {metadataType:'ReportType' , label: 'Report Types', threshold:50},
       {metadataType:'CustomField.object.Activity' , label: 'Custom Fields on Activity', threshold:100},
     ]},

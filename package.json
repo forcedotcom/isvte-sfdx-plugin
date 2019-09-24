@@ -3,7 +3,7 @@
   "description": "Scan Metadata and Provide feedback",
   "version": "0.0.1",
   "author": "Jeremy Hay Draude",
-  "bugs": "https://github.com/jhaydraude/te-scan-plugin/issues",
+  "bugs": "https://github.com/forcedotcom/isvte-sfdx-plugin/issues",
   "dependencies": {
     "@oclif/command": "^1",
     "@oclif/config": "^1",
@@ -39,7 +39,7 @@
     "/npm-shrinkwrap.json",
     "/oclif.manifest.json"
   ],
-  "homepage": "https://github.com/jhaydraude/te-scan-plugin",
+  "homepage": "https://github.com/forcedotcom/isvte-sfdx-plugin",
   "keywords": [
     "sfdx-plugin"
   ],
@@ -56,7 +56,7 @@
       "@oclif/plugin-help"
     ]
   },
-  "repository": "jhaydraude/te-scan-plugin",
+  "repository": "https://github.com/forcedotcom/isvte-sfdx-plugin",
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
     "posttest": "tslint -p test -t stylish",
