@@ -1,0 +1,4 @@
+{
+  "commandDescription" : "Scan a path containing metadata and get technical advice",
+  "sourceFlagDescription" : "path containing source data in sfdx format"
+}

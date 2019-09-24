@@ -1,0 +1,6 @@
+{
+  "scanCommandDescription" : "scan a package and provide recommendations based on package inventory",
+  "sourcefolderFlagDescription" : "directory containing package metadata",
+  "withloggingFlagDescription" : "enable verbose debug logging",
+  "showfullinventoryFlagDescription" : "show package inventory only"
+}
