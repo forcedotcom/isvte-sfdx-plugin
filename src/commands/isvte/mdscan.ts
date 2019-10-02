@@ -104,6 +104,13 @@ For more information, please connect in the Salesforce Partner Community https:/
 
       this.ux.log('\nISV Technical Enablement:');
       this.ux.log(this.packageInventory.getRecommendations());
+      let alerts = this.packageInventory.getAlerts();
+      if (alerts.length > 0) {
+        this.ux.log('\nAlerts:');
+        for (var alert of alerts) {
+          this.ux.log(`${alert.label} - ${alert.message}: ${alert.url}`);
+        }
+      }
       this.ux.log('\nInstallation Warnings:');
       this.ux.log(this.packageInventory.getInstallationWarnings());
     }
@@ -317,6 +324,7 @@ For more information, please connect in the Salesforce Partner Community https:/
           this.loggit('Interrogating Apex');
           let futureCount = 0;
           // let testCount = 0;
+          let auraEnabledCount = 0;
           let batchCount = 0;
           let schedulableCount = 0;
           let invocableCount = 0;
@@ -336,6 +344,7 @@ For more information, please connect in the Salesforce Partner Community https:/
               // this.loggit(classBody);
               //const testReg = /@istest/ig;
               const futureReg = /@future/ig;
+              const auraEnabledReg = /@AuraEnabled/ig;
               const invocableReg = /@InvocableMethod|InvocableVariable/ig;
               const batchReg = /implements\s+Database\.Batchable/ig;
               const scheduleReg = /implements\s+Schedulable/ig;
@@ -348,6 +357,9 @@ For more information, please connect in the Salesforce Partner Community https:/
               //  }
               if (futureReg.test(classBody)) {
                 futureCount++;
+              }
+              if (auraEnabledReg.test(classBody)){
+                auraEnabledCount++;
               }
               if (invocableReg.test(classBody)) {
                 invocableCount++;
@@ -368,6 +380,7 @@ For more information, please connect in the Salesforce Partner Community https:/
             }
           }
           typeInv['FutureCalls'] = futureCount;
+          typeInv['AuraEnabledCalls'] = auraEnabledCount;
           typeInv['InvocableCalls'] = invocableCount;
           // typeInv['TestMethods'] = testCount;
           typeInv['BatchApex'] = batchCount;

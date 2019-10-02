@@ -7,11 +7,11 @@
 
 const rules = [
   {name: 'Permission Sets', metadataType: 'PermissionSet'},
-  {name: 'Custom Metadata', metadataType: 'CustomMetadata', threshold:0, recPos: 'Be aware of the following Alert for New Permissions Required for Direct Read Access to Custom Metadata Types https://partners.salesforce.com/partnerAlert?id=a033A00000GimUSQAZ'},
+  {name: 'Custom Metadata', metadataType: 'CustomMetadata'},
   {name: 'Feature Parameters (Boolean)', metadataType: 'FeatureParameterBoolean'},
   {name: 'Feature Parameters (Date)', metadataType: 'FeatureParameterDate'},
   {name: 'Feature Parameters (Integer)', metadataType: 'FeatureParameterInteger'},
-  {name: 'Custom Settings', metadataType: 'CustomSetting__c', threshold:0, recPos: 'Be aware of the Alert for New Permissions Required for Direct Read Access to Custom Settings - https://partners.salesforce.com/partnerAlert?id=a033A00000GimQ6QAJ' },
+  {name: 'Custom Settings', metadataType: 'CustomSetting__c'},
   {name: 'Custom Labels', metadataType: 'CustomLabel' },
   {name: 'Tabs', metadataType: 'CustomTab'},
   {name: 'Flows', metadataType: 'Flow', threshold:0, recNeg: 'For more information about Flows - https://partners.salesforce.com/0693A000007S2Dq',  detailThreshold: [{metadataSubType: 'FlowTemplate', name: 'Flows With Template', threshold:0, recNeg: 'For more information about Flow Templates - https://partners.salesforce.com/0693A000007S2Dq'}]},
@@ -44,6 +44,12 @@ const rules = [
 
   {name: 'Person Account', metadataType: 'PersonAccount__c'},
   {name: 'Record Types', metadataType: 'RecordType'}
+];
+
+const alerts = [
+  {metadataType:'ApexClass.AuraEnabledCalls', label:'@AuraEnabled Methods', message:'New Permissions Required to Access Apex Classes containing @AuraEnabled methods. Impacts Guest Users',url:'https://partners.salesforce.com/partnerAlert?id=a033A00000Fvo12QAB',expiration:'2020-10-01T00:00:00.000Z'},
+  {metadataType:'CustomMetadata', label: 'Custom Metadata', message:'New Permissions Required for Direct Read Access to Custom Metadata Types', url:'https://partners.salesforce.com/partnerAlert?id=a033A00000GimUSQAZ',expiration:'2020-10-01T00:00:00.000Z'},
+  {metadataType: 'CustomSetting__c', label: 'Custom Settings', message: 'Be aware of the Alert for New Permissions Required for Direct Read Access to Custom Settings', url:'https://partners.salesforce.com/partnerAlert?id=a033A00000GimQ6QAJ',expiration:'2020-10-01T00:00:00.000Z' }
 ];
 
   
@@ -88,7 +94,7 @@ const editions = [
 
 
 
-export {rules, editions};
+export {rules, editions, alerts};
 
 
 

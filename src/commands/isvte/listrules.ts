@@ -6,7 +6,7 @@
  */
 
 import {  SfdxCommand } from '@salesforce/command';
-import { rules, editions } from '../../common/rules';
+import { rules, editions, alerts } from '../../common/rules';
 
 export default class listrules extends SfdxCommand {
   
@@ -25,6 +25,7 @@ For more information, please connect in the Salesforce Partner Community https:/
  
   private enablementRules = rules;
   private editionRules = editions;
+  private pushAlerts = alerts;
 
 
 
@@ -35,7 +36,10 @@ For more information, please connect in the Salesforce Partner Community https:/
      this.ux.log('\n\n');
      this.ux.log('Edition Warnings');
      this.ux.table(this.getAllEditionWarnings(),['Edition', 'Item', 'Threshold']);
-     return {'Enablement Rules': this.getAllEnablementMessages(), 'Edition Warnings': this.editionRules};
+     this.ux.log('\n\n');
+     this.ux.log('Alerts');
+     this.ux.table(this.pushAlerts,['label','message','url','expiration']);
+     return {'Enablement Rules': this.getAllEnablementMessages(), 'Edition Warnings': this.editionRules,'Alerts':this.pushAlerts};
 
   };
 
@@ -78,5 +82,6 @@ For more information, please connect in the Salesforce Partner Community https:/
     }
     return output;
   };
+
 
 }

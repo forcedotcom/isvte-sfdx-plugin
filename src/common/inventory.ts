@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: BSD-3-Clause
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
-import { rules, editions } from './rules';
+import { rules, editions, alerts } from './rules';
 
 const editionRules = editions;
 const monitoredTypes = rules;
-
+const pushAlertDefs = alerts;
 
 const packageInventory = {
   _mdInv: {},
@@ -45,6 +45,18 @@ const packageInventory = {
     }
   },
 
+  getAlerts: function(){
+    
+    let alerts = [];
+    const now = new Date().toJSON();
+    for (var alertDef of pushAlertDefs) { 
+      if ((alertDef.expiration > now) && this.getInventoryCountByMetadataType(alertDef['metadataType']) > 0) {
+        alerts.push(alertDef);
+      }  
+    }
+    return alerts;
+  },
+
   setMetadata: function(md) {
     this._mdInv = md;
   },
@@ -76,6 +88,7 @@ const packageInventory = {
     retVal['MonitoredItems'] = this.getMonitoredInvArray();
     retVal['Recommendations'] = this._recomendations;
     retVal['InstallationWarnings']  = this.getInstallationWarnings();
+    retVal['Alerts'] = this.getAlerts();
     return retVal;
   },
 
@@ -156,6 +169,7 @@ const packageInventory = {
                   count = this._mdInv[element.metadataType]['count'];
                 //  extras.push({metadataSubType:'ApexTest', 'Metadata Type': '  With Tests', count: this._mdInv[element.metadataType]['TestMethods']});
                   extras.push({metadataSubType:'ApexFuture', 'Metadata Type': '  With Future Methods', count: this._mdInv[element.metadataType]['FutureCalls']});
+                  extras.push({metadataSubType:'AuraEnabled', 'Metadata Type': '  With Aura Enabled Methods', count: this._mdInv[element.metadataType]['AuraEnabledCalls']});
                   extras.push({metadataSubType:'InvocableApex', 'Metadata Type': '  With Invocable Methods or Variables', count: this._mdInv[element.metadataType]['InvocableCalls']});
                   extras.push({metadataSubType:'BatchApex', 'Metadata Type': '  Batch Apex', count: this._mdInv[element.metadataType]['BatchApex']});
                   extras.push({metadataSubType:'ApexRest', 'Metadata Type': '  Apex REST', count: this._mdInv[element.metadataType]['ApexRest']});
