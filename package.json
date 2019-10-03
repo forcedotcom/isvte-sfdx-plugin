@@ -1,6 +1,6 @@
 {
-  "name": "te-scan-plugin",
-  "description": "Scan Metadata and Provide feedback",
+  "name": "isvte-sfdx-plugin",
+  "description": "Scan Salesforce Metadata and Provide feedback",
   "version": "0.0.1",
   "author": "Jeremy Hay Draude",
   "bugs": "https://github.com/forcedotcom/isvte-sfdx-plugin/issues",
