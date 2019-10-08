@@ -23,23 +23,24 @@ For more information, please connect in the Salesforce Partner Community https:/
   ];
 
  
-  private enablementRules = rules;
-  private editionRules = editions;
-  private pushAlerts = alerts;
+ // private enablementRules = rules;
+ // private editionRules = editions;
+ // private pushAlerts = alerts;
 
 
 
   public async run(): Promise<any> { // tslint:disable-line:no-any
 
+    
      this.ux.log('Enablement Rules');
-     this.ux.table(this.getAllEnablementMessages(), ['Rule', 'Threshold', 'Message']);
+     this.ux.table(this.getAllEnablementMessages(), ['Rule', 'Threshold', 'Message','URL']);
      this.ux.log('\n\n');
      this.ux.log('Edition Warnings');
      this.ux.table(this.getAllEditionWarnings(),['Edition', 'Item', 'Threshold']);
      this.ux.log('\n\n');
      this.ux.log('Alerts');
-     this.ux.table(this.pushAlerts,['label','message','url','expiration']);
-     return {'Enablement Rules': this.getAllEnablementMessages(), 'Edition Warnings': this.editionRules,'Alerts':this.pushAlerts};
+     this.ux.table(alerts,['label','message','url','expiration']);
+     return {'Enablement Rules': this.getAllEnablementMessages(), 'Edition Warnings': editions,'Alerts':alerts};
 
   };
 
@@ -47,22 +48,22 @@ For more information, please connect in the Salesforce Partner Community https:/
 
   private getAllEnablementMessages = function() {
     let output = [];
-    for (let mdType of this.enablementRules) {
+    for (let mdType of rules) {
       if (mdType['threshold'] != undefined) {
         if (mdType['recPos'] != undefined) {
-          output.push({Rule:mdType['name'], Threshold: `>${mdType['threshold']}`, Message: mdType['recPos']});
+          output.push({Rule:mdType['name'], Threshold: `>${mdType['threshold']}`, Message: mdType['recPos']['message'],URL: mdType['recPos']['url']});
         }
         if (mdType['recNeg'] != undefined) {
-          output.push({Rule:mdType['name'], Threshold: `<${mdType['threshold']}`, Message: mdType['recNeg']});
+          output.push({Rule:mdType['name'], Threshold: `<${mdType['threshold']}`, Message: mdType['recNeg']['message'],URL: mdType['recNeg']['url']});
         }
       }
       if (mdType['detailThreshold'] != undefined) {
         for (let mdDetail of mdType['detailThreshold']) {
           if (mdDetail['recPos'] != undefined) {
-            output.push({Rule:mdDetail['name'], Threshold:`>${mdDetail['threshold']}`, Message: mdDetail['recPos']});
+            output.push({Rule:mdDetail['name'], Threshold:`>${mdDetail['threshold']}`, Message: mdDetail['recPos']['message'],URL:mdDetail['recPos']['url']});
           }
           if (mdDetail['recNeg']!= undefined) {
-            output.push({Rule:mdDetail['name'], Threshold:`<${mdDetail['threshold']}`, Message: mdDetail['recNeg']});
+            output.push({Rule:mdDetail['name'], Threshold:`<${mdDetail['threshold']}`, Message: mdDetail['recNeg']['message'],URL:mdDetail['recNeg']['url']});
           }
         }
       }
@@ -74,7 +75,7 @@ For more information, please connect in the Salesforce Partner Community https:/
 
   private getAllEditionWarnings = function() {
     let output = [];
-    for (let edition of this.editionRules) {
+    for (let edition of editions) {
       output.push({Edition:edition['name']});
       for (let blockingRule of edition['blockingItems']) {
         output.push({Item:blockingRule['label'], Threshold: blockingRule['threshold'] });

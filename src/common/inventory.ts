@@ -182,6 +182,15 @@ const packageInventory = {
                 if (this._mdInv[element.metadataType]) {
                   count = this._mdInv[element.metadataType]['count'];
                   extras.push({metadataSubType:'FlowTemplate', 'Metadata Type': '  Flows With Template', count: this._mdInv[element.metadataType]['FlowTemplate']}); 
+                  extras.push({metadataSubType:'ScreenFlow', 'Metadata Type': '  Screen Flows', count: this._mdInv[element.metadataType]['Flow']}); 
+                  extras.push({metadataSubType:'AutoLaunchedFlow', 'Metadata Type': '  Autolanched Flows', count: this._mdInv[element.metadataType]['AutoLaunchedFlow']}); 
+                  extras.push({metadataSubType:'ProcessBuilder', 'Metadata Type': '  Process Builder', count: this._mdInv[element.metadataType]['Workflow']}); 
+                  const objects = Object.keys(this._mdInv[element.metadataType]['objects']);
+                  for (const obj of objects) {
+                    let objPBTriggerCount = this._mdInv[element.metadataType]['objects'][obj]['count'];
+                     extras.push({metadataSubType: `object.${obj}`, 'Metadata Type': `  Process Builders on ${obj}`, 'count': objPBTriggerCount });
+                    
+                 }
                 }
             break;
             case 'ConnectedApp' :
@@ -245,12 +254,12 @@ const packageInventory = {
     if (element.threshold !=undefined) {
       if (count > element.threshold) {
         if (element.recPos) {
-          this._recomendations.push(`${element.name}:\n ${element.recPos}\n`);
+          this._recomendations.push(`${element.name}:\n ${element.recPos.message}\n\tURL:${element.recPos.url}\n`);
         }  
       }
       else {
         if (element.recNeg) {
-          this._recomendations.push(`${element.name}:\n ${element.recNeg}\n`);
+          this._recomendations.push(`${element.name}:\n ${element.recNeg.message}\n\tURL:${element.recNeg.url}\n`);
         }
       }
     }
@@ -261,12 +270,12 @@ const packageInventory = {
           if (detailCount['metadataSubType'] === detailThreshold.metadataSubType || detailThreshold.metadataSubType === '*')  {
             if (detailCount['count'] > detailThreshold.threshold) {
               if (detailThreshold.recPos) {
-                this._recomendations.push(`${detailCount['Metadata Type'].trim()}:\n ${detailThreshold.recPos}\n`);
+                this._recomendations.push(`${detailCount['Metadata Type'].trim()}:\n ${detailThreshold.recPos.message}\n\tURL:${detailThreshold.recPos.url}\n`);
               }
             }
             else {
               if (detailThreshold.recNeg) {
-                this._recomendations.push(`${detailCount['Metadata Type'].trim()}:\n ${detailThreshold.recNeg}\n`);
+                this._recomendations.push(`${detailCount['Metadata Type'].trim()}:\n ${detailThreshold.recNeg.message}\n\tURL:${detailThreshold.recNeg.url}`);
               }
             }
           }

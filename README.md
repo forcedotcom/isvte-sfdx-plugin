@@ -8,7 +8,15 @@ For support with this plugin or to provide feedback, please log an issue here or
 ## Setup
 ### **Install as a SalesforceDX Plugin**
 
-  Coming soon
+```  
+sfdx plugins:install isvte-sfdx-plugin
+```
+You will be prompted to confirm that you want to install an unsigned plugin. Choose yes
+```  
+This plugin is not digitally signed and its authenticity cannot be verified. Continue installation y/n?: y
+```
+
+To whitelist this plugin, [add an entry for it in $HOME/.config/sfdx/unsignedPluginWhiteList.json](https://developer.salesforce.com/blogs/2017/10/salesforce-dx-cli-plugin-update.html).
 
 ### **Install from source**
 1. Clone the repository

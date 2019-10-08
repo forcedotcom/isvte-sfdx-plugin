@@ -15,14 +15,13 @@ import xml2js = require('xml2js');
 import {
   packageInventory
 } from '../../common/inventory';
-import { log } from 'util';
-import { throws } from 'assert';
+
 
 
 
 export default class mdscan extends SfdxCommand {
 
-  private enableDebug = false;
+  //private enableDebug = false;
   private showFullInventory = false;
   private sourceFolder = '';
   private isvteLogger;
@@ -68,7 +67,7 @@ For more information, please connect in the Salesforce Partner Community https:/
   public async run(): Promise < any > { // tslint:disable-line:no-any
 
 
-    this.enableDebug = this.flags.withlogging;
+  //  this.enableDebug = this.flags.withlogging;
     this.showFullInventory = this.flags.showfullinventory;
     this.sourceFolder = this.flags.sourcefolder;
 
@@ -253,16 +252,52 @@ For more information, please connect in the Salesforce Partner Community https:/
           // }
           // inventory['FlowTemplate__c'] = flowTemplate;
           let templateCount = 0;
+          let objects = {};
+          //let autolaunchCount = 0;
+          //let processBuilderCount = 0;
+          //let screenFlowCount = 0;
           const flowPath = `${this.flags.sourcefolder}/flows`;
           for (var flowIdx in types[typeIdx]['members']) {
             let flowName = types[typeIdx]['members'][flowIdx];
             let flowXml = `${flowPath}/${flowName}.flow`;
             let flowJSON = this.parseXML(flowXml);
+            this.loggit('Checking file:' + flowXml);
             if (flowJSON['Flow'] && flowJSON['Flow']['isTemplate'] && flowJSON['Flow']['isTemplate'][0] === 'true') {
               templateCount++;
             }
+            if (flowJSON['Flow'] && flowJSON['Flow']['processType']) {
+              this.loggit('Flow Type:' + flowJSON['Flow']['processType']);
+              if (typeInv[flowJSON['Flow']['processType']]) {
+                typeInv[flowJSON['Flow']['processType']]++;
+              } else {
+                typeInv[flowJSON['Flow']['processType']] = 1;
+              } 
+              //this.loggit('Flow Type:' + flowJSON['Flow']['processType']);
+              if (flowJSON['Flow']['processType'] == 'Workflow') {
+                //Do per object Inventory of PB
+                this.loggit('Process Builder -- Inventorying Triggers Per Object');
+                this.loggit('Flow Details: '+ JSON.stringify(flowJSON['Flow']['processMetadataValues']));
+                for (var processMetadataValue of flowJSON['Flow']['processMetadataValues']) {
+                  this.loggit('Metadata Value Name: ' + processMetadataValue['name']);
+                  if (processMetadataValue['name'] == 'ObjectType') {
+                    this.loggit('ObjectName:' + JSON.stringify(processMetadataValue['value'][0]));
+                    let objectName = processMetadataValue['value'][0]['stringValue'][0];
+                    this.loggit('Extracted Object Name:' + objectName);
+                    if (objects[objectName]) {
+                      objects[objectName]['count']++;
+                    } else {
+                      objects[objectName] = {count: 1};
+                    }
+                  }
+                }
+              }
+            }
           }
+          typeInv['Flow'] = typeInv['Flow'] ? typeInv['Flow'] : 0;
+          typeInv['AutoLaunchedFlow'] = typeInv['AutoLaunchedFlow'] ? typeInv['AutoLaunchedFlow'] : 0;
+          typeInv['Workflow'] = typeInv['Workflow'] ? typeInv['Workflow'] : 0;
           typeInv['FlowTemplate'] = templateCount;
+          typeInv['objects'] = objects;
           break;
         case 'CustomApplication':
           let lightningCount = 0;
