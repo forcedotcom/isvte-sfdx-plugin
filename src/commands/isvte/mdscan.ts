@@ -33,7 +33,7 @@ export default class mdscan extends SfdxCommand {
     `Scan a package and provide inventory of monitored metadata items and enablement messages:
 \t$sfdx isvte:mdscan -d ./mdapi
 Scan a package and provide a complete inventory of package metadata:
-\t$sfdx isvte:mdscan -d ./mdapi -f
+\t$sfdx isvte:mdscan -d ./mdapi -y
 Display this help message:
 \t$sfdx isvte:mdscan -h
 
@@ -94,24 +94,47 @@ For more information, please connect in the Salesforce Partner Community https:/
     this.checkPackage(packageJSON);
 
     if (this.showFullInventory) {
-      this.ux.log('Inventory of Package:');
+      this.ux.styledHeader('Inventory of Package:');
       this.ux.table(this.packageInventory.getFullInvArray(), ['metadataType', 'count']);
     } else {
-      this.ux.log('Inventory of Package:');
+      this.ux.styledHeader('Inventory of Package:');
 
       this.ux.table(this.packageInventory.getMonitoredInvArray(), ['Metadata Type', 'count']);
-
-      this.ux.log('\nISV Technical Enablement:');
-      this.ux.log(this.packageInventory.getRecommendations());
+      this.ux.log('\n');
+      let recommendations = this.packageInventory.getRecommendations();
+      if (recommendations.length >0) {
+        this.ux.styledHeader('ISV Technical Enablement:');
+        for (var recommendation of recommendations) {
+          this.ux.log(`${recommendation.label}:\n  ${recommendation.message}\n\tURL:${recommendation.url}\n`)
+        }
+        this.ux.log('\n');
+      }
       let alerts = this.packageInventory.getAlerts();
       if (alerts.length > 0) {
-        this.ux.log('\nAlerts:');
+        this.ux.styledHeader('Alerts:');
         for (var alert of alerts) {
-          this.ux.log(`${alert.label} - ${alert.message}: ${alert.url}`);
+          this.ux.log(`${alert.label}:\n  ${alert.message}\n\tURL:${alert.url}`);
+        }
+        this.ux.log('\n');
+      }
+      this.ux.styledHeader('Installation Warnings:');
+      let warnings = this.packageInventory.getInstallationWarnings();
+      if (warnings.length > 0) {
+        for (var warning of warnings) {
+          this.ux.log(`Package cannot be installed in ${warning['edition']} due to:`)
+          for (var blockingItem of warning['blockingItems']) {
+            this.ux.log(`  ${blockingItem['label']} count (${blockingItem['count']}) is greater than the edition limit (${blockingItem['threshold']})`);
+            if (blockingItem['requiresSR']) {
+              this.ux.log('\tThis restriction is lifted when your package passes Security Review');
+            }
+          }
+          this.ux.log('\n');
         }
       }
-      this.ux.log('\nInstallation Warnings:');
-      this.ux.log(this.packageInventory.getInstallationWarnings());
+      else {
+        this.ux.log('Can be installed in any Edition');
+      }
+     // this.ux.log(this.packageInventory.getInstallationWarnings());
     }
     return this.packageInventory.getJSONOutput();
 
@@ -252,6 +275,8 @@ For more information, please connect in the Salesforce Partner Community https:/
           // }
           // inventory['FlowTemplate__c'] = flowTemplate;
           let templateCount = 0;
+          let screenTemplateCount = 0;
+          let autolaunchedTemplateCount = 0;
           let objects = {};
           //let autolaunchCount = 0;
           //let processBuilderCount = 0;
@@ -264,11 +289,18 @@ For more information, please connect in the Salesforce Partner Community https:/
             this.loggit('Checking file:' + flowXml);
             if (flowJSON['Flow'] && flowJSON['Flow']['isTemplate'] && flowJSON['Flow']['isTemplate'][0] === 'true') {
               templateCount++;
+              if (flowJSON['Flow']['processType'] && flowJSON['Flow']['processType'] == 'Flow') {
+                screenTemplateCount++;
+              }
+              if (flowJSON['Flow']['processType'] && flowJSON['Flow']['processType'] == 'AutoLaunchedFlow') {
+                autolaunchedTemplateCount++;
+              }
             }
             if (flowJSON['Flow'] && flowJSON['Flow']['processType']) {
               this.loggit('Flow Type:' + flowJSON['Flow']['processType']);
               if (typeInv[flowJSON['Flow']['processType']]) {
                 typeInv[flowJSON['Flow']['processType']]++;
+
               } else {
                 typeInv[flowJSON['Flow']['processType']] = 1;
               } 
@@ -297,6 +329,8 @@ For more information, please connect in the Salesforce Partner Community https:/
           typeInv['AutoLaunchedFlow'] = typeInv['AutoLaunchedFlow'] ? typeInv['AutoLaunchedFlow'] : 0;
           typeInv['Workflow'] = typeInv['Workflow'] ? typeInv['Workflow'] : 0;
           typeInv['FlowTemplate'] = templateCount;
+          typeInv['ScreenFlowTemplate'] = screenTemplateCount;
+          typeInv['AutoLaunchedFlowTemplate'] = autolaunchedTemplateCount;
           typeInv['objects'] = objects;
           break;
         case 'CustomApplication':
@@ -515,14 +549,15 @@ For more information, please connect in the Salesforce Partner Community https:/
 
     //Check Person Accounts
     let pafile = `${this.flags.sourcefolder}/objects/PersonAccount.object`;
-    let paType = {
-      count: 0
-    };
+    //let paType = {
+    //  count: 0
+    //};
 
     if (fs.existsSync(pafile)) {
-      paType['count'] = 1;
+      //paType['count'] = 1;
+      inventory['PersonAccount__c'] = {count:1};
     }
-    inventory['PersonAccount__c'] = paType;
+    
     return inventory;
   }
 

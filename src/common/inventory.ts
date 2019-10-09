@@ -4,10 +4,11 @@
  * SPDX-License-Identifier: BSD-3-Clause
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
-import { rules, editions, alerts } from './rules';
+import { mdTypes, editions, enablementRules, alerts } from './rules';
 
 const editionRules = editions;
-const monitoredTypes = rules;
+const enablement = enablementRules
+const monitoredTypes = mdTypes;
 const pushAlertDefs = alerts;
 
 const packageInventory = {
@@ -16,6 +17,9 @@ const packageInventory = {
   _mdMonitoredInvArray: undefined,
   _recomendations: [],
 
+  setMetadata: function(md) {
+    this._mdInv = md;
+  },
 
   getInstallationWarnings: function(){
     
@@ -25,24 +29,28 @@ const packageInventory = {
       for (var blockingType of edition['blockingItems']) {
         if (this.getInventoryCountByMetadataType(blockingType['metadataType']) > blockingType['threshold'] ) {
           if (blockingType['requiresSR']) {
-            editionBlock.push(` -${blockingType['label']} count is greater than ${blockingType['threshold']}. Package cannot be installed without Security Review`);
+    //        editionBlock.push(` -${blockingType['label']} count is greater than ${blockingType['threshold']}. Package cannot be installed without Security Review`);
+            editionBlock.push({metadataType:blockingType['metadataType'], label: blockingType['label'], requiresSR:blockingType['requiresSR'], threshold: blockingType['threshold'], count:  this.getInventoryCountByMetadataType(blockingType['metadataType'])});
           }
           else {
-            editionBlock.push(` -${blockingType['label']} count is greater than ${blockingType['threshold']}`);
+          //  editionBlock.push(` -${blockingType['label']} count is greater than ${blockingType['threshold']}`);
+            editionBlock.push({metadataType:blockingType['metadataType'], label: blockingType['label'], threshold: blockingType['threshold'], count:  this.getInventoryCountByMetadataType(blockingType['metadataType'])});
           }
         }
       }
       if (editionBlock.length > 0) {
-        warnings.push(`Package cannot be installed in ${edition['name']} due to:`);
-        warnings.push(editionBlock.join('\n'));
+      //  warnings.push(`Package cannot be installed in ${edition['name']} due to:`);
+      //  warnings.push(editionBlock.join('\n'));
+        warnings.push({'edition':edition['name'], blockingItems: editionBlock});
       }
     }
-    if (warnings.length > 0) {
-      return warnings.join('\n');
-    }
-    else {
-      return 'Can be installed in any Edition';
-    }
+    // if (warnings.length > 0) {
+    //   return warnings.join('\n');
+    // }
+    // else {
+    //   return 'Can be installed in any Edition';
+    // }
+    return warnings;
   },
 
   getAlerts: function(){
@@ -57,50 +65,96 @@ const packageInventory = {
     return alerts;
   },
 
-  setMetadata: function(md) {
-    this._mdInv = md;
-  },
+  getRecommendations: function() {
+    // return this._recomendations.join('\n');
+    let recomendations = [];
+    for (var ruleDef of enablement) { 
+     if (ruleDef['threshold'] !=undefined ) {
+        let mdType = this._parseMetadataType(ruleDef['metadataType']);
+        if (mdType.key === 'object' && mdType.targetObj === '*') {
+//Handle Checking against multiple objects
+          if (this._mdInv[mdType.metadataType] && this._mdInv[mdType.metadataType]['objects']) {
+            const objects = Object.keys(this._mdInv[mdType.metadataType]['objects']);
+            for (var object of objects) {
+              let count = this.getInventoryCountByMetadataType(`${mdType.metadataType}.object.${object}`);
+                if (ruleDef['recPos'] && count > ruleDef['threshold']) {
+                  recomendations.push({metadataType:ruleDef.metadataType, label: `${ruleDef['label']} - ${object}`, message:ruleDef['recPos']['message'], url: ruleDef['recPos']['url']});
+                }
+                if (ruleDef['recNeg'] && count <= ruleDef['threshold']) {
+                  recomendations.push({metadataType:ruleDef.metadataType, label: `${ruleDef['label']} - ${object}`, message:ruleDef['recNeg']['message'], url: ruleDef['recNeg']['url']});
+                }
+            }
+          }
+        }
+        else {
+//Singleton
+          let count = this.getInventoryCountByMetadataType(ruleDef['metadataType']);
+          if (ruleDef['recPos'] && count > ruleDef['threshold']) {
+            recomendations.push({metadataType:ruleDef.metadataType, label: ruleDef['label'], message:ruleDef['recPos']['message'], url: ruleDef['recPos']['url']});
+          }
+          if (ruleDef['recNeg'] && count <= ruleDef['threshold']) {
+            recomendations.push({metadataType:ruleDef.metadataType, label: ruleDef['label'], message:ruleDef['recNeg']['message'], url: ruleDef['recNeg']['url']});
+          }
+      }
+      }
+    }
+   return recomendations;
+   },
+
+
 
   getInventoryCountByMetadataType(metadataType) {
-    let mdType = metadataType.split('.'); //To look at subtypes, use Type.Subtype (e.g.: ApexClass.BatchApex)
-    let key = mdType[1] ? mdType[1] : 'count';
+    // let mdType = metadataType.split('.'); //To look at subtypes, use Type.Subtype (e.g.: ApexClass.BatchApex)
+    // let key = mdType[1] ? mdType[1] : 'count';
+    let mdType = this._parseMetadataType(metadataType);
     let count = 0;
-    if (this._mdInv[mdType[0]]) {
-      if (key === 'object' && mdType[2]) {
-        let targetObj = mdType[2];
-        if (this._mdInv[mdType[0]]['objects'] && this._mdInv[mdType[0]]['objects'][targetObj]) {
-          count = this._mdInv[mdType[0]]['objects'][targetObj]['count'];
+    if (this._mdInv[mdType.metadataType]) {
+      if (mdType.key === 'object' && mdType.targetObj) {
+        if (this._mdInv[mdType.metadataType]['objects'] && this._mdInv[mdType.metadataType]['objects'][mdType.targetObj]) {
+          count = this._mdInv[mdType.metadataType]['objects'][mdType.targetObj]['count'];
         }
       }
       else {
-        if (this._mdInv[mdType[0]][key]) {
-          count = this._mdInv[mdType[0]][key];
+        if (this._mdInv[mdType.metadataType][mdType.key]) {
+          count = this._mdInv[mdType.metadataType][mdType.key];
         }
       }
       
     }
     return count;
   },
+
+  _parseMetadataType(metadataType) {
+    let mdType = metadataType.split('.'); //To look at subtypes, use Type.Subtype (e.g.: ApexClass.BatchApex)
+    let key = mdType[1] ? mdType[1] : 'count';
+    let parsedType = {'metadataType':mdType[0],'key':key};
+    if (key === 'object') {
+      parsedType['targetObj'] = mdType[2];
+    }
+    return parsedType;
+  },
+
   getJSONOutput: function() {
     let retVal = {};
     retVal['MetadataInventory'] = this._mdInv;
     retVal['InventoryArray'] = this.getFullInvArray();
     retVal['MonitoredItems'] = this.getMonitoredInvArray();
-    retVal['Recommendations'] = this._recomendations;
+    retVal['Recommendations'] = this.getRecommendations();
     retVal['InstallationWarnings']  = this.getInstallationWarnings();
     retVal['Alerts'] = this.getAlerts();
     return retVal;
   },
 
-  getRulesJSON: function() {
-    return '';
-  },
+  // getRulesJSON: function() {
+  //   return '';
+  // },
 
-  getRecommendations: function() {
-    return this._recomendations.join('\n');
-  },
+  // getRecommendations: function() {
+  //  // return this._recomendations.join('\n');
+  //   return this._recomendations;
+  // },
 
-  
+
 
   getFullInvArray: function() {
     if (!this._mdFullInvArray) {
@@ -181,16 +235,19 @@ const packageInventory = {
             case 'Flow' :
                 if (this._mdInv[element.metadataType]) {
                   count = this._mdInv[element.metadataType]['count'];
-                  extras.push({metadataSubType:'FlowTemplate', 'Metadata Type': '  Flows With Template', count: this._mdInv[element.metadataType]['FlowTemplate']}); 
                   extras.push({metadataSubType:'ScreenFlow', 'Metadata Type': '  Screen Flows', count: this._mdInv[element.metadataType]['Flow']}); 
-                  extras.push({metadataSubType:'AutoLaunchedFlow', 'Metadata Type': '  Autolanched Flows', count: this._mdInv[element.metadataType]['AutoLaunchedFlow']}); 
+                  extras.push({metadataSubType:'AutoLaunchedFlow', 'Metadata Type': '  Autolaunched Flows', count: this._mdInv[element.metadataType]['AutoLaunchedFlow']}); 
                   extras.push({metadataSubType:'ProcessBuilder', 'Metadata Type': '  Process Builder', count: this._mdInv[element.metadataType]['Workflow']}); 
+                  
                   const objects = Object.keys(this._mdInv[element.metadataType]['objects']);
                   for (const obj of objects) {
                     let objPBTriggerCount = this._mdInv[element.metadataType]['objects'][obj]['count'];
-                     extras.push({metadataSubType: `object.${obj}`, 'Metadata Type': `  Process Builders on ${obj}`, 'count': objPBTriggerCount });
+                     extras.push({metadataSubType: `object.${obj}`, 'Metadata Type': `    Process Builders on ${obj}`, 'count': objPBTriggerCount });
                     
                  }
+                 extras.push({metadataSubType:'FlowTemplate', 'Metadata Type': '  Flow Templates', count: this._mdInv[element.metadataType]['FlowTemplate']}); 
+                 extras.push({metadataSubType:'FlowTemplate', 'Metadata Type': '    Screen Flow Templates', count: this._mdInv[element.metadataType]['ScreenFlowTemplate']}); 
+                 extras.push({metadataSubType:'FlowTemplate', 'Metadata Type': '    Autolaunched Flow Templates', count: this._mdInv[element.metadataType]['AutoLaunchedFlowTemplate']}); 
                 }
             break;
             case 'ConnectedApp' :
@@ -204,6 +261,7 @@ const packageInventory = {
                   count = this._mdInv[element.metadataType]['count'];
                   extras.push({metadataSubType:'BigObject', 'Metadata Type': '  Big Objects', count: this._mdInv[element.metadataType]['BigObject']}); 
                   extras.push({metadataSubType:'ExternalObject', 'Metadata Type': '  External Objects', count: this._mdInv[element.metadataType]['ExternalObject']}); 
+                  
 
                 }
             break;
@@ -243,47 +301,51 @@ const packageInventory = {
         if (extras.length > 0) {
           this._mdMonitoredInvArray = this._mdMonitoredInvArray.concat(extras);
         }
-        this.getElementRecommendation(element,count, extras);
+       // this.getElementRecommendation(element,count, extras);
        
       });
     }
     return this._mdMonitoredInvArray;
   },
 
-  getElementRecommendation: function (element,count, detailArray) {
-    if (element.threshold !=undefined) {
-      if (count > element.threshold) {
-        if (element.recPos) {
-          this._recomendations.push(`${element.name}:\n ${element.recPos.message}\n\tURL:${element.recPos.url}\n`);
-        }  
-      }
-      else {
-        if (element.recNeg) {
-          this._recomendations.push(`${element.name}:\n ${element.recNeg.message}\n\tURL:${element.recNeg.url}\n`);
-        }
-      }
-    }
+//   getElementRecommendation: function (element,count, detailArray) {
+//     if (element.threshold !=undefined) {
+//       if (count > element.threshold) {
+//         if (element.recPos) {
+//     //      this._recomendations.push(`${element.name}:\n ${element.recPos.message}\n\tURL:${element.recPos.url}\n`);
+//           this._recomendations.push({metadataType:element.metadataType, label:element.name, message:element.recPos.message, url:element.recPos.url});
+//         }  
+//       }
+//       else {
+//         if (element.recNeg) {
+// //          this._recomendations.push(`${element.name}:\n ${element.recNeg.message}\n\tURL:${element.recNeg.url}\n`);
+//           this._recomendations.push({metadataType:element.metadataType, label:element.name, message:element.recNeg.message, url:element.recNeg.url});
+//         }
+//       }
+//     }
 
-    if (element.detailThreshold !=undefined ) {
-      element.detailThreshold.forEach(detailThreshold => {
-        detailArray.forEach(detailCount => {
-          if (detailCount['metadataSubType'] === detailThreshold.metadataSubType || detailThreshold.metadataSubType === '*')  {
-            if (detailCount['count'] > detailThreshold.threshold) {
-              if (detailThreshold.recPos) {
-                this._recomendations.push(`${detailCount['Metadata Type'].trim()}:\n ${detailThreshold.recPos.message}\n\tURL:${detailThreshold.recPos.url}\n`);
-              }
-            }
-            else {
-              if (detailThreshold.recNeg) {
-                this._recomendations.push(`${detailCount['Metadata Type'].trim()}:\n ${detailThreshold.recNeg.message}\n\tURL:${detailThreshold.recNeg.url}`);
-              }
-            }
-          }
-        });
-      });
-    }
+//     if (element.detailThreshold !=undefined ) {
+//       element.detailThreshold.forEach(detailThreshold => {
+//         detailArray.forEach(detailCount => {
+//           if (detailCount['metadataSubType'] === detailThreshold.metadataSubType || detailThreshold.metadataSubType === '*')  {
+//             if (detailCount['count'] > detailThreshold.threshold) {
+//               if (detailThreshold.recPos) {
+//           //      this._recomendations.push(`${detailCount['Metadata Type'].trim()}:\n ${detailThreshold.recPos.message}\n\tURL:${detailThreshold.recPos.url}\n`);
+//                 this._recomendations.push({metadataType:detailCount['metadataSubType'], label:detailCount['Metadata Type'].trim(), message:detailThreshold.recPos.message, url:detailThreshold.recPos.url});
+//               }
+//             }
+//             else {
+//               if (detailThreshold.recNeg) {
+//            //     this._recomendations.push(`${detailCount['Metadata Type'].trim()}:\n ${detailThreshold.recNeg.message}\n\tURL:${detailThreshold.recNeg.url}`);
+//            this._recomendations.push({metadataType:detailCount['metadataSubType'], label:detailCount['Metadata Type'].trim(), message:detailThreshold.recNeg.message, url:detailThreshold.recNeg.url});
+//               }
+//             }
+//           }
+//         });
+//       });
+//     }
 
-  },
+//   },
 
 
 };
