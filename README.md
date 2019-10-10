@@ -34,20 +34,39 @@ Scans the package contained in the specified directory. Based on that metadata, 
 
 ```
 USAGE
-  $ sfdx isvte:mdscan [-d <directory>] [-l] [-f] [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
+  $ sfdx isvte:mdscan [-d <directory>] [-y] [-s <array>] [--json] [--loglevel 
+  trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
 
 OPTIONS
-  -d, --sourcefolder=sourcefolder                                                   [default: mdapiout] directory containing package metadata
-  -f, --showfullinventory                                                           show package inventory only
-  -l, --withlogging                                                                 enable verbose debug logging
-  --json                                                                            format output as json
-  --loglevel=(trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL)  [default: warn] logging level for this command invocation
+  -d, --sourcefolder=sourcefolder
+      [default: mdapiout] directory containing package metadata
+
+  -s, --suppress=suppress
+      comma separated list of items to suppress.
+      Valid options are: ZeroInventory, Inventory, Enablement, Alerts, Warnings
+
+  -y, --showfullinventory
+      show package inventory only
+
+  --json
+      format output as json
+
+  --loglevel=(trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL)
+      [default: warn] logging level for this command invocation
 
 EXAMPLE
   Scan a package and provide inventory of monitored metadata items and enablement messages:
   	$sfdx isvte:mdscan -d ./mdapi
+
   Scan a package and provide a complete inventory of package metadata:
-  	$sfdx isvte:mdscan -d ./mdapi -f
+  	$sfdx isvte:mdscan -d ./mdapi -y
+
+  Do not display alerts and warnings:
+  	$sfdx isvte:mdscan -d ./mdapi -s alerts,warnings
+
+  Display this help message:
+  	$sfdx isvte:mdscan -h
+
 ```
 
 
@@ -55,22 +74,28 @@ EXAMPLE
 Outputs all of the rules used in the mdscan command
 ```
 USAGE
-  $ sfdx isvte:listrules [--json] [--loglevel trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
+  $ sfdx isvte:listrules [--json] [--loglevel 
+  trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL]
 
 OPTIONS
-  --json                                                                            format output as json
-  --loglevel=(trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL)  [default: warn] logging level for this command invocation
+  --json
+      format output as json
+
+  --loglevel=(trace|debug|info|warn|error|fatal|TRACE|DEBUG|INFO|WARN|ERROR|FATAL)
+      [default: warn] logging level for this command invocation
 
 EXAMPLE
   Display the enablement rules and edition warnings which are checked by the isvte plugin:
   	$sfdx isvte:listrules
+  Display this help message:
+  	$sfdx isvte:listrules -h
+
 ```
 
 **Example Output**
 ```
-sfdx isvte:mdscan -d mdApex/
-/Users/jhaydraude/Development/Projects/te-scan-plugin/src/commands/isvte
-Inventory of Package:
+$ sfdx isvte:mdscan -d mdApex/ 
+=== Inventory of Package:
 METADATA TYPE                          COUNT
 ─────────────────────────────────────  ─────
 Permission Sets                        1
@@ -82,19 +107,20 @@ Custom Settings                        0
 Custom Labels                          0
 Tabs                                   5
 Flows                                  1
-  Flows With Template                  0
+  Screen Flows                         1
+  Autolaunched Flows                   0
+  Process Builder                      0
+  Flow Templates                       0
+    Screen Flow Templates              0
+    Autolaunched Flow Templates        0
 Classes                                6
   With Future Methods                  2
+  With Aura Enabled Methods            4
   With Invocable Methods or Variables  0
   Batch Apex                           1
   Apex REST                            0
   SOAP Web Services                    0
   Schedulable Apex                     0
-Triggers                               4
-  Async Triggers                       0
-  Triggers on Expense_Type__c          2
-  Triggers on Expense__c               1
-  Triggers on Activity__c              1
 Reports                                9
 Report Types                           0
 Custom Apps                            4
@@ -119,7 +145,6 @@ Custom Fields                          25
    Fields on Expense_Type__c           5
    Fields on Expense__c                7
 Platform Events                        0
-Change Data Capture                    0
 Territory Management                   0
 Territory Management 2.0               0
 Visualforce Pages                      0
@@ -137,34 +162,56 @@ Einstein Analytics Datasets            0
 Einstein Analytics Lenses              0
 Einstein Analytics Template Bundles    0
 Einstein Analytics Dashboards          0
-Person Account                         0
+Person Accounts Enabled?               0
 Record Types                           0
 
-ISV Technical Enablement:
-Flows With Template:
- For more information about Flow Templates - https://partners.salesforce.com/0693A000007S2Dq
 
-Batch Apex:
- For more information on Batch Apex Design patterns - https://partners.salesforce.com/0693A000006aF9G
+=== ISV Technical Enablement:
+Include your Flows as Templates:
+  When packaging a Flow, consider using a Flow Template to allow your subscribers to modify the flow to suit their needs. For more information about Flow Templates see this blog post
+	URL:https://medium.com/inside-the-salesforce-ecosystem/pre-built-business-processes-how-isvs-use-flow-templates-ddc9910ff93a
 
-Triggers on Expense_Type__c:
- Best Practices Recommend 1 trigger per object. For more information on Trigger Best Practices, see this webinar - https://developer.salesforce.com/events/webinars/Deep_Dive_Apex_Triggers
+Best Practices for Packaging Batch Apex:
+  For more information on Batch Apex Design patterns and how best to package Batch Apex, see this webinar
+	URL:https://partners.salesforce.com/0693A000006aF9G
 
-Async Triggers:
- For more information on Async Triggers - https://developer.salesforce.com/blogs/2019/06/get-buildspiration-with-asynchronous-apex-triggers-in-summer-19.html
+Multiple Triggers per Object - Expense_Type__c:
+  Best Practices Recommend 1 trigger per object. For more information on Trigger Best Practices, see this webinar
+	URL:https://developer.salesforce.com/events/webinars/Deep_Dive_Apex_Triggers
 
-In-App Prompts:
- For more information - https://medium.com/inside-the-salesforce-ecosystem/in-app-prompts-for-isvs-e9b013969016
+Take Advantage of Async Triggers:
+  For more information on Async Triggers and how to use them to enable asychronous trigger proccessing, see this blog
+	URL:https://developer.salesforce.com/blogs/2019/06/get-buildspiration-with-asynchronous-apex-triggers-in-summer-19.html
 
-Fields on Activity:
- Please be aware that there is a hard limit of 100 fields on Activity including managed and unmanged
+Take Advantage of In-App Prompts:
+  For more information about how to use In-App Prompts to keep your users informed, see this blog
+	URL:https://medium.com/inside-the-salesforce-ecosystem/in-app-prompts-for-isvs-e9b013969016
 
-Aura Web Components:
- For a decision matrix on whether you should be considering migrating to LWC - https://medium.com/inside-the-salesforce-ecosystem/lightning-web-components-an-isv-partner-digest-59d9191f3248
+Take Advantage of Platform Cache:
+  Consider using Platform Cache to improve the performance of your application.
+	URL:https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_cache_namespace_overview.htm
+
+Limits on Custom Fields on Activity:
+  Please be aware that there is a hard limit of 100 fields on Activity including managed and unmanged fields
+	URL:undefined
+
+Aura Web Components vs Lightning Web Components:
+  Lightning Web Components are the new Salesforce standard for Lightning Components featuring easier devlopment, better performance and standards compliance. For a decision matrix on whether you should be considering migrating to LWC see this blog
+	URL:https://medium.com/inside-the-salesforce-ecosystem/lightning-web-components-an-isv-partner-digest-59d9191f3248
 
 
-Installation Warnings:
+
+=== Alerts:
+@AuraEnabled Methods:
+  New Permissions Required to Access Apex Classes containing @AuraEnabled methods. Impacts Guest Users
+	URL:https://partners.salesforce.com/partnerAlert?id=a033A00000Fvo12QAB
+
+
+=== Installation Warnings:
 Package cannot be installed in Essentials due to:
- -Apex count is greater than 0. Package cannot be installed without Security Review
- -Custom Objects count is greater than 0. Package cannot be installed without Security Review
+  Apex count (6) is greater than the edition limit (0)
+	This restriction is lifted when your package passes Security Review
+  Custom Objects count (4) is greater than the edition limit (0)
+	This restriction is lifted when your package passes Security Review
+
 ```

@@ -25,15 +25,24 @@ export default class mdscan extends SfdxCommand {
   private showFullInventory = false;
   private sourceFolder = '';
   private isvteLogger;
-
+  private suppressZeroInv = false;
+  private suppressAllInv = false;
+  private suppressEnablement = false;
+  private suppressAlerts = false;
+  private suppressWarnings = false;
 
   public static description = 'scan a package and provide recommendations based on package inventory';
 
   public static examples = [
     `Scan a package and provide inventory of monitored metadata items and enablement messages:
 \t$sfdx isvte:mdscan -d ./mdapi
+
 Scan a package and provide a complete inventory of package metadata:
 \t$sfdx isvte:mdscan -d ./mdapi -y
+
+Do not display alerts and warnings:
+\t$sfdx isvte:mdscan -d ./mdapi -s alerts,warnings
+
 Display this help message:
 \t$sfdx isvte:mdscan -h
 
@@ -52,6 +61,11 @@ For more information, please connect in the Salesforce Partner Community https:/
       char: 'y',
       description: 'show package inventory only'
     }),
+    suppress: flags.array({
+              char: 's',
+              description: `comma separated list of items to suppress.\n Valid options are: ZeroInventory, Inventory, Enablement, Alerts, Warnings`
+    }),
+      
   };
 
   // withlogging: flags.boolean({char:'l', description: 'enable verbose debug logging'}),
@@ -70,7 +84,19 @@ For more information, please connect in the Salesforce Partner Community https:/
   //  this.enableDebug = this.flags.withlogging;
     this.showFullInventory = this.flags.showfullinventory;
     this.sourceFolder = this.flags.sourcefolder;
-
+    
+    //Check Suppress Flags
+    if (this.flags.suppress) {
+      this.flags.suppress.forEach(element => {
+        this.suppressZeroInv = this.suppressZeroInv || element.toLowerCase() ==  'zeroinventory';
+        this.suppressAllInv = this.suppressAllInv || element.toLowerCase() == 'inventory';
+        this.suppressEnablement = this.suppressEnablement || element.toLowerCase() == 'enablement';
+        this.suppressAlerts = this.suppressAlerts || element.toLowerCase() == 'alerts';
+        this.suppressWarnings = this.suppressWarnings || element.toLowerCase() == 'warnings'; 
+      });
+    }
+    
+   
   //  this.isvteLogger = await Logger.root();
 
    this.isvteLogger = await Logger.child('isvtePlugin');
@@ -97,43 +123,54 @@ For more information, please connect in the Salesforce Partner Community https:/
       this.ux.styledHeader('Inventory of Package:');
       this.ux.table(this.packageInventory.getFullInvArray(), ['metadataType', 'count']);
     } else {
-      this.ux.styledHeader('Inventory of Package:');
-
-      this.ux.table(this.packageInventory.getMonitoredInvArray(), ['Metadata Type', 'count']);
-      this.ux.log('\n');
-      let recommendations = this.packageInventory.getRecommendations();
-      if (recommendations.length >0) {
-        this.ux.styledHeader('ISV Technical Enablement:');
-        for (var recommendation of recommendations) {
-          this.ux.log(`${recommendation.label}:\n  ${recommendation.message}\n\tURL:${recommendation.url}\n`)
-        }
+      if (!this.suppressAllInv) {
+        this.ux.styledHeader('Inventory of Package:');
+        let inventoryArray = this.packageInventory.getMonitoredInvArray().filter(element => {
+          return (!this.suppressZeroInv || element.count > 0);
+        });
+        this.ux.table(inventoryArray, ['Metadata Type', 'count']);
         this.ux.log('\n');
       }
-      let alerts = this.packageInventory.getAlerts();
-      if (alerts.length > 0) {
-        this.ux.styledHeader('Alerts:');
-        for (var alert of alerts) {
-          this.ux.log(`${alert.label}:\n  ${alert.message}\n\tURL:${alert.url}`);
-        }
-        this.ux.log('\n');
-      }
-      this.ux.styledHeader('Installation Warnings:');
-      let warnings = this.packageInventory.getInstallationWarnings();
-      if (warnings.length > 0) {
-        for (var warning of warnings) {
-          this.ux.log(`Package cannot be installed in ${warning['edition']} due to:`)
-          for (var blockingItem of warning['blockingItems']) {
-            this.ux.log(`  ${blockingItem['label']} count (${blockingItem['count']}) is greater than the edition limit (${blockingItem['threshold']})`);
-            if (blockingItem['requiresSR']) {
-              this.ux.log('\tThis restriction is lifted when your package passes Security Review');
-            }
+      if (!this.suppressEnablement) {
+        let recommendations = this.packageInventory.getRecommendations();
+        if (recommendations.length >0) {
+          this.ux.styledHeader('ISV Technical Enablement:');
+          for (var recommendation of recommendations) {
+            this.ux.log(`${recommendation.label}:\n  ${recommendation.message}\n\tURL:${recommendation.url}\n`)
           }
           this.ux.log('\n');
         }
       }
-      else {
-        this.ux.log('Can be installed in any Edition');
+      if (!this.suppressAlerts) {
+        let alerts = this.packageInventory.getAlerts();
+        if (alerts.length > 0) {
+          this.ux.styledHeader('Alerts:');
+          for (var alert of alerts) {
+            this.ux.log(`${alert.label}:\n  ${alert.message}\n\tURL:${alert.url}`);
+          }
+          this.ux.log('\n');
+        }
       }
+      if (!this.suppressWarnings) {
+        this.ux.styledHeader('Installation Warnings:');
+        let warnings = this.packageInventory.getInstallationWarnings();
+        if (warnings.length > 0) {
+          for (var warning of warnings) {
+            this.ux.log(`Package cannot be installed in ${warning['edition']} due to:`)
+            for (var blockingItem of warning['blockingItems']) {
+              this.ux.log(`  ${blockingItem['label']} count (${blockingItem['count']}) is greater than the edition limit (${blockingItem['threshold']})`);
+              if (blockingItem['requiresSR']) {
+                this.ux.log('\tThis restriction is lifted when your package passes Security Review');
+              }
+            }
+            this.ux.log('\n');
+          }
+        }
+        else {
+          this.ux.log('Can be installed in any Edition');
+        }
+      }
+      
      // this.ux.log(this.packageInventory.getInstallationWarnings());
     }
     return this.packageInventory.getJSONOutput();

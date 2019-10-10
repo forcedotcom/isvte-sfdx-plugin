@@ -29,13 +29,19 @@ For more information, please connect in the Salesforce Partner Community https:/
      this.ux.table(mdTypes, ['name', 'metadataType']);
      this.ux.log('\n\n');
      this.ux.styledHeader('Enablement Rules');
-     this.ux.table(this.getAllEnablementMessages(), ['Rule', 'Threshold', 'Message','URL']);
+     //this.ux.table(this.getAllEnablementMessages(), ['Rule', 'Threshold', 'Message','URL']);
+     for (var enablementRule of this.getAllEnablementMessages()) {
+       this.ux.log(`Rule: ${enablementRule.label}\n Trigger: ${enablementRule.metadataType} ${enablementRule.threshold}\n Message: ${enablementRule.message}\n URL: ${enablementRule.url}\n`);
+     }
      this.ux.log('\n\n');
      this.ux.styledHeader('Edition Warnings');
      this.ux.table(this.getAllEditionWarnings(),['Edition', 'Item', 'Threshold']);
      this.ux.log('\n\n');
      this.ux.styledHeader('Alerts');
-     this.ux.table(alerts,['label','message','url','expiration']);
+     //this.ux.table(alerts,['label','message','url','expiration']);
+     for (var alert of alerts) {
+       this.ux.log(`Alert Name: ${alert.label}\n Message: ${alert.message}\n URL: ${alert.url}\n Expiration: ${alert.expiration}\n`);
+     }
      return {'Monitored Types': mdTypes, 'Enablement Rules': this.getAllEnablementMessages(), 'Edition Warnings': editions,'Alerts':alerts};
 
   };
@@ -45,10 +51,10 @@ For more information, please connect in the Salesforce Partner Community https:/
     for (let mdType of enablementRules) {
       if (mdType['threshold'] != undefined) {
         if (mdType['recPos'] != undefined) {
-          output.push({Rule:mdType['label'], Threshold: `>${mdType['threshold']}`, Message: mdType['recPos']['message'],URL: mdType['recPos']['url']});
+          output.push({metadataType: mdType['metadataType'], label:mdType['label'], threshold: `> ${mdType['threshold']}`, message: mdType['recPos']['message'],url: mdType['recPos']['url']});
         }
         if (mdType['recNeg'] != undefined) {
-          output.push({Rule:mdType['label'], Threshold: `<${mdType['threshold']}`, Message: mdType['recNeg']['message'],URL: mdType['recNeg']['url']});
+          output.push({metadataType: mdType['metadataType'], label:mdType['label'], threshold: `<= ${mdType['threshold']}`, message: mdType['recNeg']['message'],url: mdType['recNeg']['url']});
         }
       }
     }
