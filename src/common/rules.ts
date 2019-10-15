@@ -5,6 +5,9 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
+const minAPI = 45;
+
+
 const mdTypes = [
   {name: 'Permission Sets', metadataType: 'PermissionSet'},
   {name: 'Custom Metadata', metadataType: 'CustomMetadata'},
@@ -45,37 +48,32 @@ const mdTypes = [
 
 const enablementRules = [
   {metadataType: 'Flow', 
-    label: 'Take Advantage of Flows', threshold:0, 
+    label: 'Take Advantage of Flows', 
+    threshold:-1, 
     recNeg: {message: 'Flows are a powerful tool to enable forms based workflows and process automation to your users. See this webinar for more information', url: 'https://partners.salesforce.com/0693A000007S2Dq'}},
   {metadataType:'Flow.FlowTemplate', 
     label: 'Include your Flows as Templates', 
     threshold:0, 
     recNeg: {message: 'When packaging a Flow, consider using a Flow Template to allow your subscribers to modify the flow to suit their needs. For more information about Flow Templates see this blog post', url: 'https://medium.com/inside-the-salesforce-ecosystem/pre-built-business-processes-how-isvs-use-flow-templates-ddc9910ff93a'}},
-  {metadataType:'Flow.object.*', 
-    label: 'Multiple Process Builders per Object', 
-    threshold:1, 
-    recPos: {message: 'Best Practices Recommend  only one record-change process per object. For more information on Process Builder Best Practices, see this document', url:'https://help.salesforce.com/articleView?id=process_considerations_design_bestpractices.htm&type=5'}},
+  
   {metadataType:'ApexClass.BatchApex', 
     label: 'Best Practices for Packaging Batch Apex', 
     threshold:0, 
     recPos: {message: 'For more information on Batch Apex Design patterns and how best to package Batch Apex, see this webinar',url:'https://partners.salesforce.com/0693A000006aF9G'}},
-  {metadataType:'ApexTrigger.object.*', 
-    label:'Multiple Triggers per Object', 
-    threshold:1, 
-    recPos: {message:'Best Practices Recommend 1 trigger per object. For more information on Trigger Best Practices, see this webinar',url:'https://developer.salesforce.com/events/webinars/Deep_Dive_Apex_Triggers'}},
+  
   {metadataType:'ApexTrigger.AsyncTrigger', 
     label: 'Take Advantage of Async Triggers', 
     threshold:0, 
     recNeg: {message: 'For more information on Async Triggers and how to use them to enable asychronous trigger proccessing, see this blog', url:'https://developer.salesforce.com/blogs/2019/06/get-buildspiration-with-asynchronous-apex-triggers-in-summer-19.html' }},
   {metadataType: 'Prompt', 
     label: 'Take Advantage of In-App Prompts', 
-    threshold:0, 
+    threshold:-1, 
     recNeg: {message:'For more information about how to use In-App Prompts to keep your users informed, see this blog',url:'https://medium.com/inside-the-salesforce-ecosystem/in-app-prompts-for-isvs-e9b013969016'}},
   {metadataType: 'PlatformCachePartition', 
     label: 'Take Advantage of Platform Cache', 
-    threshold: 0, 
+    threshold: -1, 
     recNeg: {message:'Consider using Platform Cache to improve the performance of your application.',url:'https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_cache_namespace_overview.htm'}},
-  {metadataType: 'CustomField.object.Activity', 
+  {metadataType: 'CustomField.objects.Activity', 
     label: 'Limits on Custom Fields on Activity', 
     threshold:0, 
     recPos: {message:'Please be aware that there is a hard limit of 100 fields on Activity including managed and unmanged fields'}},
@@ -93,12 +91,61 @@ const enablementRules = [
     recPos: {message:'Lightning Web Components are the new Salesforce standard for Lightning Components featuring easier devlopment, better performance and standards compliance. For a decision matrix on whether you should be considering migrating to LWC see this blog',url:'https://medium.com/inside-the-salesforce-ecosystem/lightning-web-components-an-isv-partner-digest-59d9191f3248'}},
   {metadataType: 'LightningComponentBundle', 
     label: 'Lightning Web Components Best Practices for ISVs', 
-    threshold:0,
+    threshold:-1,
     recNeg: {message:'Find more information about how to leverage the power of LWC in your application, see this webinar', url:'https://partners.salesforce.com/0693A000007Kd7oQAC'}},
   {metadataType: 'WaveTemplateBundle', 
     label: 'Einstein Analytics Template Bundles Best Practices for ISVs', 
     threshold: 0, 
     recPos: {message:'For more information on Creating & Distributing Analytics Apps using Templates see this webinar',url:'https://partners.salesforce.com/partnerEvent?id=a033A00000FYOQOQA5'}},
+  
+];
+
+const qualityRules = [
+  {metadataType: 'apiVersions.mdapi',
+    label: 'Using old Metadata API Version',
+    threshold:minAPI,
+    recNeg:{message:`You appear to be using a version of Metadata API less than the recommended ${minAPI}`}
+  },
+  {metadataType: 'apiVersions.ApexClass.*',
+    label: 'Using old Apex API Version',
+    threshold:minAPI,
+    recNeg:{message:`You appear to be using an API version less than ${minAPI} for this component`}
+  },
+  {metadataType: 'apiVersions.ApexTrigger.*',
+    label: 'Using old Trigger API Version',
+    threshold:minAPI,
+    recNeg:{message: `You appear to be using an API version less than ${minAPI} for this component`}
+  },
+  {metadataType: 'apiVersions.AuraDefinitionBundle.*',
+    label: 'Using old Aura Component API Version',
+    threshold:minAPI,
+    recNeg:{message: `You appear to be using an API version less than ${minAPI} for this component`}
+  },
+  {metadataType: 'apiVersions.LightningComponentBundle.*',
+    label: 'Using old Lightning Web Component API Version',
+    threshold:minAPI,
+    recNeg:{message: `You appear to be using an API version less than ${minAPI} for this component`}
+  },
+  {metadataType: 'componentProperties.CustomObject.*.descriptionExists',
+    label: 'Custom Objects should have a description',
+    threshold:0,
+    recNeg:{message:`Custom Objects should have a description for useability`}
+  },
+  {metadataType: 'componentProperties.CustomField.*.descriptionExists',
+    label: 'Custom Fields should have a description',
+    threshold:0,
+    recNeg:{message: `Custom Fields should have a description for useability`}
+  },
+  {metadataType:'ApexTrigger.objects.*', 
+    label:'Multiple Triggers per Object', 
+    threshold:1, 
+    recPos:{message: 'Best Practices Recommend 1 trigger per object. Please check triggers on the objects below to see if you can use triggers and trigger handlers to reduce the number of triggers per object.'}
+  },
+  {metadataType:'Flow.objects.*', 
+    label: 'Multiple Process Builders per Object', 
+    threshold:1, 
+    recPos:{message:'Best Practices Recommend  only one record-change process per object. Please check Process Builders on the objects below to see if you can combine all processes into one'}
+  },
 ];
 
 const alerts = [
@@ -165,8 +212,7 @@ const editions = [
 ];
 
 
-
-export {mdTypes, enablementRules, editions, alerts};
+export {mdTypes, enablementRules, editions, alerts, qualityRules};
 
 
 

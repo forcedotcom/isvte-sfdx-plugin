@@ -6,7 +6,7 @@
  */
 
 import {  SfdxCommand } from '@salesforce/command';
-import { mdTypes, enablementRules, editions, alerts } from '../../common/rules';
+import { mdTypes, enablementRules, editions, alerts, qualityRules } from '../../common/rules';
 
 export default class listrules extends SfdxCommand {
   
@@ -34,6 +34,11 @@ For more information, please connect in the Salesforce Partner Community https:/
        this.ux.log(`Rule: ${enablementRule.label}\n Trigger: ${enablementRule.metadataType} ${enablementRule.threshold}\n Message: ${enablementRule.message}\n URL: ${enablementRule.url}\n`);
      }
      this.ux.log('\n\n');
+     this.ux.styledHeader('Code Quality Checks');
+     for (var qualityRule of this.getAllQualityRules()) {
+       this.ux.log(`Rule: ${qualityRule.label}\n Trigger: ${qualityRule.metadataType} ${qualityRule.threshold}\n Message: ${qualityRule.message}\n`);
+     }
+     this.ux.log('\n\n');
      this.ux.styledHeader('Edition Warnings');
      this.ux.table(this.getAllEditionWarnings(),['Edition', 'Item', 'Threshold']);
      this.ux.log('\n\n');
@@ -42,11 +47,34 @@ For more information, please connect in the Salesforce Partner Community https:/
      for (var alert of alerts) {
        this.ux.log(`Alert Name: ${alert.label}\n Message: ${alert.message}\n URL: ${alert.url}\n Expiration: ${alert.expiration}\n`);
      }
-     return {'Monitored Types': mdTypes, 'Enablement Rules': this.getAllEnablementMessages(), 'Edition Warnings': editions,'Alerts':alerts};
+     return {'Monitored Types': mdTypes, 'Enablement Rules': this.getAllEnablementMessages(), 'Code Quality Rules': this.getAllQualityRules(), 'Edition Warnings': editions,'Alerts':alerts};
 
   };
 
+  private getAllRules = function(ruleDefs) {
+    let output = [];
+    for (let mdType of ruleDefs) {
+      if (mdType['threshold'] != undefined) {
+        if (mdType['recPos'] != undefined) {
+          output.push({metadataType: mdType['metadataType'], label:mdType['label'], threshold: `> ${mdType['threshold']}`, message: mdType['recPos']['message'],url: mdType['recPos']['url']});
+        }
+        if (mdType['recNeg'] != undefined) {
+          output.push({metadataType: mdType['metadataType'], label:mdType['label'], threshold: `<= ${mdType['threshold']}`, message: mdType['recNeg']['message'],url: mdType['recNeg']['url']});
+        }
+      }
+    }
+    return output; 
+  };
+
+  private getAllQualityRules = function() {
+    return this.getAllRules(qualityRules);
+  }
+
   private getAllEnablementMessages = function() {
+    return this.getAllRules(enablementRules);
+  };
+
+  private getAllEnablementMessages1 = function() {
     let output = [];
     for (let mdType of enablementRules) {
       if (mdType['threshold'] != undefined) {

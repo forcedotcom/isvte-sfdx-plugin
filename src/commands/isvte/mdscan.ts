@@ -30,6 +30,7 @@ export default class mdscan extends SfdxCommand {
   private suppressEnablement = false;
   private suppressAlerts = false;
   private suppressWarnings = false;
+  private suppressQuality = false;
 
   public static description = 'scan a package and provide recommendations based on package inventory';
 
@@ -63,7 +64,7 @@ For more information, please connect in the Salesforce Partner Community https:/
     }),
     suppress: flags.array({
               char: 's',
-              description: `comma separated list of items to suppress.\n Valid options are: ZeroInventory, Inventory, Enablement, Alerts, Warnings`
+              description: `comma separated list of items to suppress.\n Valid options are: ZeroInventory, Inventory, Enablement, CodeQuality, Alerts, Warnings `
     }),
       
   };
@@ -93,6 +94,7 @@ For more information, please connect in the Salesforce Partner Community https:/
         this.suppressEnablement = this.suppressEnablement || element.toLowerCase() == 'enablement';
         this.suppressAlerts = this.suppressAlerts || element.toLowerCase() == 'alerts';
         this.suppressWarnings = this.suppressWarnings || element.toLowerCase() == 'warnings'; 
+        this.suppressQuality = this.suppressQuality || element.toLowerCase() == 'codequality';
       });
     }
     
@@ -119,6 +121,7 @@ For more information, please connect in the Salesforce Partner Community https:/
 
     this.checkPackage(packageJSON);
 
+
     if (this.showFullInventory) {
       this.ux.styledHeader('Inventory of Package:');
       this.ux.table(this.packageInventory.getFullInvArray(), ['metadataType', 'count']);
@@ -132,14 +135,30 @@ For more information, please connect in the Salesforce Partner Community https:/
         this.ux.log('\n');
       }
       if (!this.suppressEnablement) {
-        let recommendations = this.packageInventory.getRecommendations();
+        let recommendations = this.packageInventory.getEnablementMessages();
         if (recommendations.length >0) {
           this.ux.styledHeader('ISV Technical Enablement:');
           for (var recommendation of recommendations) {
-            this.ux.log(`${recommendation.label}:\n  ${recommendation.message}\n\tURL:${recommendation.url}\n`)
+            if (recommendation.url != undefined) {
+              this.ux.log(`${recommendation.label}:\n  ${recommendation.message}\n\tURL:${recommendation.url}\n`);
+            }
+            else {
+              this.ux.log(`${recommendation.label}:\n  ${recommendation.message}\n`);
+            }
           }
           this.ux.log('\n');
         }
+      }
+            
+      if (!this.suppressQuality) {
+        let notes = this.packageInventory.getQualityRecommendations();
+        if (notes.length >0) {
+          this.ux.styledHeader('Code Quality Notes:');
+          for (var note of notes) {
+            this.ux.log(`${note.label}:\n  ${note.message}\n\tExceptions: ${note.exceptions.join(', ')}\n`);
+          }
+        }
+
       }
       if (!this.suppressAlerts) {
         let alerts = this.packageInventory.getAlerts();
@@ -173,6 +192,7 @@ For more information, please connect in the Salesforce Partner Community https:/
       
      // this.ux.log(this.packageInventory.getInstallationWarnings());
     }
+
     return this.packageInventory.getJSONOutput();
 
   }
@@ -180,11 +200,18 @@ For more information, please connect in the Salesforce Partner Community https:/
   private checkPackage(p) {
 
     this.loggit('-Getting Inventory');
-    this.packageInventory.setMetadata(this.inventoryPackage(p.types));
+    this.packageInventory.setMetadata(this.inventoryPackage(p));
+   // this.packageInventory.setAPIVersion(parseFloat(p.version[0]));
   }
 
-  private inventoryPackage(types) {
+  private inventoryPackage(p) {
+    let types = p.types;
     let inventory = {};
+    let apiVersions = {};
+    let componentProperties = {};
+    if (p.version) {
+      apiVersions['mdapi'] = parseFloat(p.version[0]);
+    }
     for (var typeIdx in types) {
       let metadataType = types[typeIdx]['name'];
       let typeInv = {};
@@ -226,6 +253,27 @@ For more information, please connect in the Salesforce Partner Community https:/
                 'objectType': objectType
               };
             }
+
+            //Check field descriptions
+            const objectPath = `${this.flags.sourcefolder}/objects`;
+            let objectXml = `${objectPath}/${objectName}.object`;
+            let objectJSON = this.parseXML(objectXml);
+            if (objectJSON['CustomObject'] && objectJSON['CustomObject']['fields']) {
+              for (var fieldDef of objectJSON['CustomObject']['fields']) {
+                if (fieldDef['fullName'] == fieldName) {
+                  this.loggit('Checking Properties of Field: ' + fieldFullName);
+                  if (componentProperties['CustomField'] == undefined) {
+                    componentProperties['CustomField'] = {};
+                  }
+                  if (componentProperties['CustomField'][fieldFullName] == undefined) {
+                    componentProperties['CustomField'][fieldFullName] = {};
+                  }
+                  componentProperties['CustomField'][fieldFullName]['descriptionExists'] = fieldDef['description'] ? 1 : 0;
+                }
+                
+              }
+            }
+
           }
           typeInv['objects'] = objectFields;
 
@@ -247,7 +295,6 @@ For more information, please connect in the Salesforce Partner Community https:/
           let fmType = {
             count: 0
           };
-
           for (var objIdx in types[typeIdx]['members']) {
             let objectName = types[typeIdx]['members'][objIdx];
             this.loggit('Checking Object: ' + objectName);
@@ -279,6 +326,23 @@ For more information, please connect in the Salesforce Partner Community https:/
             if (objectJSON['CustomObject'] && objectJSON['CustomObject']['customSettingsType']) {
               csType['count']++;
             }
+            //Check for Descriptions
+            if (objectName.slice(-3) == '__c') {
+              this.loggit('Checking properties of object ' + objectName);
+            
+              // console.log(JSON.stringify(objectJSON));
+               if (componentProperties['CustomObject'] == undefined) {
+                 componentProperties['CustomObject'] = {};
+               }
+               if (componentProperties['CustomObject'][objectName] == undefined) {
+                 componentProperties['CustomObject'][objectName] = {};
+               }
+               componentProperties['CustomObject'][objectName]['descriptionExists'] = objectJSON['CustomObject'] && objectJSON['CustomObject']['description']? 1 : 0;
+               
+            }
+            
+            
+
 
             //   this.loggit(objectJSON,'JSON');
           }
@@ -441,10 +505,8 @@ For more information, please connect in the Salesforce Partner Community https:/
           for (var apxIdx in types[typeIdx]['members']) {
             let className = types[typeIdx]['members'][apxIdx];
             let classFile = `${apexPath}/${className}.cls`;
-
+           
             if (fs.existsSync(classFile)) {
-
-
 
               let classBody = fs.readFileSync(classFile, 'utf8');
               // this.loggit(classBody);
@@ -483,6 +545,17 @@ For more information, please connect in the Salesforce Partner Community https:/
                 batchCount++;
               }
               //batchCount += ((classBody || '').match(batchReg) || []).length;
+            }
+
+            let classMetaFile = `${apexPath}/${className}.cls-meta.xml`;
+            if (fs.existsSync(classMetaFile)) {
+              let classMetaJSON = this.parseXML(classMetaFile);
+              if (classMetaJSON['ApexClass'] && classMetaJSON['ApexClass']['apiVersion']) {
+                if (apiVersions['ApexClass'] == undefined) {
+                  apiVersions['ApexClass'] = {};
+                }
+                apiVersions['ApexClass'][className] = parseFloat(classMetaJSON['ApexClass']['apiVersion'][0]);
+              }
             }
           }
           typeInv['FutureCalls'] = futureCount;
@@ -524,6 +597,17 @@ For more information, please connect in the Salesforce Partner Community https:/
                 count: 1
               };
             }
+            let triggerMetaFile = `${triggerPath}/${triggerName}.trigger-meta.xml`;
+            if (fs.existsSync(triggerMetaFile)) {
+              let triggerMetaJSON = this.parseXML(triggerMetaFile);
+              if (triggerMetaJSON['ApexTrigger'] && triggerMetaJSON['ApexTrigger']['apiVersion']) {
+                
+                  if (apiVersions['ApexTrigger'] == undefined) {
+                    apiVersions['ApexTrigger'] = {};
+                  }
+                  apiVersions['ApexTrigger'][triggerName] = parseFloat(triggerMetaJSON['ApexTrigger']['apiVersion'][0]);
+                }
+            }
           }
           //  this.loggit(triggerInv,'JSON');
           typeInv['objects'] = triggerInv;
@@ -549,6 +633,12 @@ For more information, please connect in the Salesforce Partner Community https:/
 
               this.loggit('Checking LWC ' + lwcName);
               // this.loggit(lwcJSON,'JSON');
+              if (lwcJSON['apiVersion']) {
+                if (apiVersions['LightningComponentBundle'] == undefined) {
+                  apiVersions['LightningComponentBundle'] = {};
+                }
+                apiVersions['LightningComponentBundle'][lwcName] = parseFloat(lwcJSON['apiVersion'][0]);
+              }
               if (lwcJSON['isExposed'] && lwcJSON['isExposed'][0] === 'true') {
                 exposedCount++;
               }
@@ -579,6 +669,22 @@ For more information, please connect in the Salesforce Partner Community https:/
           typeInv['FlowScreenComponents'] = flowScreenCount;
 
           break;
+          case 'AuraDefinitionBundle':
+            this.loggit('Interrogating Aura Components');
+            const auraPath = `${this.flags.sourcefolder}/aura`;
+            for (var auraIdx in types[typeIdx]['members']) {
+              const auraName = types[typeIdx]['members'][auraIdx];
+              const auraXml = `${auraPath}/${auraName}/${auraName}.cmp-meta.xml`;
+              let auraJSON = this.parseXML(auraXml);
+              this.loggit('Checking Aura Component ' + auraName);
+              if (auraJSON['AuraDefinitionBundle'] && auraJSON['AuraDefinitionBundle']['apiVersion']) {
+                if (apiVersions['AuraDefinitionBundle'] == undefined) {
+                  apiVersions['AuraDefinitionBundle'] = {};
+                }
+                apiVersions['AuraDefinitionBundle'][auraName] = parseFloat(auraJSON['AuraDefinitionBundle']['apiVersion'][0]);
+              }
+            }
+          break;
       }
 
       inventory[metadataType] = typeInv;
@@ -594,7 +700,9 @@ For more information, please connect in the Salesforce Partner Community https:/
       //paType['count'] = 1;
       inventory['PersonAccount__c'] = {count:1};
     }
-    
+    //Add Version Info
+    inventory['apiVersions'] = apiVersions;
+    inventory['componentProperties'] = componentProperties;
     return inventory;
   }
 
@@ -628,8 +736,8 @@ For more information, please connect in the Salesforce Partner Community https:/
     folderContents.forEach(element => {
 
       const [fileName, ext] = [element.substr(0, element.lastIndexOf('.')), element.substr(element.lastIndexOf('.') + 1, element.length)]
-      console.log('File: ' + fileName);
-      console.log('Extension: ' + ext);
+    //  console.log('File: ' + fileName);
+    //  console.log('Extension: ' + ext);
       if (ext === extension) {
         members.push(fileName);
       }

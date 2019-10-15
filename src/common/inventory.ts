@@ -4,12 +4,13 @@
  * SPDX-License-Identifier: BSD-3-Clause
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
-import { mdTypes, editions, enablementRules, alerts } from './rules';
+import { mdTypes, editions, enablementRules, qualityRules, alerts } from './rules';
 
 const editionRules = editions;
-const enablement = enablementRules
+//const enablement = enablementRules
 const monitoredTypes = mdTypes;
 const pushAlertDefs = alerts;
+//const qualityRuleDefs = qualityRules;
 
 const packageInventory = {
   _mdInv: {},
@@ -17,9 +18,12 @@ const packageInventory = {
   _mdMonitoredInvArray: undefined,
   _recomendations: [],
 
+
   setMetadata: function(md) {
     this._mdInv = md;
   },
+
+ 
 
   getInstallationWarnings: function(){
     
@@ -65,48 +69,142 @@ const packageInventory = {
     return alerts;
   },
 
-  getRecommendations: function() {
-    // return this._recomendations.join('\n');
-    let recomendations = [];
-    for (var ruleDef of enablement) { 
-     if (ruleDef['threshold'] !=undefined ) {
-        let mdType = this._parseMetadataType(ruleDef['metadataType']);
-        if (mdType.key === 'object' && mdType.targetObj === '*') {
-//Handle Checking against multiple objects
-          if (this._mdInv[mdType.metadataType] && this._mdInv[mdType.metadataType]['objects']) {
-            const objects = Object.keys(this._mdInv[mdType.metadataType]['objects']);
-            for (var object of objects) {
-              let count = this.getInventoryCountByMetadataType(`${mdType.metadataType}.object.${object}`);
-                if (ruleDef['recPos'] && count > ruleDef['threshold']) {
-                  recomendations.push({metadataType:ruleDef.metadataType, label: `${ruleDef['label']} - ${object}`, message:ruleDef['recPos']['message'], url: ruleDef['recPos']['url']});
-                }
-                if (ruleDef['recNeg'] && count <= ruleDef['threshold']) {
-                  recomendations.push({metadataType:ruleDef.metadataType, label: `${ruleDef['label']} - ${object}`, message:ruleDef['recNeg']['message'], url: ruleDef['recNeg']['url']});
-                }
-            }
-          }
-        }
-        else {
-//Singleton
-          let count = this.getInventoryCountByMetadataType(ruleDef['metadataType']);
-          if (ruleDef['recPos'] && count > ruleDef['threshold']) {
-            recomendations.push({metadataType:ruleDef.metadataType, label: ruleDef['label'], message:ruleDef['recPos']['message'], url: ruleDef['recPos']['url']});
-          }
-          if (ruleDef['recNeg'] && count <= ruleDef['threshold']) {
-            recomendations.push({metadataType:ruleDef.metadataType, label: ruleDef['label'], message:ruleDef['recNeg']['message'], url: ruleDef['recNeg']['url']});
-          }
-      }
-      }
-    }
-   return recomendations;
+  // getRecommendations: function() {
+  //   let recomendations = [];
+  //   for (var ruleDef of enablement) { 
+  //    if (ruleDef['threshold'] !=undefined ) {
+  //     let count = this.getInventoryCountByMetadataType(ruleDef['metadataType']);
+  //     if (ruleDef['recPos'] && count > ruleDef['threshold']) {
+  //       recomendations.push({metadataType:ruleDef.metadataType, label: ruleDef['label'], message:ruleDef['recPos']['message'], url: ruleDef['recPos']['url']});
+  //     }
+  //     if (ruleDef['recNeg'] && count <= ruleDef['threshold']) {
+  //       recomendations.push({metadataType:ruleDef.metadataType, label: ruleDef['label'], message:ruleDef['recNeg']['message'], url: ruleDef['recNeg']['url']});
+  //     }
+  //    }
+  //   }
+  //  return recomendations;
+  //  },
+
+   getQualityRecommendations() {
+ //    console.log(JSON.stringify(this.checkRules(qualityRules)));
+     return this.checkRules(qualityRules);
    },
 
+   getEnablementMessages() {
+     return this.checkRules(enablementRules)
+   },
+   
+   checkRules(ruleSet) {
+     let recomendations = [];
+     for (var ruleDef of ruleSet) { 
+ //     console.log('Rule: ' + JSON.stringify(ruleDef));
 
+      let counts = this.getCountByMetadataType(ruleDef.metadataType);
+  //       console.log('Counts: ' + JSON.stringify(counts));
+         if (ruleDef.recNeg) {
+           let exceptions = [];
+           if (counts.length == 0 && ruleDef.threshold == -1) {
+            recomendations.push({metadataType:ruleDef.metadataType, label: ruleDef['label'], message:ruleDef['recNeg']['message'], url: ruleDef['recNeg']['url']});
+           }
+           else {
+           for (var count of counts) {
+             if (count.value <= ruleDef.threshold) {
+               exceptions.push(count.property);
+             }
+           }
+           if (exceptions.length > 0) {
+             recomendations.push({metadataType:ruleDef.metadataType, label: ruleDef['label'], message:ruleDef['recNeg']['message'], 'exceptions': exceptions, url: ruleDef['recNeg']['url']});
+           }
+          }
+         }
+         if (ruleDef.recPos) {
+           let exceptions = [];
+           for (var count of counts) {
+             if (count.value > ruleDef.threshold) {
+               exceptions.push(count.property);
+             }
+           }
+           if (exceptions.length > 0) {
+             recomendations.push({metadataType:ruleDef.metadataType, label: ruleDef['label'], message:ruleDef['recPos']['message'], 'exceptions': exceptions, url: ruleDef['recPos']['url']});
+           }
+         } 
+       }
+       return recomendations;
+      },
+
+    getCountByMetadataType(metadataType) {
+    let mdDefArray = metadataType.split('.');
+    let retVal = [];
+    let mdCount = this.traverseMetadata(mdDefArray,this._mdInv);
+    if (Array.isArray(mdCount)) {
+      retVal = mdCount;
+    }
+    else {
+      retVal.push(mdCount);
+    }
+    return retVal;
+  },
+
+  traverseMetadata(mdArray,mdObject,wildcard = '') {
+ //   console.log('Traversing MD Array:');
+ //   console.log('MD Def:' + mdArray);
+ //   console.log('Source Obj:' + JSON.stringify(mdObject));
+ //   console.log(`---Traversing Metadata. mdArray: ${mdArray} wildcard: ${wildcard}`);
+    let topLevel = mdArray.shift();
+    if (topLevel === '*') {
+      let retVal = [];
+//      console.log ('Checking Wildcard');
+      for (var topArray in mdObject) {
+        let tmpArray = [topArray,...mdArray];
+       
+//        console.log('checking new Array: ' + tmpArray);
+//        console.log(`  ParamArray: ${tmpArray}, Wildcard: ${topArray}`);
+        retVal.push(this.traverseMetadata(tmpArray,mdObject,topArray));
+      }
+//      console.log('Wildcard Processed');
+      return retVal;
+    }
+    else if (mdObject[topLevel] != undefined) {
+      if (mdArray.length > 0) {
+//        console.log('There are more components left. Recursing');
+//        console.log(`  ObjectKey: ${topLevel} ParamArray: ${mdArray}, Wildcard: ${wildcard}`);
+        return this.traverseMetadata(mdArray,mdObject[topLevel],wildcard);
+      }
+      else {
+//        console.log('This is last portion. Looking for value');
+        let count = undefined;
+        if (isNaN(mdObject[topLevel])) {
+//          console.log(`${mdObject[topLevel]} is not a number. Checking .count`);
+          if (mdObject[topLevel]['count'] != undefined && isFinite(mdObject[topLevel]['count'])) {
+            count = mdObject[topLevel]['count'];
+          }
+          else {
+//            console.log(' Cannot find a valid number returning empty object');
+            return {};
+          }
+          
+        }
+        else {
+//          console.log('Using value from ' + topLevel);
+          count = mdObject[topLevel];
+        }
+//        console.log('Final Value:' + count);
+        let componentName = wildcard == '' ? topLevel : wildcard;
+        return {property: componentName, value: count};
+      }
+      
+    }
+    else {
+ //     console.log(`could not find Key ${topLevel} in the object: ` + JSON.stringify(mdObject));
+      return {};
+    }
+  },
+     
 
   getInventoryCountByMetadataType(metadataType) {
     // let mdType = metadataType.split('.'); //To look at subtypes, use Type.Subtype (e.g.: ApexClass.BatchApex)
     // let key = mdType[1] ? mdType[1] : 'count';
-    let mdType = this._parseMetadataType(metadataType);
+    let mdType = this.parseMetadataType(metadataType);
     let count = 0;
     if (this._mdInv[mdType.metadataType]) {
       if (mdType.key === 'object' && mdType.targetObj) {
@@ -124,44 +222,39 @@ const packageInventory = {
     return count;
   },
 
-  _parseMetadataType(metadataType) {
+  parseMetadataType(metadataType) {
     let mdType = metadataType.split('.'); //To look at subtypes, use Type.Subtype (e.g.: ApexClass.BatchApex)
     let key = mdType[1] ? mdType[1] : 'count';
     let parsedType = {'metadataType':mdType[0],'key':key};
-    if (key === 'object') {
+    if (key === 'object' && mdType[2]) {
       parsedType['targetObj'] = mdType[2];
     }
+    if (mdType[0] === 'apiVersions' && mdType[2]) {
+      parsedType['targetComponent'] = mdType[2];
+    }
+   
     return parsedType;
   },
 
   getJSONOutput: function() {
     let retVal = {};
     retVal['MetadataInventory'] = this._mdInv;
-    retVal['InventoryArray'] = this.getFullInvArray();
     retVal['MonitoredItems'] = this.getMonitoredInvArray();
-    retVal['Recommendations'] = this.getRecommendations();
+    retVal['Recommendations'] = this.getEnablementMessages();
+    retVal['CodeQualityNotes'] = this.getQualityRecommendations();
     retVal['InstallationWarnings']  = this.getInstallationWarnings();
     retVal['Alerts'] = this.getAlerts();
     return retVal;
   },
-
-  // getRulesJSON: function() {
-  //   return '';
-  // },
-
-  // getRecommendations: function() {
-  //  // return this._recomendations.join('\n');
-  //   return this._recomendations;
-  // },
-
 
 
   getFullInvArray: function() {
     if (!this._mdFullInvArray) {
       this._mdFullInvArray = [];
       for (var mdType in this._mdInv) {
-        if (!this._mdInv.hasOwnProperty(mdType)) continue;
-        this._mdFullInvArray.push({"metadataType": mdType, "count": this._mdInv[mdType]["count"]});
+        if (mdType !== 'apiVersions') {
+          this._mdFullInvArray.push({"metadataType": mdType, "count": this._mdInv[mdType]["count"]});
+        }
       };
     }
     
@@ -307,46 +400,6 @@ const packageInventory = {
     }
     return this._mdMonitoredInvArray;
   },
-
-//   getElementRecommendation: function (element,count, detailArray) {
-//     if (element.threshold !=undefined) {
-//       if (count > element.threshold) {
-//         if (element.recPos) {
-//     //      this._recomendations.push(`${element.name}:\n ${element.recPos.message}\n\tURL:${element.recPos.url}\n`);
-//           this._recomendations.push({metadataType:element.metadataType, label:element.name, message:element.recPos.message, url:element.recPos.url});
-//         }  
-//       }
-//       else {
-//         if (element.recNeg) {
-// //          this._recomendations.push(`${element.name}:\n ${element.recNeg.message}\n\tURL:${element.recNeg.url}\n`);
-//           this._recomendations.push({metadataType:element.metadataType, label:element.name, message:element.recNeg.message, url:element.recNeg.url});
-//         }
-//       }
-//     }
-
-//     if (element.detailThreshold !=undefined ) {
-//       element.detailThreshold.forEach(detailThreshold => {
-//         detailArray.forEach(detailCount => {
-//           if (detailCount['metadataSubType'] === detailThreshold.metadataSubType || detailThreshold.metadataSubType === '*')  {
-//             if (detailCount['count'] > detailThreshold.threshold) {
-//               if (detailThreshold.recPos) {
-//           //      this._recomendations.push(`${detailCount['Metadata Type'].trim()}:\n ${detailThreshold.recPos.message}\n\tURL:${detailThreshold.recPos.url}\n`);
-//                 this._recomendations.push({metadataType:detailCount['metadataSubType'], label:detailCount['Metadata Type'].trim(), message:detailThreshold.recPos.message, url:detailThreshold.recPos.url});
-//               }
-//             }
-//             else {
-//               if (detailThreshold.recNeg) {
-//            //     this._recomendations.push(`${detailCount['Metadata Type'].trim()}:\n ${detailThreshold.recNeg.message}\n\tURL:${detailThreshold.recNeg.url}`);
-//            this._recomendations.push({metadataType:detailCount['metadataSubType'], label:detailCount['Metadata Type'].trim(), message:detailThreshold.recNeg.message, url:detailThreshold.recNeg.url});
-//               }
-//             }
-//           }
-//         });
-//       });
-//     }
-
-//   },
-
 
 };
 
