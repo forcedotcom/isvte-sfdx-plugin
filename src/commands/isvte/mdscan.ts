@@ -330,7 +330,6 @@ For more information, please connect in the Salesforce Partner Community https:/
             if (objectName.slice(-3) == '__c') {
               this.loggit('Checking properties of object ' + objectName);
             
-              // console.log(JSON.stringify(objectJSON));
                if (componentProperties['CustomObject'] == undefined) {
                  componentProperties['CustomObject'] = {};
                }
@@ -736,8 +735,6 @@ For more information, please connect in the Salesforce Partner Community https:/
     folderContents.forEach(element => {
 
       const [fileName, ext] = [element.substr(0, element.lastIndexOf('.')), element.substr(element.lastIndexOf('.') + 1, element.length)]
-    //  console.log('File: ' + fileName);
-    //  console.log('Extension: ' + ext);
       if (ext === extension) {
         members.push(fileName);
       }

@@ -146,10 +146,15 @@ const packageInventory = {
   },
 
   traverseMetadata(mdArray,mdObject,wildcard = '') {
- //   console.log('Traversing MD Array:');
- //   console.log('MD Def:' + mdArray);
- //   console.log('Source Obj:' + JSON.stringify(mdObject));
- //   console.log(`---Traversing Metadata. mdArray: ${mdArray} wildcard: ${wildcard}`);
+ //  Recurses through mdArray -- a sequential list of properties to navigate down the object, mdObject
+ //
+ // Check the first element in the array. 
+ // If it's a wildcard (*), go through all top level properties of the object calling this function again for each property of the object 
+ // If it is not a wildcard, check to see if that value exists as a key of the object.
+ // If value exists and there exist more entries in the properties array, recursively call this function with parameters mdArray = (original mdArray with first entry removed), mdObject = mdObject['Property that was removed from mdArray']
+ // if value exists and there are no more entries in the array, check to see if the value is a number
+ // If it is a number, then return the number and the property name (or the wildcard name)
+ // If it is not a number, then check to see if adding .count to the property is a number
     let topLevel = mdArray.shift();
     if (topLevel === '*') {
       let retVal = [];
@@ -202,8 +207,6 @@ const packageInventory = {
      
 
   getInventoryCountByMetadataType(metadataType) {
-    // let mdType = metadataType.split('.'); //To look at subtypes, use Type.Subtype (e.g.: ApexClass.BatchApex)
-    // let key = mdType[1] ? mdType[1] : 'count';
     let mdType = this.parseMetadataType(metadataType);
     let count = 0;
     if (this._mdInv[mdType.metadataType]) {
