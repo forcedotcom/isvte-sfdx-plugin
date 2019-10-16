@@ -9,7 +9,12 @@ import {
   flags,
   SfdxCommand
 } from '@salesforce/command';
-import {Logger, SfdxError} from '@salesforce/core';
+import {
+  SfdxError
+} from '@salesforce/core';
+import {
+  loggit
+} from '../../common/logger';
 import fs = require('fs-extra');
 import xml2js = require('xml2js');
 import {
@@ -21,16 +26,16 @@ import {
 
 export default class mdscan extends SfdxCommand {
 
-  //private enableDebug = false;
   private showFullInventory = false;
   private sourceFolder = '';
-  private isvteLogger;
   private suppressZeroInv = false;
   private suppressAllInv = false;
   private suppressEnablement = false;
   private suppressAlerts = false;
   private suppressWarnings = false;
   private suppressQuality = false;
+  private loggit;
+  private packageInventory;
 
   public static description = 'scan a package and provide recommendations based on package inventory';
 
@@ -63,48 +68,34 @@ For more information, please connect in the Salesforce Partner Community https:/
       description: 'show package inventory only'
     }),
     suppress: flags.array({
-              char: 's',
-              description: `comma separated list of items to suppress.\n Valid options are: ZeroInventory, Inventory, Enablement, CodeQuality, Alerts, Warnings `
+      char: 's',
+      description: `comma separated list of items to suppress.\n Valid options are: ZeroInventory, Inventory, Enablement, CodeQuality, Alerts, Warnings `
     }),
-      
+
   };
 
-  // withlogging: flags.boolean({char:'l', description: 'enable verbose debug logging'}),
-
-  // protected static flagsConfig = {
-  //   sourcefolder: flags.directory({char: 'd', description: messages.getMessage('sourcefolderFlagDescription'), default: 'mdapiout' }),
-  //   withlogging: flags.boolean({char:'l', description: messages.getMessage('withloggingFlagDescription')}),
-  //   showfullinventory: flags.boolean({char:'f', description: messages.getMessage('showfullinventoryFlagDescription')}),
-  // };
-
-  private packageInventory = packageInventory;
 
   public async run(): Promise < any > { // tslint:disable-line:no-any
 
+    this.loggit = new loggit('isvtePlugin');
 
-  //  this.enableDebug = this.flags.withlogging;
     this.showFullInventory = this.flags.showfullinventory;
     this.sourceFolder = this.flags.sourcefolder;
-    
+
     //Check Suppress Flags
     if (this.flags.suppress) {
       this.flags.suppress.forEach(element => {
-        this.suppressZeroInv = this.suppressZeroInv || element.toLowerCase() ==  'zeroinventory';
+        this.suppressZeroInv = this.suppressZeroInv || element.toLowerCase() == 'zeroinventory';
         this.suppressAllInv = this.suppressAllInv || element.toLowerCase() == 'inventory';
         this.suppressEnablement = this.suppressEnablement || element.toLowerCase() == 'enablement';
         this.suppressAlerts = this.suppressAlerts || element.toLowerCase() == 'alerts';
-        this.suppressWarnings = this.suppressWarnings || element.toLowerCase() == 'warnings'; 
+        this.suppressWarnings = this.suppressWarnings || element.toLowerCase() == 'warnings';
         this.suppressQuality = this.suppressQuality || element.toLowerCase() == 'codequality';
       });
     }
-    
-   
-  //  this.isvteLogger = await Logger.root();
-
-   this.isvteLogger = await Logger.child('isvtePlugin');
 
     if (!fs.existsSync(this.sourceFolder)) {
-      this.loggit(`your source folder ${this.sourceFolder} doesn't exist`, 'Error');
+      this.loggit.loggit(`your source folder ${this.sourceFolder} doesn't exist`, 'Error');
       throw new SfdxError(`Source Folder ${this.sourceFolder} does not exist`, 'SourceNotExistError');
     }
 
@@ -114,13 +105,14 @@ For more information, please connect in the Salesforce Partner Community https:/
     if (packageJSON['Package']) {
       packageJSON = packageJSON['Package'];
     } else {
-      this.loggit(`Package.xml  ${packagexml} appears to be invalid `, 'Error');
+      this.loggit.loggit(`Package.xml  ${packagexml} appears to be invalid `, 'Error');
       throw new SfdxError(`Package.xml  ${packagexml} appears to be invalid `, 'InvalidPackageXMLError');
 
     }
 
-    this.checkPackage(packageJSON);
-
+    this.loggit.loggit('Parsing Package');
+    this.packageInventory = new packageInventory();
+    this.packageInventory.setMetadata(this.inventoryPackage(packageJSON));
 
     if (this.showFullInventory) {
       this.ux.styledHeader('Inventory of Package:');
@@ -136,23 +128,22 @@ For more information, please connect in the Salesforce Partner Community https:/
       }
       if (!this.suppressEnablement) {
         let recommendations = this.packageInventory.getEnablementMessages();
-        if (recommendations.length >0) {
+        if (recommendations.length > 0) {
           this.ux.styledHeader('ISV Technical Enablement:');
           for (var recommendation of recommendations) {
             if (recommendation.url != undefined) {
               this.ux.log(`${recommendation.label}:\n  ${recommendation.message}\n\tURL:${recommendation.url}\n`);
-            }
-            else {
+            } else {
               this.ux.log(`${recommendation.label}:\n  ${recommendation.message}\n`);
             }
           }
           this.ux.log('\n');
         }
       }
-            
+
       if (!this.suppressQuality) {
         let notes = this.packageInventory.getQualityRecommendations();
-        if (notes.length >0) {
+        if (notes.length > 0) {
           this.ux.styledHeader('Code Quality Notes:');
           for (var note of notes) {
             this.ux.log(`${note.label}:\n  ${note.message}\n\tExceptions: ${note.exceptions.join(', ')}\n`);
@@ -184,25 +175,24 @@ For more information, please connect in the Salesforce Partner Community https:/
             }
             this.ux.log('\n');
           }
-        }
-        else {
+        } else {
           this.ux.log('Can be installed in any Edition');
         }
       }
-      
-     // this.ux.log(this.packageInventory.getInstallationWarnings());
+
+      // this.ux.log(this.packageInventory.getInstallationWarnings());
     }
 
     return this.packageInventory.getJSONOutput();
 
   }
 
-  private checkPackage(p) {
+  // private checkPackage(p) {
 
-    this.loggit('-Getting Inventory');
-    this.packageInventory.setMetadata(this.inventoryPackage(p));
-   // this.packageInventory.setAPIVersion(parseFloat(p.version[0]));
-  }
+  //   this.loggit.loggit('-Getting Inventory');
+  //   this.packageInventory.setMetadata(this.inventoryPackage(p));
+  //  // this.packageInventory.setAPIVersion(parseFloat(p.version[0]));
+  // }
 
   private inventoryPackage(p) {
     let types = p.types;
@@ -219,12 +209,12 @@ For more information, please connect in the Salesforce Partner Community https:/
       typeInv['index'] = typeIdx;
       typeInv['count'] = types[typeIdx]['members'].length;
 
-      this.loggit('Checking MetadataType: ' + metadataType);
-      this.loggit('  Found ' + types[typeIdx]['members'].length + ' members');
-      this.loggit('Members: ' + JSON.stringify(types[typeIdx]['members']));
+      this.loggit.loggit('Checking MetadataType: ' + metadataType);
+      this.loggit.loggit('  Found ' + types[typeIdx]['members'].length + ' members');
+      this.loggit.loggit('Members: ' + JSON.stringify(types[typeIdx]['members']));
       //Check for wildcard members
       if (types[typeIdx]['members'].includes('*')) {
-        this.loggit('Found Wildcard Members');
+        this.loggit.loggit('Found Wildcard Members');
         types[typeIdx]['members'] = this.getMembers(types[typeIdx]);
       }
       switch (String(metadataType)) {
@@ -238,7 +228,7 @@ For more information, please connect in the Salesforce Partner Community https:/
             let fieldName = fieldFullName.split(".")[1];
             let objectType = 'Standard';
 
-            this.loggit('Checking field: ' + fieldName + ' on Object: ' + objectName + ' --- ' + fieldFullName);
+            this.loggit.loggit('Checking field: ' + fieldName + ' on Object: ' + objectName + ' --- ' + fieldFullName);
             if (objectName.slice(-3) == '__c' || objectName.slice(-3) == '__b') {
               objectType = 'Custom';
             }
@@ -261,7 +251,7 @@ For more information, please connect in the Salesforce Partner Community https:/
             if (objectJSON['CustomObject'] && objectJSON['CustomObject']['fields']) {
               for (var fieldDef of objectJSON['CustomObject']['fields']) {
                 if (fieldDef['fullName'] == fieldName) {
-                  this.loggit('Checking Properties of Field: ' + fieldFullName);
+                  this.loggit.loggit('Checking Properties of Field: ' + fieldFullName);
                   if (componentProperties['CustomField'] == undefined) {
                     componentProperties['CustomField'] = {};
                   }
@@ -270,7 +260,7 @@ For more information, please connect in the Salesforce Partner Community https:/
                   }
                   componentProperties['CustomField'][fieldFullName]['descriptionExists'] = fieldDef['description'] ? 1 : 0;
                 }
-                
+
               }
             }
 
@@ -280,7 +270,7 @@ For more information, please connect in the Salesforce Partner Community https:/
           break;
         case 'CustomObject':
           // Look for Custom Settings, External Objects,  Person Accounts, Big Objects
-          this.loggit('Deep Inventory on Custom Objects');
+          this.loggit.loggit('Deep Inventory on Custom Objects');
           const objectPath = `${this.flags.sourcefolder}/objects`;
           //let xoType = {count:0};
           let xoCount = 0;
@@ -297,7 +287,7 @@ For more information, please connect in the Salesforce Partner Community https:/
           };
           for (var objIdx in types[typeIdx]['members']) {
             let objectName = types[typeIdx]['members'][objIdx];
-            this.loggit('Checking Object: ' + objectName);
+            this.loggit.loggit('Checking Object: ' + objectName);
             //Check external Objects
             if (objectName.slice(-3) == '__x') {
               //xoType['count']++;
@@ -328,19 +318,19 @@ For more information, please connect in the Salesforce Partner Community https:/
             }
             //Check for Descriptions
             if (objectName.slice(-3) == '__c') {
-              this.loggit('Checking properties of object ' + objectName);
-            
-               if (componentProperties['CustomObject'] == undefined) {
-                 componentProperties['CustomObject'] = {};
-               }
-               if (componentProperties['CustomObject'][objectName] == undefined) {
-                 componentProperties['CustomObject'][objectName] = {};
-               }
-               componentProperties['CustomObject'][objectName]['descriptionExists'] = objectJSON['CustomObject'] && objectJSON['CustomObject']['description']? 1 : 0;
-               
+              this.loggit.loggit('Checking properties of object ' + objectName);
+
+              if (componentProperties['CustomObject'] == undefined) {
+                componentProperties['CustomObject'] = {};
+              }
+              if (componentProperties['CustomObject'][objectName] == undefined) {
+                componentProperties['CustomObject'][objectName] = {};
+              }
+              componentProperties['CustomObject'][objectName]['descriptionExists'] = objectJSON['CustomObject'] && objectJSON['CustomObject']['description'] ? 1 : 0;
+
             }
-            
-            
+
+
 
 
             //   this.loggit(objectJSON,'JSON');
@@ -361,7 +351,7 @@ For more information, please connect in the Salesforce Partner Community https:/
         case 'Flow':
           //Check for Flow Templates
 
-          this.loggit('Checking flows');
+          this.loggit.loggit('Checking flows');
           // let flowTemplate = {count:0};
 
           // const flowPath = `${this.flags.sourcefolder}/flows`;
@@ -386,7 +376,7 @@ For more information, please connect in the Salesforce Partner Community https:/
             let flowName = types[typeIdx]['members'][flowIdx];
             let flowXml = `${flowPath}/${flowName}.flow`;
             let flowJSON = this.parseXML(flowXml);
-            this.loggit('Checking file:' + flowXml);
+            this.loggit.loggit('Checking file:' + flowXml);
             if (flowJSON['Flow'] && flowJSON['Flow']['isTemplate'] && flowJSON['Flow']['isTemplate'][0] === 'true') {
               templateCount++;
               if (flowJSON['Flow']['processType'] && flowJSON['Flow']['processType'] == 'Flow') {
@@ -397,28 +387,30 @@ For more information, please connect in the Salesforce Partner Community https:/
               }
             }
             if (flowJSON['Flow'] && flowJSON['Flow']['processType']) {
-              this.loggit('Flow Type:' + flowJSON['Flow']['processType']);
+              this.loggit.loggit('Flow Type:' + flowJSON['Flow']['processType']);
               if (typeInv[flowJSON['Flow']['processType']]) {
                 typeInv[flowJSON['Flow']['processType']]++;
 
               } else {
                 typeInv[flowJSON['Flow']['processType']] = 1;
-              } 
+              }
               //this.loggit('Flow Type:' + flowJSON['Flow']['processType']);
               if (flowJSON['Flow']['processType'] == 'Workflow') {
                 //Do per object Inventory of PB
-                this.loggit('Process Builder -- Inventorying Triggers Per Object');
-                this.loggit('Flow Details: '+ JSON.stringify(flowJSON['Flow']['processMetadataValues']));
+                this.loggit.loggit('Process Builder -- Inventorying Triggers Per Object');
+                this.loggit.loggit('Flow Details: ' + JSON.stringify(flowJSON['Flow']['processMetadataValues']));
                 for (var processMetadataValue of flowJSON['Flow']['processMetadataValues']) {
-                  this.loggit('Metadata Value Name: ' + processMetadataValue['name']);
+                  this.loggit.loggit('Metadata Value Name: ' + processMetadataValue['name']);
                   if (processMetadataValue['name'] == 'ObjectType') {
-                    this.loggit('ObjectName:' + JSON.stringify(processMetadataValue['value'][0]));
+                    this.loggit.loggit('ObjectName:' + JSON.stringify(processMetadataValue['value'][0]));
                     let objectName = processMetadataValue['value'][0]['stringValue'][0];
-                    this.loggit('Extracted Object Name:' + objectName);
+                    this.loggit.loggit('Extracted Object Name:' + objectName);
                     if (objects[objectName]) {
                       objects[objectName]['count']++;
                     } else {
-                      objects[objectName] = {count: 1};
+                      objects[objectName] = {
+                        count: 1
+                      };
                     }
                   }
                 }
@@ -442,7 +434,7 @@ For more information, please connect in the Salesforce Partner Community https:/
             let appName = types[typeIdx]['members'][appIdx];
             let uiType;
             let navType;
-            this.loggit('Checking App: ' + appName);
+            this.loggit.loggit('Checking App: ' + appName);
             const appPath = `${this.flags.sourcefolder}/applications`;
             let appXml = `${appPath}/${appName}.app`;
             let appJSON = this.parseXML(appXml);
@@ -474,7 +466,7 @@ For more information, please connect in the Salesforce Partner Community https:/
           typeInv['ClassicConsoleCount'] = classicConsoleCount;
           break;
         case 'ConnectedApp':
-          this.loggit('Checking Connected Apps');
+          this.loggit.loggit('Checking Connected Apps');
 
           let canvasCount = 0;
 
@@ -490,7 +482,7 @@ For more information, please connect in the Salesforce Partner Community https:/
           typeInv['CanvasApp'] = canvasCount;
           break;
         case 'ApexClass':
-          this.loggit('Interrogating Apex');
+          this.loggit.loggit('Interrogating Apex');
           let futureCount = 0;
           // let testCount = 0;
           let auraEnabledCount = 0;
@@ -504,7 +496,7 @@ For more information, please connect in the Salesforce Partner Community https:/
           for (var apxIdx in types[typeIdx]['members']) {
             let className = types[typeIdx]['members'][apxIdx];
             let classFile = `${apexPath}/${className}.cls`;
-           
+
             if (fs.existsSync(classFile)) {
 
               let classBody = fs.readFileSync(classFile, 'utf8');
@@ -525,7 +517,7 @@ For more information, please connect in the Salesforce Partner Community https:/
               if (futureReg.test(classBody)) {
                 futureCount++;
               }
-              if (auraEnabledReg.test(classBody)){
+              if (auraEnabledReg.test(classBody)) {
                 auraEnabledCount++;
               }
               if (invocableReg.test(classBody)) {
@@ -569,7 +561,7 @@ For more information, please connect in the Salesforce Partner Community https:/
 
           break;
         case 'ApexTrigger':
-          this.loggit('Interrogating Trigger');
+          this.loggit.loggit('Interrogating Trigger');
           let triggerInv = {};
           //let asyncTrigger = {'count':0};
           let asyncCount = 0;
@@ -582,9 +574,9 @@ For more information, please connect in the Salesforce Partner Community https:/
             let triggerDetail = triggerDetailReg.exec(triggerBody);
             let triggerObj = triggerDetail[2];
             let triggerType = triggerDetail[3];
-            this.loggit('Trigger Name:' + triggerName);
-            this.loggit('Trigger Object:' + triggerObj);
-            this.loggit('Trigger Type: ' + triggerType);
+            this.loggit.loggit('Trigger Name:' + triggerName);
+            this.loggit.loggit('Trigger Object:' + triggerObj);
+            this.loggit.loggit('Trigger Type: ' + triggerType);
             if (triggerObj.slice(-11).toLowerCase() === 'changeevent') {
               //  asyncTrigger['count']++;
               asyncCount++;
@@ -600,12 +592,12 @@ For more information, please connect in the Salesforce Partner Community https:/
             if (fs.existsSync(triggerMetaFile)) {
               let triggerMetaJSON = this.parseXML(triggerMetaFile);
               if (triggerMetaJSON['ApexTrigger'] && triggerMetaJSON['ApexTrigger']['apiVersion']) {
-                
-                  if (apiVersions['ApexTrigger'] == undefined) {
-                    apiVersions['ApexTrigger'] = {};
-                  }
-                  apiVersions['ApexTrigger'][triggerName] = parseFloat(triggerMetaJSON['ApexTrigger']['apiVersion'][0]);
+
+                if (apiVersions['ApexTrigger'] == undefined) {
+                  apiVersions['ApexTrigger'] = {};
                 }
+                apiVersions['ApexTrigger'][triggerName] = parseFloat(triggerMetaJSON['ApexTrigger']['apiVersion'][0]);
+              }
             }
           }
           //  this.loggit(triggerInv,'JSON');
@@ -615,7 +607,7 @@ For more information, please connect in the Salesforce Partner Community https:/
 
           break;
         case 'LightningComponentBundle':
-          this.loggit('Interrogating LWC');
+          this.loggit.loggit('Interrogating LWC');
           const lwcPath = `${this.flags.sourcefolder}/lwc`;
           let exposedCount = 0;
           let appPageCount = 0;
@@ -630,7 +622,7 @@ For more information, please connect in the Salesforce Partner Community https:/
             if (lwcJSON['LightningComponentBundle']) {
               lwcJSON = lwcJSON['LightningComponentBundle'];
 
-              this.loggit('Checking LWC ' + lwcName);
+              this.loggit.loggit('Checking LWC ' + lwcName);
               // this.loggit(lwcJSON,'JSON');
               if (lwcJSON['apiVersion']) {
                 if (apiVersions['LightningComponentBundle'] == undefined) {
@@ -642,8 +634,8 @@ For more information, please connect in the Salesforce Partner Community https:/
                 exposedCount++;
               }
               if (lwcJSON['targets'] && lwcJSON['targets'][0]['target']) {
-                this.loggit('Checking Targets');
-                this.loggit(lwcJSON['targets'][0]);
+                this.loggit.loggit('Checking Targets');
+                this.loggit.loggit(lwcJSON['targets'][0]);
                 for (let target of lwcJSON['targets'][0]['target']) {
                   if (target === 'lightning__RecordPage') {
                     recordPageCount++;
@@ -668,21 +660,21 @@ For more information, please connect in the Salesforce Partner Community https:/
           typeInv['FlowScreenComponents'] = flowScreenCount;
 
           break;
-          case 'AuraDefinitionBundle':
-            this.loggit('Interrogating Aura Components');
-            const auraPath = `${this.flags.sourcefolder}/aura`;
-            for (var auraIdx in types[typeIdx]['members']) {
-              const auraName = types[typeIdx]['members'][auraIdx];
-              const auraXml = `${auraPath}/${auraName}/${auraName}.cmp-meta.xml`;
-              let auraJSON = this.parseXML(auraXml);
-              this.loggit('Checking Aura Component ' + auraName);
-              if (auraJSON['AuraDefinitionBundle'] && auraJSON['AuraDefinitionBundle']['apiVersion']) {
-                if (apiVersions['AuraDefinitionBundle'] == undefined) {
-                  apiVersions['AuraDefinitionBundle'] = {};
-                }
-                apiVersions['AuraDefinitionBundle'][auraName] = parseFloat(auraJSON['AuraDefinitionBundle']['apiVersion'][0]);
+        case 'AuraDefinitionBundle':
+          this.loggit.loggit('Interrogating Aura Components');
+          const auraPath = `${this.flags.sourcefolder}/aura`;
+          for (var auraIdx in types[typeIdx]['members']) {
+            const auraName = types[typeIdx]['members'][auraIdx];
+            const auraXml = `${auraPath}/${auraName}/${auraName}.cmp-meta.xml`;
+            let auraJSON = this.parseXML(auraXml);
+            this.loggit.loggit('Checking Aura Component ' + auraName);
+            if (auraJSON['AuraDefinitionBundle'] && auraJSON['AuraDefinitionBundle']['apiVersion']) {
+              if (apiVersions['AuraDefinitionBundle'] == undefined) {
+                apiVersions['AuraDefinitionBundle'] = {};
               }
+              apiVersions['AuraDefinitionBundle'][auraName] = parseFloat(auraJSON['AuraDefinitionBundle']['apiVersion'][0]);
             }
+          }
           break;
       }
 
@@ -697,7 +689,9 @@ For more information, please connect in the Salesforce Partner Community https:/
 
     if (fs.existsSync(pafile)) {
       //paType['count'] = 1;
-      inventory['PersonAccount__c'] = {count:1};
+      inventory['PersonAccount__c'] = {
+        count: 1
+      };
     }
     //Add Version Info
     inventory['apiVersions'] = apiVersions;
@@ -706,8 +700,8 @@ For more information, please connect in the Salesforce Partner Community https:/
   }
 
   private getMembers(mdTypeDef) {
-    this.loggit('Getting wildcard members')
-  //  this.loggit(mdTypeDef, 'json');
+    this.loggit.loggit('Getting wildcard members')
+    //  this.loggit(mdTypeDef, 'json');
     switch (String(mdTypeDef['name'])) {
       case 'ApexClass':
         return this.getMembersFromFiles('classes', 'cls');
@@ -726,12 +720,12 @@ For more information, please connect in the Salesforce Partner Community https:/
     const typePath = `${this.flags.sourcefolder}/${folder}`;
     const members = [];
     if (!fs.existsSync(typePath)) {
-      this.loggit(`Folder ${typePath} does not exist. Cannot find members`);
+      this.loggit.loggit(`Folder ${typePath} does not exist. Cannot find members`);
       return members;
     }
-    this.loggit(`Looking in folder ${typePath} for members`);
+    this.loggit.loggit(`Looking in folder ${typePath} for members`);
     const folderContents = fs.readdirSync(typePath);
-    this.loggit('Folder Contents: ' + JSON.stringify(folderContents));
+    this.loggit.loggit('Folder Contents: ' + JSON.stringify(folderContents));
     folderContents.forEach(element => {
 
       const [fileName, ext] = [element.substr(0, element.lastIndexOf('.')), element.substr(element.lastIndexOf('.') + 1, element.length)]
@@ -741,7 +735,7 @@ For more information, please connect in the Salesforce Partner Community https:/
       return members;
     });
 
-    this.loggit('Found Members: ' + JSON.stringify(members));
+    this.loggit.loggit('Found Members: ' + JSON.stringify(members));
   }
 
   private parseXML(xmlfile, dieOnError = false) {
@@ -754,10 +748,10 @@ For more information, please connect in the Salesforce Partner Community https:/
     if (!fs.existsSync(xmlfile)) {
       let message = `Cannot find XML File: ${xmlfile}`;
       if (dieOnError) {
-        this.loggit(message, 'Error');
+        this.loggit.loggit(message, 'Error');
         throw new SfdxError(message, 'XMLNotFoundError');
       } else {
-        this.loggit(message,'Warn');
+        this.loggit.loggit(message, 'Warn');
         return json;
       }
     }
@@ -769,26 +763,26 @@ For more information, please connect in the Salesforce Partner Community https:/
     });
 
     if (error) {
-      this.loggit(`Error parsing ${xmlfile}: ${error}`, 'Error');
+      this.loggit.loggit(`Error parsing ${xmlfile}: ${error}`, 'Error');
       throw new SfdxError(`Error parsing ${xmlfile}: ${error}`, 'XMLParseError');
     }
     return json;
   }
 
-  private loggit(logMessage, type = '') {
-    switch(type) { 
-      case 'Error': { 
-        this.isvteLogger.error(logMessage);
-         break; 
-      } 
-      case 'Warn': {
-        this.isvteLogger.warn(logMessage);
-        break;
-      }
-      default: { 
-        this.isvteLogger.debug(logMessage);
-        break; 
-      } 
-   } 
-  }
+  // private loggit(logMessage, type = '') {
+  //   switch(type) { 
+  //     case 'Error': { 
+  //       this.isvteLogger.error(logMessage);
+  //        break; 
+  //     } 
+  //     case 'Warn': {
+  //       this.isvteLogger.warn(logMessage);
+  //       break;
+  //     }
+  //     default: { 
+  //       this.isvteLogger.debug(logMessage);
+  //       break; 
+  //     } 
+  //  } 
+  // }
 }
