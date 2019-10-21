@@ -30,7 +30,8 @@ export default class listrules extends SfdxCommand {
 Display this help message:
 \t$sfdx isvte:listrules -h
 
-For more information, please connect in the Salesforce Partner Community https://partners.salesforce.com/_ui/core/chatter/groups/GroupProfilePage?g=0F9300000001s8iCAA or log an issue in github https://github.com/forcedotcom/isvte-sfdx-plugin
+For more information, please connect in the ISV Technical Enablement Plugin
+ Chatter group on the Salesforce Partner Community https://partners.salesforce.com/0F93A0000004mWj or log an issue in github https://github.com/forcedotcom/isvte-sfdx-plugin
 `
   ];
 
