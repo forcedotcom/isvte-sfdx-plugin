@@ -13,7 +13,8 @@ import {
   enablementRules,
   editionWarningRules,
   alertRules,
-  qualityRules
+  qualityRules,
+  rulesVersion
 } from '../../common/rules';
 import {
   loggit
@@ -41,32 +42,36 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
     this.loggit.loggit('Exporting all isvte Rules');
 
+    this.ux.log(`Rule Definition version: ${rulesVersion}\n\n`);
+
     this.ux.styledHeader('Monitored Metadata Types');
     this.ux.table(mdTypes, ['name', 'metadataType']);
     this.ux.log('\n\n');
-    this.ux.styledHeader('Enablement Rules');
+    this.ux.styledHeader('Best Practices and Feature Recommendations:');
     for (var enablementRule of this.getAllRules(enablementRules)) {
       this.ux.log(`Rule: ${enablementRule.label}\n Trigger: ${enablementRule.metadataType} ${enablementRule.threshold}\n Message: ${enablementRule.message}\n URL: ${enablementRule.url}\n`);
     }
     this.ux.log('\n\n');
-    this.ux.styledHeader('Code Quality Checks');
+    this.ux.styledHeader('Quality Rules:');
     for (var qualityRule of this.getAllRules(qualityRules)) {
       this.ux.log(`Rule: ${qualityRule.label}\n Trigger: ${qualityRule.metadataType} ${qualityRule.threshold}\n Message: ${qualityRule.message}\n`);
     }
     this.ux.log('\n\n');
-    this.ux.styledHeader('Edition Warnings');
-    this.ux.table(this.getAllEditionWarnings(), ['Edition', 'Item', 'Threshold']);
-    this.ux.log('\n\n');
-    this.ux.styledHeader('Alerts');
+    
+    this.ux.styledHeader('Partner Alerts:');
     for (var alert of alertRules) {
       this.ux.log(`Alert Name: ${alert.label}\n Message: ${alert.message}\n URL: ${alert.url}\n Expiration: ${alert.expiration}\n`);
     }
+    this.ux.styledHeader('Installation Warnings:');
+    this.ux.table(this.getAllEditionWarnings(), ['Edition', 'Item', 'Threshold']);
+    this.ux.log('\n\n');
     return {
+      'Rules Version' : rulesVersion,
       'Monitored Types': mdTypes,
       'Enablement Rules': this.getAllRules(enablementRules),
-      'Code Quality Rules': this.getAllRules(qualityRules),
-      'Edition Warnings': editionWarningRules,
-      'Alerts': alertRules
+      'Quality Rules': this.getAllRules(qualityRules),
+      'Alerts': alertRules,
+      'Edition Warnings': editionWarningRules
     };
 
   };

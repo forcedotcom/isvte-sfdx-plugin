@@ -9,7 +9,8 @@ import {
   editionWarningRules,
   enablementRules,
   qualityRules,
-  alertRules
+  alertRules,
+  minAPI
 } from './rules';
 import {
   loggit
@@ -21,10 +22,16 @@ export class packageInventory {
   private _mdFullInvArray;
   private _mdMonitoredInvArray;
   private loggit;
+  private _minAPI = minAPI;
 
   public constructor() {
     this.loggit = new loggit('isvtePlugin:PackageInventory');
     this.loggit.loggit('Creating New Package Inventory');
+  };
+
+  public setMinAPI(newAPIVersion) {
+    //set this to be just below the minimum because recNeg uses less than or equal. We just want less than for API checks
+    this._minAPI = newAPIVersion - .01; 
   };
 
   public setMetadata(md) {
@@ -98,12 +105,18 @@ export class packageInventory {
     let recomendations = [];
     for (var ruleDef of ruleSet) {
       this.loggit.loggit('Rule: ' + JSON.stringify(ruleDef));
-
+      let threshold = ruleDef.threshold;
+      if (ruleDef.metadataType.split('.')[0] == 'apiVersions') {
+        this.loggit.loggit('-------Checking an API type rule');
+        threshold = this._minAPI;
+      }
+      this.loggit.loggit('Threshold is: ' + threshold);
       let counts = this.getCountByMetadataType(ruleDef.metadataType);
       this.loggit.loggit('Counts: ' + JSON.stringify(counts));
       if (ruleDef.recNeg) {
         let exceptions = [];
-        if (counts.length == 0 && ruleDef.threshold == -1) {
+        if (counts.length == 0 && threshold == -1) {
+          this.loggit.loggit('No results found and Threshold is -1. Pushing Negative exception');
           recomendations.push({
             metadataType: ruleDef.metadataType,
             label: ruleDef['label'],
@@ -112,7 +125,9 @@ export class packageInventory {
           });
         } else {
           for (var count of counts) {
-            if (count.value <= ruleDef.threshold) {
+            this.loggit.loggit(`Comparing count: ${count.value} against threshold ${threshold}`);
+            if (count.value <= threshold) {
+              this.loggit.loggit(`Property Name: ${count.property} count ${count.value} is less than ${threshold}`);
               exceptions.push(count.property);
             }
           }
@@ -130,7 +145,10 @@ export class packageInventory {
       if (ruleDef.recPos) {
         let exceptions = [];
         for (var count of counts) {
-          if (count.value > ruleDef.threshold) {
+          this.loggit.loggit(`Comparing count: ${count.value} against threshold ${threshold}`);
+          if (count.value > threshold) {
+            this.loggit.loggit(`Property Name: ${count.property} count ${count.value} is greater than ${threshold}`);
+
             exceptions.push(count.property);
           }
         }
@@ -145,6 +163,7 @@ export class packageInventory {
         }
       }
     }
+    this.loggit.loggit('Final Recommendations: ' + JSON.stringify(recomendations));
     return recomendations;
   };
 
@@ -219,7 +238,7 @@ export class packageInventory {
       }
 
     } else {
-      this.loggit.loggit(`could not find Key ${topLevel} in the object: ` + JSON.stringify(mdObject));
+      this.loggit.loggit(`could not find Key ${topLevel} in the object.`);
       return {};
     }
   };

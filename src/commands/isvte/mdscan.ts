@@ -20,6 +20,9 @@ import xml2js = require('xml2js');
 import {
   packageInventory
 } from '../../common/inventory';
+import {
+  minAPI
+} from '../../common/rules';
 
 
 
@@ -34,6 +37,7 @@ export default class mdscan extends SfdxCommand {
   private suppressAlerts = false;
   private suppressWarnings = false;
   private suppressQuality = false;
+  private suppressAPI = false;
   private loggit;
   private packageInventory;
 
@@ -70,8 +74,12 @@ For more information, please connect in the ISV Technical Enablement Plugin
     }),
     suppress: flags.array({
       char: 's',
-      description: `comma separated list of items to suppress.\n Valid options are: ZeroInventory, Inventory, Enablement, CodeQuality, Alerts, Warnings `
+      description: `comma separated list of items to suppress.\n Valid options are: ZeroInventory, Inventory, Enablement, Quality, Alerts, Warnings, API `
     }),
+    minapi: flags.integer({
+      description: 'minimum api version to use during quality checks',
+      default: minAPI
+    })
 
   };
 
@@ -91,7 +99,8 @@ For more information, please connect in the ISV Technical Enablement Plugin
         this.suppressEnablement = this.suppressEnablement || element.toLowerCase() == 'enablement';
         this.suppressAlerts = this.suppressAlerts || element.toLowerCase() == 'alerts';
         this.suppressWarnings = this.suppressWarnings || element.toLowerCase() == 'warnings';
-        this.suppressQuality = this.suppressQuality || element.toLowerCase() == 'codequality';
+        this.suppressQuality = this.suppressQuality || element.toLowerCase() == 'quality';
+        this.suppressAPI = this.suppressAPI || element.toLowerCase() == 'api';
       });
     }
 
@@ -100,7 +109,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
       throw new SfdxError(`Source Folder ${this.sourceFolder} does not exist`, 'SourceNotExistError');
     }
 
-    const packagexml = `${this.flags.sourcefolder}/package.xml`;
+    const packagexml = `${this.sourceFolder}/package.xml`;
 
     let packageJSON = this.parseXML(packagexml, true);
     if (packageJSON['Package']) {
@@ -113,6 +122,12 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
     this.loggit.loggit('Parsing Package');
     this.packageInventory = new packageInventory();
+    
+    if (this.flags.minapi) {
+      this.loggit.loggit(`Setting Minimum API version for quality checks to ${this.flags.minapi}`);
+      this.packageInventory.setMinAPI(this.flags.minapi);
+    }
+
     this.packageInventory.setMetadata(this.inventoryPackage(packageJSON));
 
     if (this.showFullInventory) {
@@ -130,12 +145,12 @@ For more information, please connect in the ISV Technical Enablement Plugin
       if (!this.suppressEnablement) {
         let recommendations = this.packageInventory.getEnablementMessages();
         if (recommendations.length > 0) {
-          this.ux.styledHeader('ISV Technical Enablement:');
+          this.ux.styledHeader('Best Practices and Feature Recommendations:');
           for (var recommendation of recommendations) {
             if (recommendation.url != undefined) {
-              this.ux.log(`${recommendation.label}:\n  ${recommendation.message}\n\tURL:${recommendation.url}\n`);
+              this.ux.log(`${recommendation.label}:\n${recommendation.message}\nURL:${recommendation.url}\n`);
             } else {
-              this.ux.log(`${recommendation.label}:\n  ${recommendation.message}\n`);
+              this.ux.log(`${recommendation.label}:\n${recommendation.message}\n`);
             }
           }
           this.ux.log('\n');
@@ -143,21 +158,30 @@ For more information, please connect in the ISV Technical Enablement Plugin
       }
 
       if (!this.suppressQuality) {
-        let notes = this.packageInventory.getQualityRecommendations();
+        let notes = this.packageInventory.getQualityRecommendations().filter(element => {
+          return (!this.suppressAPI || element.metadataType.split('.')[0] !== 'apiVersions');
+        });
         if (notes.length > 0) {
-          this.ux.styledHeader('Code Quality Notes:');
+          this.ux.styledHeader('Quality Rules:');
           for (var note of notes) {
-            this.ux.log(`${note.label}:\n  ${note.message}\n\tExceptions: ${note.exceptions.join(', ')}\n`);
+            if (note.metadataType.split('.')[0] == 'apiVersions') {
+              this.ux.log(`${note.label} < ${this.flags.minapi}:\n${note.message}\nComponents: ${note.exceptions.join(', ')}\n`);
+            }
+            else {
+              this.ux.log(`${note.label}:\n${note.message}\nComponents: ${note.exceptions.join(', ')}\n`);
+            }
           }
         }
 
       }
       if (!this.suppressAlerts) {
         let alerts = this.packageInventory.getAlerts();
+        this.ux.styledHeader('Partner Alerts:');
+          this.ux.log('Sign up here to be notified of all Partner Alerts: \nURL:https://partners.salesforce.com/partnerAlert?id=a033A00000FtFWqQAN\n');
         if (alerts.length > 0) {
-          this.ux.styledHeader('Alerts:');
+
           for (var alert of alerts) {
-            this.ux.log(`${alert.label}:\n  ${alert.message}\n\tURL:${alert.url}`);
+            this.ux.log(`${alert.label}:\n${alert.message}\nURL:${alert.url}`);
           }
           this.ux.log('\n');
         }
