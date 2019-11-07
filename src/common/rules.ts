@@ -246,7 +246,7 @@ const enablementRules = [{
   {
     metadataType: 'LightningComponentBundle',
     label: 'Take advantage of Lightning Web Components',
-    threshold: -1,
+    threshold: 0,
     recNeg: {
       message: 'Find more information about how to leverage the power of LWC and for best practices, see this webinar.',
       url: 'https://partners.salesforce.com/0693A000007Kd7oQAC'

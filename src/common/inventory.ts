@@ -30,7 +30,7 @@ export class packageInventory {
   };
 
   public setMinAPI(newAPIVersion) {
-    //set this to be just below the minimum because recNeg uses less than or equal. We just want less than for API checks
+    //set this to be just below the minimum because recNeg uses less than or equal. We just want less than for API checks 
     this._minAPI = newAPIVersion - .01; 
   };
 
@@ -177,7 +177,10 @@ export class packageInventory {
       retVal = mdCount;
     } else {
       this.loggit.loggit('Found a single result');
-      retVal.push(mdCount);
+      if (mdCount.value == -1) {
+        retVal = [];
+      }
+      else retVal.push(mdCount);
     }
     return retVal;
   };
@@ -239,7 +242,10 @@ export class packageInventory {
 
     } else {
       this.loggit.loggit(`could not find Key ${topLevel} in the object.`);
-      return {};
+      return {
+        property: topLevel,
+        value: -1
+      };
     }
   };
 

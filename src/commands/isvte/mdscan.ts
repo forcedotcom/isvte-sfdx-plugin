@@ -270,25 +270,28 @@ For more information, please connect in the ISV Technical Enablement Plugin
             }
 
             //Check field descriptions
-            const objectPath = `${this.flags.sourcefolder}/objects`;
-            let objectXml = `${objectPath}/${objectName}.object`;
-            let objectJSON = this.parseXML(objectXml);
-            if (objectJSON['CustomObject'] && objectJSON['CustomObject']['fields']) {
-              for (var fieldDef of objectJSON['CustomObject']['fields']) {
-                if (fieldDef['fullName'] == fieldName) {
-                  this.loggit.loggit('Checking Properties of Field: ' + fieldFullName);
-                  if (componentProperties['CustomField'] == undefined) {
-                    componentProperties['CustomField'] = {};
-                  }
-                  if (componentProperties['CustomField'][fieldFullName] == undefined) {
-                    componentProperties['CustomField'][fieldFullName] = {};
-                  }
-                  componentProperties['CustomField'][fieldFullName]['descriptionExists'] = fieldDef['description'] ? 1 : 0;
-                }
+             //Only check custom fields or standard fields on custom objects, not standard
+            if (objectType == 'Custom' || objectType == 'External' || fieldName.slice(-3) == '__c') {
+              const objectPath = `${this.flags.sourcefolder}/objects`;
+              let objectXml = `${objectPath}/${objectName}.object`;
+              let objectJSON = this.parseXML(objectXml);
+              if (objectJSON['CustomObject'] && objectJSON['CustomObject']['fields']) {
+                for (var fieldDef of objectJSON['CustomObject']['fields']) {
+                  if (fieldDef['fullName'] == fieldName) {
+                    this.loggit.loggit('Checking Properties of Field: ' + fieldFullName);
 
+                    if (componentProperties['CustomField'] == undefined) {
+                      componentProperties['CustomField'] = {};
+                    }
+                    if (componentProperties['CustomField'][fieldFullName] == undefined) {
+                      componentProperties['CustomField'][fieldFullName] = {};
+                    }
+                    componentProperties['CustomField'][fieldFullName]['descriptionExists'] = fieldDef['description'] ? 1 : 0;
+                  }
+
+                }
               }
             }
-
           }
           typeInv['objects'] = objectFields;
 

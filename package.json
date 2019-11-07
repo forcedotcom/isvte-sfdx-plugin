@@ -1,11 +1,12 @@
 {
   "name": "isvte-sfdx-plugin",
   "description": "Salesforce ISV TE Plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Jeremy Hay Draude",
   "bugs": "https://github.com/forcedotcom/isvte-sfdx-plugin/issues",
   "dependencies": {
     "@oclif/command": "^1",
+    "@oclif/plugin-help": "^2",
     "@oclif/config": "^1",
     "@oclif/errors": "^1",
     "@salesforce/command": "^1.4.1",
@@ -16,7 +17,6 @@
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1",
-    "@oclif/plugin-help": "^2",
     "@oclif/test": "^1",
     "@salesforce/dev-config": "1.4.1",
     "@types/chai": "^4",
