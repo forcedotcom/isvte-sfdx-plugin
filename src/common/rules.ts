@@ -61,6 +61,10 @@ const mdTypes = [{
     metadataType: 'ApexClass'
   },
   {
+    name: 'Apex Triggers',
+    metadataType: 'ApexTrigger'
+  },
+  {
     name: 'Custom Reports',
     metadataType: 'Report'
   },
