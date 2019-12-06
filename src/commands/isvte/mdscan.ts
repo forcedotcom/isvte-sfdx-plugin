@@ -600,22 +600,28 @@ For more information, please connect in the ISV Technical Enablement Plugin
             let triggerBody = fs.readFileSync(triggerFile, 'utf8');
             const triggerDetailReg = /trigger\s+(\w+)\s+on\s+(\w+)\s*\((.+)\)/im;
             let triggerDetail = triggerDetailReg.exec(triggerBody);
-            let triggerObj = triggerDetail[2];
-            let triggerType = triggerDetail[3];
-            this.loggit.loggit('Trigger Name:' + triggerName);
-            this.loggit.loggit('Trigger Object:' + triggerObj);
-            this.loggit.loggit('Trigger Type: ' + triggerType);
-            if (triggerObj.slice(-11).toLowerCase() === 'changeevent') {
-              //  asyncTrigger['count']++;
-              asyncCount++;
+            if (triggerDetail == null) {
+              this.loggit.loggit('Could not parse Trigger File: ' + triggerFile);
             }
-            if (triggerInv[triggerObj]) {
-              triggerInv[triggerObj]['count']++;
-            } else {
-              triggerInv[triggerObj] = {
-                count: 1
-              };
+            else {
+              let triggerObj = triggerDetail[2];
+              let triggerType = triggerDetail[3];
+              this.loggit.loggit('Trigger Name:' + triggerName);
+              this.loggit.loggit('Trigger Object:' + triggerObj);
+              this.loggit.loggit('Trigger Type: ' + triggerType);
+              if (triggerObj.slice(-11).toLowerCase() === 'changeevent') {
+                //  asyncTrigger['count']++;
+                asyncCount++;
+              }
+              if (triggerInv[triggerObj]) {
+                triggerInv[triggerObj]['count']++;
+              } else {
+                triggerInv[triggerObj] = {
+                  count: 1
+                };
+              }
             }
+            
             let triggerMetaFile = `${triggerPath}/${triggerName}.trigger-meta.xml`;
             if (fs.existsSync(triggerMetaFile)) {
               let triggerMetaJSON = this.parseXML(triggerMetaFile);
