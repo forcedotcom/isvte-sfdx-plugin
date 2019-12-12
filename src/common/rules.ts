@@ -25,6 +25,10 @@ const mdTypes = [{
     metadataType: 'PermissionSet'
   },
   {
+    name: 'Custom Profiles',
+    metadataType: 'Profile'    
+  },
+  {
     name: 'Custom Metadata',
     metadataType: 'CustomMetadata'
   },
