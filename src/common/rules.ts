@@ -354,6 +354,13 @@ const alertRules = [{
     expiration: '2020-10-01T00:00:00.000Z'
   },
   {
+    metadataType: 'componentProperties.AuraDefinitionBundle.*.namespaceReferences.ui',
+    label: 'Aura Components in UI Namespace Retiring in Summer \'21',
+    message: 'In Summer \'21, Lightning Base Components in the ui namespace will be retired.',
+    url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GXNKsQAP',
+    expiration: '2020-10-01T00:00:00.000Z'
+  },
+  {
     metadataType: 'CustomMetadata',
     label: 'Custom Metadata',
     message: 'New Permissions Required for Direct Read Access to Custom Metadata Types.',
@@ -374,6 +381,7 @@ const alertRules = [{
     url: 'https://help.salesforce.com/articleView?id=000318370&type=1&mode=1',
     expiration: '2020-10-01T00:00:00.000Z'
   },
+
   {
     metadataType: 'RecordType',
     label: 'Change to Record Type Access',

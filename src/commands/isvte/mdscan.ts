@@ -181,7 +181,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
         if (alerts.length > 0) {
 
           for (var alert of alerts) {
-            this.ux.log(`${alert.label}:\n${alert.message}\nURL:${alert.url}`);
+            this.ux.log(`${alert.label}:\n${alert.message}\nURL:${alert.url}\nComponents: ${alert.exceptions.join(', ')}\n`);
           }
           this.ux.log('\n');
         }
@@ -708,6 +708,44 @@ For more information, please connect in the ISV Technical Enablement Plugin
               }
               apiVersions['AuraDefinitionBundle'][auraName] = parseFloat(auraJSON['AuraDefinitionBundle']['apiVersion'][0]);
             }
+            //Count Used Components by Namespace
+            let auraCmpFile = `${auraPath}/${auraName}/${auraName}.cmp`;
+            this.loggit.loggit(`Checking ${auraCmpFile} for ui namespace components`);
+
+            if (fs.existsSync(auraCmpFile)) {
+
+              let auraBody = fs.readFileSync(auraCmpFile, 'utf8');
+              
+              const componentsReg = /<(\w+:\w+)/ig;
+              this.loggit.loggit('Performing Regex search against component');
+              let referencedComponents = this.getMatches(auraBody,componentsReg);
+              if (referencedComponents.length > 0) {
+                this.loggit.loggit(`Found the following Components: ${JSON.stringify(referencedComponents)}`);
+                if (componentProperties['AuraDefinitionBundle'] == undefined) {
+                  componentProperties['AuraDefinitionBundle'] = {};
+                }
+                if (componentProperties['AuraDefinitionBundle'][auraName] == undefined) {
+                  componentProperties['AuraDefinitionBundle'][auraName] = {};
+                }
+                if (componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'] == undefined) {
+                  componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'] = {};
+                }
+                referencedComponents.forEach(element => {
+                  let ns = element.split(":",2)[0];
+                  if (componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] == undefined) {
+                    componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] = 1;
+                  }
+                  else {
+                    componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] += 1
+                  }
+                });
+
+                
+              }
+            }
+            else {
+              this.loggit.loggit('File not found');
+            }
           }
           break;
       }
@@ -770,6 +808,17 @@ For more information, please connect in the ISV Technical Enablement Plugin
     });
 
     this.loggit.loggit('Found Members: ' + JSON.stringify(members));
+  }
+
+  private getMatches(searchString, regex) {
+    let matches = [];
+    let match;
+    while (match = regex.exec(searchString)) {
+      matches.push(match[1]);
+    }
+    this.loggit.loggit(`Found ${matches.length} matches`);
+    this.loggit.loggit(JSON.stringify(matches));
+    return matches;
   }
 
   private parseXML(xmlfile, dieOnError = false) {

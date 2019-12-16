@@ -83,9 +83,29 @@ export class packageInventory {
     const now = new Date().toJSON();
     for (var alertDef of alertRules) {
       this.loggit.loggit('Checking Relevance of alert: ' + JSON.stringify(alertDef));
-      if ((alertDef.expiration > now) && this.getInventoryCountByMetadataType(alertDef['metadataType']) > 0) {
+      let exceptions = [];
+   /*   if ((alertDef.expiration > now) && this.getInventoryCountByMetadataType(alertDef['metadataType']) > 0) {
         alerts.push(alertDef);
+      }*/
+      if (alertDef.expiration > now) {
+        let found = false;
+        for (var count of this.getCountByMetadataType(alertDef['metadataType'])) {
+          if (count.value > 0) {
+            exceptions.push(count.property);
+          }
+        }
+        if (exceptions.length > 0) {
+          alerts.push({
+              metadataType: alertDef.metadataType,
+              label: alertDef.label,
+              message: alertDef.message,
+              exceptions: exceptions,
+              url: alertDef.url
+            });
+         
+        }
       }
+       
     }
     return alerts;
   };
