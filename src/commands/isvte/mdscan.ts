@@ -38,6 +38,7 @@ export default class mdscan extends SfdxCommand {
   private suppressWarnings = false;
   private suppressQuality = false;
   private suppressAPI = false;
+  private suppressAdoptionScore = false;
   private loggit;
   private packageInventory;
 
@@ -74,7 +75,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
     }),
     suppress: flags.array({
       char: 's',
-      description: `comma separated list of items to suppress.\n Valid options are: ZeroInventory, Inventory, Enablement, Quality, Alerts, Warnings, API `
+      description: `comma separated list of items to suppress.\n Valid options are: ZeroInventory, Inventory, Enablement, Quality, Alerts, Warnings, API, TechAdoption `
     }),
     minapi: flags.integer({
       description: 'minimum api version to use during quality checks',
@@ -101,6 +102,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
         this.suppressWarnings = this.suppressWarnings || element.toLowerCase() == 'warnings';
         this.suppressQuality = this.suppressQuality || element.toLowerCase() == 'quality';
         this.suppressAPI = this.suppressAPI || element.toLowerCase() == 'api';
+        this.suppressAdoptionScore = this.suppressAdoptionScore || element.toLowerCase() == 'techadoption'
       });
     }
 
@@ -201,7 +203,16 @@ For more information, please connect in the ISV Technical Enablement Plugin
             this.ux.log('\n');
           }
         } else {
-          this.ux.log('Can be installed in any Edition');
+          this.ux.log('Can be installed in any Edition\n');
+        }
+      }
+
+      if (!this.suppressAdoptionScore) {
+        this.ux.styledHeader('Technology Adoption Score:');
+        let adoptionScore = this.packageInventory.getTechAdoptionScore();
+        this.ux.log('Tech Adoption Score: ' + adoptionScore.score);
+        for (var detail of adoptionScore.details) {
+          this.ux.log(`Metadata Type: ${detail.label}, Value: ${detail.score}\n`);
         }
       }
 

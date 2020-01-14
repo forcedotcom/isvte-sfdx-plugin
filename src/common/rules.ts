@@ -269,6 +269,15 @@ const enablementRules = [{
       url: 'https://partners.salesforce.com/partnerEvent?id=a033A00000FYOQOQA5'
     }
   },
+  {
+    metadataType: 'Report',
+    label: 'Learn about Einstein Analytics Template Bundles',
+    threshold: 0,
+    recPos: {
+      message: 'For more information on Creating & Distributing Analytics Apps using Templates see this webinar.',
+      url: 'https://partners.salesforce.com/partnerEvent?id=a033A00000FYOQOQA5'
+    }
+  },
 
 ];
 
@@ -490,6 +499,24 @@ const editionWarningRules = [{
 
 ];
 
+const techAdoptionRules = [
+  {
+  metadataType: 'Flow',
+  label: 'Use Flows',
+  threshold: 0,
+    recPos: {
+      score:1
+    } 
+  },
+  {
+    metadataType: 'ApexClass',
+    label: 'Use Apex',
+    threshold: 0,
+      recPos: {
+        score:1
+      } 
+    }
+];
 
 export {
   mdTypes,
@@ -498,6 +525,7 @@ export {
   alertRules,
   qualityRules,
   minAPI,
+  techAdoptionRules,
   rulesVersion
 };
 
