@@ -88,7 +88,6 @@ export class packageInventory {
         alerts.push(alertDef);
       }*/
       if (alertDef.expiration > now) {
-        let found = false;
         for (var count of this.getCountByMetadataType(alertDef['metadataType'])) {
           if (count.value > 0) {
             exceptions.push(count.property);
