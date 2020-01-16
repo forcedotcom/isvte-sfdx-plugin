@@ -500,22 +500,95 @@ const editionWarningRules = [{
 ];
 
 const techAdoptionRules = [
+  
   {
-  metadataType: 'Flow',
-  label: 'Use Flows',
-  threshold: 0,
-    recPos: {
-      score:1
-    } 
-  },
-  {
-    metadataType: 'ApexClass',
-    label: 'Use Apex',
+    metadataType: 'CustomObject',
+    label: 'Custom Objects as Primary Data Store',
     threshold: 0,
       recPos: {
-        score:1
+        score:10
       } 
-    }
+    },
+    {
+      metadataType: 'CustomObject',
+      label: 'Custom Objects to Store and Process Data',
+      threshold: 0,
+        recPos: {
+          score:5
+        } 
+      },
+    {
+      metadataType: 'CustomObject.BigObject',
+      label: 'Big Objects to Store and Process Data',
+      threshold: 0,
+        recPos: {
+          score:5
+        } 
+      },
+      {
+        metadataType: 'PlatformEventChannelMember',
+        label: 'Change Data Capture for Processing Data',
+        threshold: 0,
+        recPos: {
+          score:5
+        } 
+      },
+      {
+        metadataType: 'LightningComponentBundle',
+        label: 'Lightning Web Components for User Experience',
+        threshold: 0,
+        recPos: {
+          score:10
+        } 
+      },
+      {
+        metadataType: 'AuraDefinitionBundle',
+        label: 'Aura Lightning Components for User Experience',
+        threshold: 0,
+        recPos: {
+          score:5
+        } 
+      },
+      {
+        metadataType: 'ApexPage',
+        label: 'Visualforce Pages for User Experience',
+        threshold: 0,
+        recPos: {
+          score:5
+        } 
+      },
+      {
+        metadataType: 'Flow.Workflow',
+        label: 'Process Builder for Application Processing',
+        threshold: 0,
+        recPos: {
+          score:5
+        } 
+      },
+      {
+        metadataType: 'Flow.Flow',
+        label: 'Flows for Data Processing',
+        threshold: 0,
+          recPos: {
+            score:10
+          } 
+        },
+  {
+    metadataType: 'ApexClass',
+    label: 'Apex for Data Processing',
+    threshold: 0,
+      recPos: {
+        score:5
+      } 
+    },
+    {
+      metadataType: 'PlatformCachePartition',
+      label: 'Platform Cache for Processing Performance',
+      threshold: 0,
+        recPos: {
+          score:10
+        } 
+      },
 ];
 
 export {
