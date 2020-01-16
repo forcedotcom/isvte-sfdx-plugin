@@ -20,6 +20,44 @@ const minAPI = 43;
 
 const rulesVersion = '20191023';
 
+
+
+const enablementRulesNew = [
+  {
+  name: 'Flows',
+  label: 'Take Advantage of Flows',
+  condition: {
+    metadataType: 'Flow',
+    operator: 'notexists',
+  },
+  resultTrue: {
+    message: 'Flows are a powerful tool to enable forms based workflows and process automation to your users. See this webinar for more information.',
+    url: 'https://partners.salesforce.com/0693A000007S2Dq'
+  },
+  showDetails: false
+},
+{
+  name: 'Flow Templates',
+  label: 'Include your Flows as Templates',
+  condition: {
+    metadataType: 'Flow.FlowTemplate',
+    operator: 'notexists',
+    conditionAnd: {
+      processAlways: false,
+      metadataType: 'Flow',
+      operator: 'exists'
+    }
+  }
+  },
+  resultTrue: {
+    message: 'When packaging a Flow, consider using a Flow Template to allow your subscribers to modify the flow to suit their needs. For more information about Flow Templates see this blog post.',
+    url: 'https://medium.com/inside-the-salesforce-ecosystem/pre-built-business-processes-how-isvs-use-flow-templates-ddc9910ff93a'
+  },
+  showDetails: false
+},
+
+];
+
 const mdTypes = [{
     name: 'Permission Sets',
     metadataType: 'PermissionSet'
@@ -599,8 +637,14 @@ export {
   qualityRules,
   minAPI,
   techAdoptionRules,
-  rulesVersion
+  rulesVersion,
+  enablementRulesNew
 };
+
+/*
+http://salesforce.vidyard.com/watch/pXTQPKtMkF8vmZDJoBidx9?
+Feature Management!!!
+*/
 
 /*{
     metadataType: 'ApexTrigger.AsyncTrigger',

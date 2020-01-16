@@ -40,6 +40,114 @@ export class packageInventory {
     this._mdInv = md;
   };
 
+
+  private checkCondition(cond) {
+    this.loggit.loggit('Checking Condition:' + JSON.stringify(cond));
+    let response = { conditionPass: false, passProperties:[]};
+    if (!this.isConditionValid(cond)) {
+      this.loggit.loggit('Condition is not valid. Returning false')
+      return response;
+    }
+    if (cond.metadataType != undefined) {
+      this.loggit.loggit('Checking Condition Metadata type:' + JSON.stringify(cond.metadataType));
+
+      let mdTypeCount = this.getCountByMetadataType2(cond.metadataType);
+      if (mdTypeCount.length == 0) {
+        this.loggit.loggit('Checking Condition. empty response receieved. We should not end up here');
+        mdTypeCount.push({property:cond.metadataType,value:-1});
+      }
+      
+      for (var itemCount of mdTypeCount) {
+        this.loggit.loggit('Validating item:' + itemCount.property);
+        this.loggit.loggit('  Value:' + itemCount.value);
+        this.loggit.loggit('  Operator:' + cond.operator);
+        this.loggit.loggit('  CompareTo:' + cond.compare);
+        let itemPass = false;
+        switch(cond.operator) {
+          case 'exists' : 
+            itemPass = itemCount.value >0;
+            break;
+          case 'notexists' :
+            itemPass = itemCount.value <= 0;
+            break;
+          case 'null' : 
+            itemPass = itemCount.value <0;
+            break;
+          case 'gt' :
+            itemPass = cond.compare < itemCount.value;
+            break;
+          case 'gte' :
+              itemPass = cond.compare <= itemCount.value;
+            break;
+          case 'lt' :
+              itemPass = cond.compare < itemCount.value;
+            break;
+          case 'lte' :
+              itemPass = cond.compare <= itemCount.value;
+            break;
+          case 'eq' :
+              itemPass = cond.compare == itemCount.value;
+              break;
+        }
+        if (itemPass) {
+          this.loggit.loggit('    Condition Passed');
+          response.conditionPass = true;
+          response.passProperties.push(itemCount.propery);
+        }
+        else {
+          this.loggit.loggit('    Condition Failed');
+        }
+      }
+      if (cond.conditionOr != undefined) {
+        //By default, don't process the OR if the condition has already passed
+        if (cond.conditionOr.processAlways == true || !response.conditionPass) {
+          this.loggit.loggit('Checking OR condition');
+          let orResponse = this.checkCondition(cond.conditionOr);
+          response.conditionPass = response.conditionPass || orResponse.conditionPass;
+          if (orResponse.conditionPass) {
+            response.passProperties.push(...orResponse.passProperties);
+          }
+  
+        }
+      }
+      if (cond.conditionAnd != undefined) {
+        //By default, don't process the AND if the condition is already false
+        if (cond.conditionAnd.processAlways == true || response.conditionPass) {
+          this.loggit.loggit('Checking AND condition');
+          let andResponse = this.checkCondition(cond.conditionAnd);
+          response.conditionPass = response.conditionPass && andResponse.conditionPass;
+          if (andResponse.conditionPass) {
+            response.passProperties.push(...andResponse.passProperties);
+          }
+        }
+      }
+    }
+    return response;
+  }
+
+  private isConditionValid(cond) {
+  //TODO: Validate
+    return true;
+  }
+
+  private isRuleValid(rule) {
+  //TODO: Validate
+    return true;
+  }
+
+  public processRules(ruleSet) {
+    //Replaces   public checkRules(ruleSet) {
+      this.loggit.loggit('Checking Rules');
+      for (var rule of ruleSet) {
+        this.loggit.loggit('Checking rule: ' + rule.name);
+        if (!this.isRuleValid(rule)) {
+          this.loggit.loggit('Rule is invalid. Skipping it.');
+          continue;
+        }
+        
+      }
+  }
+
   public getInstallationWarnings() {
     this.loggit.loggit('Getting Installation Warnings');
     let warnings = [];
@@ -77,6 +185,7 @@ export class packageInventory {
     }
     return warnings;
   };
+
 
   public getAlerts() {
     this.loggit.loggit('Getting Alerts');
@@ -201,6 +310,21 @@ export class packageInventory {
     }
     this.loggit.loggit('Final Recommendations: ' + JSON.stringify(recomendations));
     return recomendations;
+  };
+
+  public getCountByMetadataType2(metadataType) {
+    this.loggit.loggit('getCountByMetadataType - Getting Count of Metadata by type: ' + metadataType);
+    let mdDefArray = metadataType.split('.');
+    let retVal = [];
+    let mdCount = this.traverseMetadata(mdDefArray, this._mdInv);
+    if (Array.isArray(mdCount)) {
+      this.loggit.loggit('Found an Array of results. We must have passed a wildcard search');
+      retVal = mdCount;
+    } else {
+      this.loggit.loggit('Found a single result');
+      retVal.push(mdCount);
+    }
+    return retVal;
   };
 
   public getCountByMetadataType(metadataType) {
