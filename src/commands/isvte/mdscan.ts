@@ -23,6 +23,9 @@ import {
 import {
   minAPI
 } from '../../common/rules';
+import {
+  mdmap
+} from '../../common/mdmap';
 
 
 
@@ -241,7 +244,10 @@ For more information, please connect in the ISV Technical Enablement Plugin
       if (types[typeIdx]['members'].includes('*')) {
         this.loggit.loggit('Found Wildcard Members');
         types[typeIdx]['members'] = this.getMembers(types[typeIdx]);
+//        this.loggit.loggit('Members: ' + JSON.stringify(types[typeIdx]['members']));
       }
+      typeInv['count'] = types[typeIdx]['members'].length;
+
       switch (String(metadataType)) {
         case 'CustomField':
           //Do per object field counts
@@ -772,20 +778,15 @@ For more information, please connect in the ISV Technical Enablement Plugin
   }
 
   private getMembers(mdTypeDef) {
-    this.loggit.loggit('Getting wildcard members')
-    //  this.loggit(mdTypeDef, 'json');
-    switch (String(mdTypeDef['name'])) {
-      case 'ApexClass':
-        return this.getMembersFromFiles('classes', 'cls');
-      case 'CustomObject':
-        return this.getMembersFromFiles('objects', 'object');
-      case 'CustomObject':
-        return this.getMembersFromFiles('objects', 'object');
-      case 'CustomObject':
-        return this.getMembersFromFiles('objects', 'object');
-      default:
-        return mdTypeDef['members'];
+    this.loggit.loggit('Getting wildcard members for ' + mdTypeDef.name) ;
+    let retVal = mdTypeDef['members'];
+    if (mdmap[mdTypeDef.name] != undefined) {
+      if (mdmap[mdTypeDef.name]['folder'] != 'null' && mdmap[mdTypeDef.name]['extension'] != 'null') {
+        retVal = this.getMembersFromFiles(mdmap[mdTypeDef.name]['folder'], mdmap[mdTypeDef.name]['extension']);
+//        this.loggit.loggit("Added Members from files.:" + JSON.stringify(retVal));
+      }
     }
+   return retVal;
   }
 
   private getMembersFromFiles(folder, extension) {
@@ -804,10 +805,10 @@ For more information, please connect in the ISV Technical Enablement Plugin
       if (ext === extension) {
         members.push(fileName);
       }
-      return members;
     });
 
     this.loggit.loggit('Found Members: ' + JSON.stringify(members));
+    return members;
   }
 
   private getMatches(searchString, regex) {
