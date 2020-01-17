@@ -18,7 +18,7 @@
 */
 const minAPI = 43;
 
-const rulesVersion = '20191023';
+const rulesVersion = '20200116';
 
 const mdTypes = [{
     name: 'Permission Sets',
@@ -500,95 +500,82 @@ const editionWarningRules = [{
 ];
 
 const techAdoptionRules = [
-  
   {
-    metadataType: 'CustomObject',
-    label: 'Custom Objects as Primary Data Store',
-    threshold: 0,
-      recPos: {
-        score:10
-      } 
-    },
-    {
-      metadataType: 'CustomObject',
-      label: 'Custom Objects to Store and Process Data',
-      threshold: 0,
-        recPos: {
-          score:5
-        } 
-      },
-    {
-      metadataType: 'CustomObject.BigObject',
-      label: 'Big Objects to Store and Process Data',
-      threshold: 0,
-        recPos: {
-          score:5
-        } 
+    categoryName: 'DataStore',
+    categoryLabel: 'Which platform technology does your application use as its primary data store?',
+    items: [
+      {
+        metadataType: 'CustomObject',
+        label: 'Custom Objects'
+      }
+    ]
+  },
+  {
+    categoryName: 'DataProcess',
+    categoryLabel: 'Which other platform technologies does your application use to process and store data?',
+    items: [
+      {
+        metadataType: 'CustomObject',
+        label: 'Custom Objects'
       },
       {
-        metadataType: 'PlatformEventChannelMember',
-        label: 'Change Data Capture for Processing Data',
-        threshold: 0,
-        recPos: {
-          score:5
-        } 
+        metadataType: 'CustomObject.BigObject',
+        label: 'Big Objects'
       },
+      {
+        metadataType: 'PlatformEvent__c',
+        label: 'Platform Events'     
+      },
+      {
+        metadataType: 'PlatformEventChannel',
+        label: 'Change Data Capture'     
+      }
+    ]
+  },
+  {
+    categoryName: 'UX',
+    categoryLabel: 'Which user interface technologies does your application use to deliver the end-user experience?',
+    items: [
       {
         metadataType: 'LightningComponentBundle',
-        label: 'Lightning Web Components for User Experience',
-        threshold: 0,
-        recPos: {
-          score:10
-        } 
+        label: 'Lightning Web Components',
       },
       {
         metadataType: 'AuraDefinitionBundle',
-        label: 'Aura Lightning Components for User Experience',
-        threshold: 0,
-        recPos: {
-          score:5
-        } 
+        label: 'Aura Lightning Components',
       },
       {
         metadataType: 'ApexPage',
-        label: 'Visualforce Pages for User Experience',
-        threshold: 0,
-        recPos: {
-          score:5
-        } 
-      },
+        label: 'Visualforce Pages',
+      }
+    ]
+  },
+  {
+    categoryName: 'ApplicationProcessing',
+    categoryLabel: 'Which technologies does your app use for application processing and security?',
+    items: [
       {
         metadataType: 'Flow.Workflow',
-        label: 'Process Builder for Application Processing',
-        threshold: 0,
-        recPos: {
-          score:5
-        } 
+        label: 'Process Builder',
       },
       {
         metadataType: 'Flow.Flow',
-        label: 'Flows for Data Processing',
-        threshold: 0,
-          recPos: {
-            score:10
-          } 
-        },
-  {
-    metadataType: 'ApexClass',
-    label: 'Apex for Data Processing',
-    threshold: 0,
-      recPos: {
-        score:5
-      } 
-    },
-    {
-      metadataType: 'PlatformCachePartition',
-      label: 'Platform Cache for Processing Performance',
-      threshold: 0,
-        recPos: {
-          score:10
-        } 
+        label: 'Screen Flows',
       },
+      {
+        metadataType: 'Flow.AutoLaunchedFlow',
+        label: 'Autolaunched Flows',
+      },
+      {
+        metadataType: 'ApexClass',
+        label: 'Apex',
+      },
+      {
+        metadataType: 'PlatformCachePartition',
+        label: 'Platform Cache',
+      }
+    ]
+  }
 ];
 
 export {

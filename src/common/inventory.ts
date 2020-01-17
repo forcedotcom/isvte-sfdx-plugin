@@ -112,12 +112,15 @@ export class packageInventory {
 
   public getTechAdoptionScore() {
     this.loggit.loggit('Checking Tech Adoption Score');
-    let adoptionResult = {};
-    adoptionResult['score'] = 0
-    adoptionResult['details'] = this.checkRules(techAdoptionRules);
-    for (var detail of adoptionResult['details']) {
-      if (detail['score'] != undefined) {
-        adoptionResult['score'] += detail['score'];
+    let adoptionResult = [...techAdoptionRules];
+    for (var adoptionCategory of adoptionResult) {
+      for (var item of adoptionCategory.items) {
+        item['isIncluded'] = false;
+        for (var counts of this.getCountByMetadataType(item.metadataType)) {
+          if (counts.value > 0) {
+            item['isIncluded'] = true;
+          }
+        }
       }
     }
     return adoptionResult;

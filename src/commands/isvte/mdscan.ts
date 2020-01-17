@@ -208,11 +208,12 @@ For more information, please connect in the ISV Technical Enablement Plugin
       }
 
       if (!this.suppressAdoptionScore) {
-        this.ux.styledHeader('Technology Adoption Score:');
-        let adoptionScore = this.packageInventory.getTechAdoptionScore();
-        this.ux.log('Tech Adoption Score: ' + adoptionScore.score);
-        for (var detail of adoptionScore.details) {
-          this.ux.log(`Metadata Type: ${detail.label}, Value: ${detail.score}\n`);
+        this.ux.styledHeader('Technology Adoption:');
+        for (var category of this.packageInventory.getTechAdoptionScore()) {
+          this.ux.log(`\n${category.categoryLabel}\n`);
+          for (var item of category.items) {
+            this.ux.log(`   ${item.label}: ${item.isIncluded ? 'Found' : 'Not Found'}`)
+          }
         }
       }
 
