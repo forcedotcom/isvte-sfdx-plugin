@@ -209,7 +209,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
         }*/
       }
       if (!this.suppressAlerts) {
-        let recommendations = this.packageInventory.getAlertsNew();
+        let recommendations = this.packageInventory.getAlerts();
         if (recommendations.length > 0) {
           this.ux.styledHeader('Partner Alerts:');
           for (var recommendation of recommendations) {
@@ -264,7 +264,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
       }
 
      this.ux.styledHeader('New Rules Engine!!!!');
-      for (var recommendation of this.packageInventory.getAlertsNew()) {
+      for (var recommendation of this.packageInventory.getAlerts()) {
         let message = `${recommendation.label}:\n${recommendation.message}\n`;
         if (recommendation.url != undefined) {
           message += `URL:${recommendation.url}\n`;

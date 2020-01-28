@@ -12,7 +12,7 @@ import {
   alertRules,
   minAPI,
   techAdoptionRules,
-  alertRulesNew
+  
 } from './rules';
 import {
   loggit
@@ -272,7 +272,7 @@ export class packageInventory {
   };
 
 
-  public getAlertsDeprecated() {
+ /* public getAlertsDeprecated() {
     this.loggit.loggit('Getting Alerts');
     let alerts = [];
     const now = new Date().toJSON();
@@ -282,7 +282,7 @@ export class packageInventory {
       /*   if ((alertDef.expiration > now) && this.getInventoryCountByMetadataType(alertDef['metadataType']) > 0) {
            alerts.push(alertDef);
          }*/
-      if (alertDef.expiration > now) {
+   /*   if (alertDef.expiration > now) {
         for (var count of this.getCountByMetadataType(alertDef['metadataType'])) {
           if (count.value > 0) {
             exceptions.push(count.property);
@@ -303,7 +303,7 @@ export class packageInventory {
     }
     return alerts;
   };
-
+*/
   public getTechAdoptionScore() {
     this.loggit.loggit('Checking Tech Adoption Score');
     let adoptionResult = {};
@@ -320,7 +320,7 @@ export class packageInventory {
   public getAlerts() {
     this.loggit.loggit('Checking Partner Alerts');
     this.loggit.loggit('Using New Rules Engine');
-    return this.processRules(alertRulesNew);
+    return this.processRules(alertRules);
   }
 
   public getQualityRecommendations() {

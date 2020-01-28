@@ -655,7 +655,7 @@ const qualityRulesOld = [{
     }
   },
 ];
-const alertRulesNew = [{
+const alertRules = [{
     name: 'Alerts Signup',
     label: 'Stay on Top of Alerts',
     condition: {
@@ -748,7 +748,7 @@ const alertRulesNew = [{
     }
  },
 ];
-const alertRules = [{
+const alertRulesOld = [{
     metadataType: 'ApexClass.AuraEnabledCalls',
     label: '@AuraEnabled Methods',
     message: 'New Permissions Required to Access Apex Classes containing @AuraEnabled methods.',
@@ -991,7 +991,6 @@ export {
   minAPI,
   techAdoptionRules,
   rulesVersion,
-  alertRulesNew,
 };
 
 /*
