@@ -11,7 +11,8 @@ import {
   qualityRules,
   alertRules,
   minAPI,
-  techAdoptionRules
+  techAdoptionRules,
+  alertRulesNew
 } from './rules';
 import {
   loggit
@@ -32,7 +33,7 @@ export class packageInventory {
 
   public setMinAPI(newAPIVersion) {
     //set this to be just below the minimum because recNeg uses less than or equal. We just want less than for API checks 
-    this._minAPI = newAPIVersion - .01; 
+    this._minAPI = newAPIVersion - .01;
   };
 
   public setMetadata(md) {
@@ -43,81 +44,104 @@ export class packageInventory {
 
   private checkCondition(cond) {
     this.loggit.loggit('Checking Condition:' + JSON.stringify(cond));
-    let response = { conditionPass: false, passProperties:[]};
+    let response = {
+      conditionPass: false,
+      passItems: [],
+      failItems: []
+    };
     if (!this.isConditionValid(cond)) {
       this.loggit.loggit('Condition is not valid. Returning false')
       return response;
     }
     if (cond.metadataType != undefined) {
-      this.loggit.loggit('Checking Condition Metadata type:' + JSON.stringify(cond.metadataType));
-
+      this.loggit.loggit('Checking Condition Metadata type:' + cond.metadataType);
       let mdTypeCount = this.getCountByMetadataType2(cond.metadataType);
       if (mdTypeCount.length == 0) {
         this.loggit.loggit('Checking Condition. empty response receieved. We should not end up here');
-        mdTypeCount.push({property:cond.metadataType,value:-1});
+        mdTypeCount.push({
+          property: cond.metadataType,
+          value: -1
+        });
       }
-      
+      let compare = cond.metadataType.split('.')[0] == 'apiVersions' ? this._minAPI : cond.compare;
+
       for (var itemCount of mdTypeCount) {
         this.loggit.loggit('Validating item:' + itemCount.property);
         this.loggit.loggit('  Value:' + itemCount.value);
         this.loggit.loggit('  Operator:' + cond.operator);
-        this.loggit.loggit('  CompareTo:' + cond.compare);
+        this.loggit.loggit('  CompareTo:' + compare);
         let itemPass = false;
-        switch(cond.operator) {
-          case 'exists' : 
-            itemPass = itemCount.value >0;
+        switch (cond.operator) {
+          case 'always':
+            itemPass = true;
             break;
-          case 'notexists' :
+          case 'never':
+            itemPass = false;
+            break;
+          case 'exists':
+            itemPass = itemCount.value > 0;
+            break;
+          case 'notexists':
             itemPass = itemCount.value <= 0;
             break;
-          case 'null' : 
-            itemPass = itemCount.value <0;
+          case 'null':
+            itemPass = itemCount.value < 0;
             break;
-          case 'gt' :
-            itemPass = cond.compare < itemCount.value;
+          case 'gt':
+            itemPass = compare < itemCount.value;
             break;
-          case 'gte' :
-              itemPass = cond.compare <= itemCount.value;
+          case 'gte':
+            itemPass = compare <= itemCount.value;
             break;
-          case 'lt' :
-              itemPass = cond.compare < itemCount.value;
+          case 'lt':
+            itemPass = compare > itemCount.value;
             break;
-          case 'lte' :
-              itemPass = cond.compare <= itemCount.value;
+          case 'lte':
+            itemPass = compare >= itemCount.value;
             break;
-          case 'eq' :
-              itemPass = cond.compare == itemCount.value;
-              break;
+          case 'eq':
+            itemPass = compare == itemCount.value;
+            break;
         }
         if (itemPass) {
           this.loggit.loggit('    Condition Passed');
           response.conditionPass = true;
-          response.passProperties.push(itemCount.propery);
-        }
-        else {
+          response.passItems.push(itemCount.property);
+        } else {
           this.loggit.loggit('    Condition Failed');
+          response.failItems.push(itemCount.property);
         }
       }
       if (cond.conditionOr != undefined) {
+        this.loggit.loggit('Checking OR condition');
         //By default, don't process the OR if the condition has already passed
         if (cond.conditionOr.processAlways == true || !response.conditionPass) {
-          this.loggit.loggit('Checking OR condition');
           let orResponse = this.checkCondition(cond.conditionOr);
           response.conditionPass = response.conditionPass || orResponse.conditionPass;
-          if (orResponse.conditionPass) {
-            response.passProperties.push(...orResponse.passProperties);
-          }
-  
+
+          response.passItems.push(...orResponse.passItems);
+          response.failItems.push(...orResponse.failItems);
         }
       }
       if (cond.conditionAnd != undefined) {
+        this.loggit.loggit('Checking AND condition');
         //By default, don't process the AND if the condition is already false
         if (cond.conditionAnd.processAlways == true || response.conditionPass) {
-          this.loggit.loggit('Checking AND condition');
           let andResponse = this.checkCondition(cond.conditionAnd);
-          response.conditionPass = response.conditionPass && andResponse.conditionPass;
-          if (andResponse.conditionPass) {
-            response.passProperties.push(...andResponse.passProperties);
+          if (cond.conditionAnd.conditionPerItem) {
+            this.loggit.loggit('Checking condition per item in the AND');
+            this.loggit.loggit('Core Condition passes: ' + JSON.stringify(response.passItems));
+            this.loggit.loggit('And Condition passes: ' + JSON.stringify(andResponse.passItems));
+            //Condition passes if the same property passes in both this condition and in conditionAnd
+            response.passItems = response.passItems.filter(item => andResponse.passItems.includes(item));
+            this.loggit.loggit('Intersection of core and and Conditions: ' + JSON.stringify(response.passItems));
+            //Logic correct here? Fail will return items that do not pass both conditions. Items that pass one condition but not the other are lost.
+            response.failItems = response.failItems.filter(item => andResponse.failItems.includes(item));
+            response.conditionPass = response.passItems.length > 0;
+          } else {
+            response.conditionPass = response.conditionPass && andResponse.conditionPass;
+            response.passItems.push(...andResponse.passItems);
+            response.failItems.push(...andResponse.failItems);
           }
         }
       }
@@ -126,27 +150,88 @@ export class packageInventory {
   }
 
   private isConditionValid(cond) {
-  //TODO: Validate
-    return true;
+    this.loggit.loggit('Checking validity of Condition:' + JSON.stringify(cond));
+    let isValid = true;
+    let validOperators = ['always', 'never', 'exists', 'notexists', 'null', 'gt', 'gte', 'lt', 'lte', 'eq'];
+    let operatorsNeedCompare = ['gt', 'gte', 'lt', 'lte', 'eq'];
+    //Check Expiration
+    if (cond['expiration'] != undefined) {
+      const now = new Date().toJSON();
+      if (cond.expiration < now) {
+        this.loggit.loggit('Condition has expired. Expiration:' + cond.expiration);
+        isValid = false;
+      }
+    }
+    //Cannot have both conditionAnd and conditionOr properties
+    if (cond['conditionAnd'] != undefined && cond['conditionOr'] != undefined) {
+      this.loggit.loggit('Condition has both AND and OR sub conditions. Not OK');
+      isValid = false;
+    }
+    //Make sure Operator is valid
+    if (!validOperators.includes(cond['operator'])) {
+      this.loggit.loggit('Condition Operator is not valid: ' + cond['operator']);
+      isValid = false;
+    }
+    //Make sure Operators that require a comparitor have one
+    if (operatorsNeedCompare.includes(cond['operator']) && isNaN(cond['compare'])) {
+      this.loggit.loggit('Operator ' + cond['operator'] + ' requires a value to compare against. Compare:' + cond['compare']);
+      isValid = false;
+    }
+    return isValid;
   }
 
   private isRuleValid(rule) {
-  //TODO: Validate
-    return true;
+
+    return (rule['name'] != undefined &&
+      rule['label'] != undefined &&
+      rule['condition'] != undefined
+      //          && rule['metadataType'] != undefined
+      &&
+      (rule['resultTrue'] != undefined || rule['resultFalse'] != undefined))
   }
 
   public processRules(ruleSet) {
-    //Replaces   public checkRules(ruleSet) {
-      this.loggit.loggit('Checking Rules');
-      for (var rule of ruleSet) {
-        this.loggit.loggit('Checking rule: ' + rule.name);
-        if (!this.isRuleValid(rule)) {
-          this.loggit.loggit('Rule is invalid. Skipping it.');
-          continue;
-        }
-        
+    //Replaces   public checkRules(ruleSet) 
+    let results = [];
+    this.loggit.loggit('Checking Rules');
+    for (var rule of ruleSet) {
+      this.loggit.loggit('Checking rule: ' + rule.name);
+      if (!this.isRuleValid(rule)) {
+        this.loggit.loggit('Rule is invalid. Skipping it.');
+        continue;
       }
-  }
+      let conditionResult = this.checkCondition(rule.condition);
+      if (conditionResult.conditionPass && rule.resultTrue != undefined) {
+        let result = {};
+        //        result['metadataType'] = rule.metadataType;
+        result['label'] = rule.label;
+        result['message'] = rule.resultTrue.message;
+        if (rule.resultTrue.url != undefined) {
+          result['url'] = rule.resultTrue.url;
+        }
+        if (rule.resultTrue.showDetails) {
+          result['exceptions'] = conditionResult.passItems;
+        }
+        results.push(result);
+      }
+      if (!conditionResult.conditionPass && rule.resultFalse != undefined) {
+        let result = {};
+        //      result['metadataType'] = rule.metadataType;
+        result['label'] = rule.label;
+        result['message'] = rule.resultFalse.message;
+        if (rule.resultFalse.url != undefined) {
+          result['url'] = rule.resultTrue.url;
+        }
+        if (rule.resultFalse.showDetails) {
+          result['exceptions'] = conditionResult.failItems;
+        }
+        results.push(result);
+      }
+    }
+    return results;
+  };
+
+
 
   public getInstallationWarnings() {
     this.loggit.loggit('Getting Installation Warnings');
@@ -187,16 +272,16 @@ export class packageInventory {
   };
 
 
-  public getAlerts() {
+  public getAlertsDeprecated() {
     this.loggit.loggit('Getting Alerts');
     let alerts = [];
     const now = new Date().toJSON();
     for (var alertDef of alertRules) {
       this.loggit.loggit('Checking Relevance of alert: ' + JSON.stringify(alertDef));
       let exceptions = [];
-   /*   if ((alertDef.expiration > now) && this.getInventoryCountByMetadataType(alertDef['metadataType']) > 0) {
-        alerts.push(alertDef);
-      }*/
+      /*   if ((alertDef.expiration > now) && this.getInventoryCountByMetadataType(alertDef['metadataType']) > 0) {
+           alerts.push(alertDef);
+         }*/
       if (alertDef.expiration > now) {
         for (var count of this.getCountByMetadataType(alertDef['metadataType'])) {
           if (count.value > 0) {
@@ -205,16 +290,16 @@ export class packageInventory {
         }
         if (exceptions.length > 0) {
           alerts.push({
-              metadataType: alertDef.metadataType,
-              label: alertDef.label,
-              message: alertDef.message,
-              exceptions: exceptions,
-              url: alertDef.url
-            });
-         
+            metadataType: alertDef.metadataType,
+            label: alertDef.label,
+            message: alertDef.message,
+            exceptions: exceptions,
+            url: alertDef.url
+          });
+
         }
       }
-       
+
     }
     return alerts;
   };
@@ -232,15 +317,27 @@ export class packageInventory {
     return adoptionResult;
   }
 
+  public getAlerts() {
+    this.loggit.loggit('Checking Partner Alerts');
+    this.loggit.loggit('Using New Rules Engine');
+    return this.processRules(alertRulesNew);
+  }
+
   public getQualityRecommendations() {
     this.loggit.loggit('Checking Quality Recommendation Rules');
-    return this.checkRules(qualityRules);
+ //   return this.checkRules(qualityRules);
+    this.loggit.loggit('Using New Rules Engine');
+    return this.processRules(qualityRules);
   };
 
   public getEnablementMessages() {
     this.loggit.loggit('Checking Enablement Content Rules');
-    return this.checkRules(enablementRules)
+    //  return this.checkRules(enablementRules)
+    this.loggit.loggit('Using New Rules Engine');
+    return this.processRules(enablementRules);
   };
+
+
 
   public checkRules(ruleSet) {
     this.loggit.loggit('Diving into Rules');
@@ -339,8 +436,7 @@ export class packageInventory {
       this.loggit.loggit('Found a single result');
       if (mdCount.value == -1) {
         retVal = [];
-      }
-      else retVal.push(mdCount);
+      } else retVal.push(mdCount);
     }
     return retVal;
   };
@@ -362,6 +458,7 @@ export class packageInventory {
     if (topLevel === '*') {
       let retVal = [];
       this.loggit.loggit('Checking Wildcard');
+
       for (var topArray in mdObject) {
         let tmpArray = [topArray, ...mdArray];
 
@@ -373,7 +470,19 @@ export class packageInventory {
       return retVal;
     } else if (mdObject[topLevel] != undefined) {
       if (mdArray.length > 0) {
-        this.loggit.loggit('There are more components left. Recursing');
+        this.loggit.loggit('There are more components left.');
+        if (mdArray.length == 1 && mdArray[0] === '*') {
+          this.loggit.loggit('Last component is a wildcard. Peeking ahead');
+          //Check to see if the wildcard object has any values
+          if (Object.keys(mdObject[topLevel]).length == 0) {
+            this.loggit.loggit(` Component ${topLevel} is an empty object. We can stop here`);
+            return {
+              property: topLevel,
+              value: -1
+            };
+          } 
+        }
+        this.loggit.loggit('We can safely Recurse');
         this.loggit.loggit(`  ObjectKey: ${topLevel} ParamArray: ${mdArray}, Wildcard: ${wildcard}`);
         return this.traverseMetadata(mdArray, mdObject[topLevel], wildcard);
       } else {

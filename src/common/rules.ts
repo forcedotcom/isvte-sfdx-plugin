@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
- 
+
 /*
  Note about Thresholds:
  -recNeg fires if Count is less than or Equal to the threshold
@@ -18,44 +18,151 @@
 */
 const minAPI = 43;
 
-const rulesVersion = '20191023';
+const rulesVersion = '20200127';
 
 
 
-const enablementRulesNew = [
-  {
-  name: 'Flows',
-  label: 'Take Advantage of Flows',
-  condition: {
-    metadataType: 'Flow',
-    operator: 'notexists',
-  },
-  resultTrue: {
-    message: 'Flows are a powerful tool to enable forms based workflows and process automation to your users. See this webinar for more information.',
-    url: 'https://partners.salesforce.com/0693A000007S2Dq'
-  },
-  showDetails: false
-},
-{
-  name: 'Flow Templates',
-  label: 'Include your Flows as Templates',
-  condition: {
-    metadataType: 'Flow.FlowTemplate',
-    operator: 'notexists',
-    conditionAnd: {
-      processAlways: false,
+const enablementRules = [{
+    name: 'Flows',
+    label: 'Take Advantage of Flows',
+    condition: {
       metadataType: 'Flow',
+      operator: 'notexists',
+    },
+    resultTrue: {
+      message: 'Flows are a powerful tool to enable forms based workflows and process automation to your users. See this webinar for more information.',
+      url: 'https://partners.salesforce.com/0693A000007S2Dq'
+    },
+  },
+  {
+    name: 'Flow Templates',
+    label: 'Include your Flows as Templates',
+    condition: {
+      metadataType: 'Flow.FlowTemplate',
+      operator: 'notexists',
+      conditionAnd: {
+        processAlways: false,
+        metadataType: 'Flow',
+        operator: 'exists'
+      }
+    },
+    resultTrue: {
+      message: 'When packaging a Flow, consider using a Flow Template to allow your subscribers to modify the flow to suit their needs. For more information about Flow Templates see this blog post.',
+      url: 'https://medium.com/inside-the-salesforce-ecosystem/pre-built-business-processes-how-isvs-use-flow-templates-ddc9910ff93a'
+    },
+  },
+  {
+    name: 'Batch Apex',
+    label: 'Follow best practices for Batch Apex',
+    condition: {
+      metadataType: 'ApexClass.BatchApex',
       operator: 'exists'
+    },
+    resultTrue: {
+      message: 'For more information on Batch Apex Design patterns and how best to package Batch Apex, see this webinar.',
+      url: 'https://partners.salesforce.com/0693A000006aF9G',
+    },
+  },
+  {
+    name: 'In App Prompts',
+    label: 'Take Advantage of In-App Prompts',
+    condition: {
+      metadataType: 'Prompt',
+      operator: 'notexists'
+    },
+    resultTrue: {
+      message: 'For more information about how to use In-App Prompts to keep your users informed, see this blog.',
+      url: 'https://medium.com/inside-the-salesforce-ecosystem/in-app-prompts-for-isvs-e9b013969016'
+    },
+  },
+  {
+    name: 'Platform Cache',
+    label: 'Take Advantage of Platform Cache',
+    condition: {
+      metadataType: 'PlatformCachePartition',
+      operator: 'notexists'
+    },
+    resultTrue: {
+      message: 'Use Platform Cache to improve the performance of your application.',
+      url: 'https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_cache_namespace_overview.htm'
+    }
+  },
+  {
+    name: 'Custom Fields on Activity',
+    label: 'Be aware of limits on Custom Fields on Activity',
+    condition: {
+      metadataType: 'CustomField.objects.Activity',
+      operator: 'gte',
+      compare: 1
+    },
+    resultTrue: {
+      message: 'Please be aware that there is a hard limit of 100 fields on the Activity object including all managed and unmanaged fields. Your package will not install if this raises the number of fields on the Activity object past this threshold in your subscriber\'s org.'
+    }
+  },
+  {
+    name: 'Platform Events',
+    label: 'Be aware of Platform Events Best Practices',
+    condition: {
+      metadataType: 'PlatformEventChannel',
+      operator: 'exists'
+    },
+    resultTrue: {
+      message: 'For more information on Platform Events and how to use them within your application, see this webinar.',
+      url: 'https://partners.salesforce.com/partnerEvent?id=a033A00000GF5BPQA1'
+    }
+  },
+  {
+    name: 'Change Data Capture',
+    label: 'Be aware of Change Data Capture Best Practices',
+    condition: {
+      metadataType: 'PlatformEventChannelMember',
+      operator: 'exists'
+    },
+    resultTrue: {
+      message: 'For more information on Change Data Capture and how to use it in your application, please see this webinar.',
+      url: 'https://developer.salesforce.com/events/webinars/change-data-capture'
+    }
+  },
+  {
+    name: 'Aura Components',
+    label: 'Learn about migrating from Aura Web Components to Lightning Web Components',
+    condition: {
+      metadataType: 'AuraDefinitionBundle',
+      operator: 'exists',
+      conditionAnd: {
+        metadataType: 'LightningComponentBundle',
+        operator: 'notexists'
+      },
+    },
+    resultTrue: {
+      message: 'Lightning Web Components are the new Salesforce standard for Lightning Components featuring easier devlopment, better performance and standards compliance. For a decision matrix on whether you should be considering migrating to LWC see this blog.',
+      url: 'https://medium.com/inside-the-salesforce-ecosystem/lightning-web-components-an-isv-partner-digest-59d9191f3248'
+    }
+  },
+  {
+    name: 'Lightning Web Components',
+    label: 'Take advantage of Lightning Web Components',
+    condition: {
+      metadataType: 'LightningComponentBundle',
+      operator: 'notexists'
+    },
+    resultTrue: {
+      message: 'Find more information about how to leverage the power of LWC and for best practices, see this webinar.',
+      url: 'https://partners.salesforce.com/0693A000007Kd7oQAC'
+    }
+  },
+  {
+    name: 'Einstein Analytics Templates',
+    label: 'Learn about Einstein Analytics Template Bundles',
+    condition: {
+      metadataType: 'WaveTemplateBundle',
+      operator: 'exists'
+    },
+    resultTrue: {
+      message: 'For more information on Creating & Distributing Analytics Apps using Templates see this webinar.',
+      url: 'https://partners.salesforce.com/partnerEvent?id=a033A00000FYOQOQA5'
     }
   }
-  },
-  resultTrue: {
-    message: 'When packaging a Flow, consider using a Flow Template to allow your subscribers to modify the flow to suit their needs. For more information about Flow Templates see this blog post.',
-    url: 'https://medium.com/inside-the-salesforce-ecosystem/pre-built-business-processes-how-isvs-use-flow-templates-ddc9910ff93a'
-  },
-  showDetails: false
-},
-
 ];
 
 const mdTypes = [{
@@ -64,7 +171,7 @@ const mdTypes = [{
   },
   {
     name: 'Custom Profiles',
-    metadataType: 'Profile'    
+    metadataType: 'Profile'
   },
   {
     name: 'Custom Metadata',
@@ -208,7 +315,7 @@ const mdTypes = [{
   }
 ];
 
-const enablementRules = [{
+const enablementRulesOld = [{
     metadataType: 'Flow',
     label: 'Take Advantage of Flows',
     threshold: -1,
@@ -320,6 +427,162 @@ const enablementRules = [{
 ];
 
 const qualityRules = [{
+    name: 'Metadata API Version',
+    label: 'Using old Metadata API Version',
+    condition: {
+      metadataType: 'apiVersions.mdapi',
+      operator: 'exists',
+      conditionAnd: {
+        metadataType: 'apiVersions.mdapi',
+        operator: 'lt',
+        compare: minAPI
+      }
+    },
+    resultTrue: {
+      message: `You appear to be using a version of Metadata API less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
+    },
+  },
+  {
+    name: 'Apex API Version',
+    label: 'Using old Apex API Version',
+    condition: {
+      metadataType: 'apiVersions.ApexClass',
+      operator: 'exists',
+      conditionAnd: {
+        metadataType: 'apiVersions.ApexClass.*',
+        operator: 'lt',
+        compare: minAPI
+      }
+    },
+    resultTrue: {
+      message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
+      showDetails: true
+    }
+  },
+  {
+    name: 'Trigger API Version',
+    label: 'Using old Trigger API Version',
+    condition: {
+      metadataType: 'apiVersions.ApexTrigger',
+      operator: 'exists',
+      conditionAnd: {
+        metadataType: 'apiVersions.ApexTrigger.*',
+        operator: 'lt',
+        compare: minAPI
+      }
+    },
+    resultTrue: {
+      message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
+      showDetails: true
+    }
+  },
+  {
+    name: 'Aura Component API Version',
+    label: 'Using old Aura Component API Version',
+    condition: {
+      metadataType: 'apiVersions.AuraDefinitionBundle',
+      operator: 'exists',
+      conditionAnd: {
+        metadataType: 'apiVersions.AuraDefinitionBundle.*',
+        operator: 'lt',
+        compare: minAPI
+      }
+    },
+    resultTrue: {
+      message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
+      showDetails: true
+    }
+  },
+  {
+    name: 'LWC API Version',
+    label: 'Using old Lightning Web Component API Version',
+    condition: {
+      metadataType: 'apiVersions.LightningComponentBundle',
+      operator: 'exists',
+      conditionAnd: {
+        metadataType: 'apiVersions.LightningComponentBundle.*',
+        operator: 'lt',
+        compare: minAPI
+      }
+    },
+    resultTrue: {
+      message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
+      showDetails: true
+    }
+  },
+  {
+    name: 'Custom Object Description',
+    label: 'Custom Objects should have a description',
+    condition: {
+      metadataType: 'componentProperties.CustomObject.*.descriptionExists',
+      operator: 'notexists'
+    },
+    resultTrue: {
+      message: `It is a best practice that Custom Objects have a description.`,
+      showDetails: true
+    }
+  },
+  {
+    name: 'Custom Field Description',
+    label: 'Custom Fields should have a description',
+    condition: {
+      metadataType: 'componentProperties.CustomField.*.descriptionExists',
+      operator: 'exists'
+    },
+    resultFalse: {
+      message: `It is a best practice that Custom Fields have a description.`,
+      showDetails: true
+    }
+  },
+  {
+    name: 'Triggers per Object',
+    label: 'Multiple Triggers per Object',
+    condition: {
+      metadataType: 'ApexTrigger.objects.*',
+      operator: 'gt',
+      compare: 1
+    },
+    resultTrue: {
+      message: 'It is a best practice to have 1 trigger per object. Please check triggers on the objects below to see if you can use triggers and trigger handlers to reduce the number of triggers per object.',
+      showDetails: true
+    }
+  },
+  {
+    name: 'Process Builders per Object',
+    label: 'Multiple Process Builders per Object',
+    condition: {
+      metadataType: 'Flow.objects.*',
+      operator: 'gt',
+      compare: 1
+    },
+    resultTrue: {
+      message: 'It is a best best practice to have 1 record-change process per object. Please check Process Builders on the objects below to see if you can combine all processes into one.',
+      showDetails: true
+    }
+  },
+  {
+    name: 'Change Processes per Object',
+    label: 'Multiple Change Processes per Object',
+    condition: {
+      metadataType: 'ApexTrigger.objects.*',
+      operator: 'gte',
+      compare: 1,
+      conditionAnd: {
+        metadataType: 'Flow.objects.*',
+        operator: 'gte',
+        compare: 1,
+        conditionPerItem: true
+      },
+    },
+
+    resultTrue: {
+      message: 'It is a best best practice to have 1 record-change process per object. Avoid using both Triggers and Process Builders on the same object.',
+      showDetails: true
+    }
+  },
+];
+
+const qualityRulesOld = [{
     metadataType: 'apiVersions.mdapi',
     label: 'Using old Metadata API Version',
     threshold: minAPI,
@@ -392,7 +655,99 @@ const qualityRules = [{
     }
   },
 ];
-
+const alertRulesNew = [{
+    name: 'Alerts Signup',
+    label: 'Stay on Top of Alerts',
+    condition: {
+      metadataType: 'any',
+      operator: 'always'
+    },
+    resultTrue: {
+      message: 'Sign up here to be notified of all Partner Alerts',
+      url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000FtFWqQAN'
+    }
+  },
+  {
+    name: '@AuraEnabled Methods',
+    label: '@AuraEnabled Methods',
+    condition: {
+      metadataType: 'ApexClass.AuraEnabledCalls',
+      operator: 'exists',
+      expiration: '2020-10-01T00:00:00.000Z'
+    },
+    resultTrue: {
+      message: 'New Permissions Required to Access Apex Classes containing @AuraEnabled methods.',
+      url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000Fvo12QAB',  
+      showDetails: true
+    }    
+  },
+  {
+    name: 'Aura UI Namespace',
+    label: 'Aura Components in UI Namespace Retiring in Summer \'21',
+    condition: {
+      metadataType: 'componentProperties.AuraDefinitionBundle.*.namespaceReferences.ui',
+      operator: 'exists',
+      expiration: '2020-10-01T00:00:00.000Z'
+    },
+    resultTrue: {
+      message: 'In Summer \'21, Lightning Base Components in the ui namespace will be retired.',
+      url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GXNKsQAP',
+      showDetails: true
+    }
+  },
+  {
+    name: 'Custom Metadata Permissions',
+    label: 'Custom Metadata',
+    condition: {
+      metadataType: 'CustomMetadata',
+      operator: 'exists',
+      expiration: '2020-10-01T00:00:00.000Z'
+    },
+    resultTrue: {
+      message: 'New Permissions Required for Direct Read Access to Custom Metadata Types.',
+      url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GimUSQAZ',
+    }
+  },
+  {
+    name: 'Custom Settings Direct Read',
+    label: 'Custom Settings',
+    condition: {
+      metadataType: 'CustomSetting__c',
+      operator: 'exists',
+      expiration: '2020-10-01T00:00:00.000Z'
+    },
+    resultTrue: {
+      message: 'New Permissions Required for Direct Read Access to Custom Settings.',
+      url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GimQ6QAJ',
+    }
+  },
+  {
+    name: 'Territory 1 EOL',
+    label: 'Territory Management 1.0',
+    condition: {
+      metadataType: 'Territory',
+      operator: 'exists',
+      expiration: '2020-10-01T00:00:00.000Z'
+    },
+    resultTrue: {
+      message: 'Territory Management will be End of Life starting in Winter \'20. Please migrate to Territory Management 2.0.',
+      url: 'https://help.salesforce.com/articleView?id=000318370&type=1&mode=1',
+    }
+ },
+ {
+    name: 'RecordType Access',
+    label: 'Change to Record Type Access',
+    condition: {
+      metadataType: 'RecordType',
+      operator: 'exists',
+      expiration: '2020-22-01T00:00:00.000Z'
+    },
+    resultTrue: {
+      message: 'There have been changes to Record Type access in permission sets within Managed Packages for Winter \'20 in response to a Known Issue. Subscribers may need to upgrade your package to see this fix.',
+      url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GSdBoQAL',
+    }
+ },
+];
 const alertRules = [{
     metadataType: 'ApexClass.AuraEnabledCalls',
     label: '@AuraEnabled Methods',
@@ -506,7 +861,7 @@ const editionWarningRules = [{
         label: 'Sharing Rules',
         threshold: 0
       },
-      
+
     ]
   },
   {
@@ -521,112 +876,110 @@ const editionWarningRules = [{
         label: 'Report Types',
         threshold: 50
       },
-      
+
     ]
   },
   {
     name: 'Enterprise Edition',
-    blockingItems: [
-      {
-        metadataType: 'ReportType',
-        label: 'Custom Report Types',
-        threshold: 100
-      },
-    ]
+    blockingItems: [{
+      metadataType: 'ReportType',
+      label: 'Custom Report Types',
+      threshold: 100
+    }, ]
   },
 
 ];
 
 const techAdoptionRules = [
-  
+
   {
     metadataType: 'CustomObject',
     label: 'Custom Objects as Primary Data Store',
     threshold: 0,
-      recPos: {
-        score:10
-      } 
-    },
-    {
-      metadataType: 'CustomObject',
-      label: 'Custom Objects to Store and Process Data',
-      threshold: 0,
-        recPos: {
-          score:5
-        } 
-      },
-    {
-      metadataType: 'CustomObject.BigObject',
-      label: 'Big Objects to Store and Process Data',
-      threshold: 0,
-        recPos: {
-          score:5
-        } 
-      },
-      {
-        metadataType: 'PlatformEventChannelMember',
-        label: 'Change Data Capture for Processing Data',
-        threshold: 0,
-        recPos: {
-          score:5
-        } 
-      },
-      {
-        metadataType: 'LightningComponentBundle',
-        label: 'Lightning Web Components for User Experience',
-        threshold: 0,
-        recPos: {
-          score:10
-        } 
-      },
-      {
-        metadataType: 'AuraDefinitionBundle',
-        label: 'Aura Lightning Components for User Experience',
-        threshold: 0,
-        recPos: {
-          score:5
-        } 
-      },
-      {
-        metadataType: 'ApexPage',
-        label: 'Visualforce Pages for User Experience',
-        threshold: 0,
-        recPos: {
-          score:5
-        } 
-      },
-      {
-        metadataType: 'Flow.Workflow',
-        label: 'Process Builder for Application Processing',
-        threshold: 0,
-        recPos: {
-          score:5
-        } 
-      },
-      {
-        metadataType: 'Flow.Flow',
-        label: 'Flows for Data Processing',
-        threshold: 0,
-          recPos: {
-            score:10
-          } 
-        },
+    recPos: {
+      score: 10
+    }
+  },
+  {
+    metadataType: 'CustomObject',
+    label: 'Custom Objects to Store and Process Data',
+    threshold: 0,
+    recPos: {
+      score: 5
+    }
+  },
+  {
+    metadataType: 'CustomObject.BigObject',
+    label: 'Big Objects to Store and Process Data',
+    threshold: 0,
+    recPos: {
+      score: 5
+    }
+  },
+  {
+    metadataType: 'PlatformEventChannelMember',
+    label: 'Change Data Capture for Processing Data',
+    threshold: 0,
+    recPos: {
+      score: 5
+    }
+  },
+  {
+    metadataType: 'LightningComponentBundle',
+    label: 'Lightning Web Components for User Experience',
+    threshold: 0,
+    recPos: {
+      score: 10
+    }
+  },
+  {
+    metadataType: 'AuraDefinitionBundle',
+    label: 'Aura Lightning Components for User Experience',
+    threshold: 0,
+    recPos: {
+      score: 5
+    }
+  },
+  {
+    metadataType: 'ApexPage',
+    label: 'Visualforce Pages for User Experience',
+    threshold: 0,
+    recPos: {
+      score: 5
+    }
+  },
+  {
+    metadataType: 'Flow.Workflow',
+    label: 'Process Builder for Application Processing',
+    threshold: 0,
+    recPos: {
+      score: 5
+    }
+  },
+  {
+    metadataType: 'Flow.Flow',
+    label: 'Flows for Data Processing',
+    threshold: 0,
+    recPos: {
+      score: 10
+    }
+  },
   {
     metadataType: 'ApexClass',
     label: 'Apex for Data Processing',
     threshold: 0,
-      recPos: {
-        score:5
-      } 
-    },
-    {
-      metadataType: 'PlatformCachePartition',
-      label: 'Platform Cache for Processing Performance',
-      threshold: 0,
-        recPos: {
-          score:10
-        } 
-      },
+    recPos: {
+      score: 5
+    }
+  },
+  {
+    metadataType: 'PlatformCachePartition',
+    label: 'Platform Cache for Processing Performance',
+    threshold: 0,
+    recPos: {
+      score: 10
+    }
+  },
 ];
 
 export {
@@ -638,7 +991,7 @@ export {
   minAPI,
   techAdoptionRules,
   rulesVersion,
-  enablementRulesNew
+  alertRulesNew,
 };
 
 /*
@@ -656,27 +1009,27 @@ Feature Management!!!
     }
   },*/
 
-  /*
-        {
-        metadataType: 'CustomMetadata',
-        label: 'Custom Metadata',
-        requiresSR: true
-      },
+/*
       {
-        metadataType: 'ApexClass',
-        label: 'Apex',
-        threshold: 0,
-        requiresSR: true
-      },
-      {
-        metadataType: 'ApexClass.SchedulableApex',
-        label: 'Scheduled Apex',
-        threshold: 0,
-        requiresSR: true
-      },
-      {
-        metadataType: 'CustomObject',
-        label: 'Custom Objects',
-        threshold: 0,
-        requiresSR: true
-      },*/
+      metadataType: 'CustomMetadata',
+      label: 'Custom Metadata',
+      requiresSR: true
+    },
+    {
+      metadataType: 'ApexClass',
+      label: 'Apex',
+      threshold: 0,
+      requiresSR: true
+    },
+    {
+      metadataType: 'ApexClass.SchedulableApex',
+      label: 'Scheduled Apex',
+      threshold: 0,
+      requiresSR: true
+    },
+    {
+      metadataType: 'CustomObject',
+      label: 'Custom Objects',
+      threshold: 0,
+      requiresSR: true
+    },*/

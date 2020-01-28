@@ -144,8 +144,24 @@ For more information, please connect in the ISV Technical Enablement Plugin
         this.ux.table(inventoryArray, ['Metadata Type', 'count']);
         this.ux.log('\n');
       }
+
+
       if (!this.suppressEnablement) {
         let recommendations = this.packageInventory.getEnablementMessages();
+        if (recommendations.length > 0) {
+          this.ux.styledHeader('Best Practices and Feature Recommendations:');
+          for (var recommendation of recommendations) {
+            let message = `${recommendation.label}:\n${recommendation.message}\n`;
+            if (recommendation.url != undefined) {
+              message += `URL:${recommendation.url}\n`;
+            }
+            if (recommendation.exceptions != undefined && recommendation.exceptions.length >0) {
+              message += `Components: ${recommendation.exceptions.join(', ')}\n`;
+            }
+            this.ux.log(message);
+          }
+        }
+   /*     let recommendations = this.packageInventory.getEnablementMessages();
         if (recommendations.length > 0) {
           this.ux.styledHeader('Best Practices and Feature Recommendations:');
           for (var recommendation of recommendations) {
@@ -157,10 +173,27 @@ For more information, please connect in the ISV Technical Enablement Plugin
           }
           this.ux.log('\n');
         }
+        */
       }
 
       if (!this.suppressQuality) {
-        let notes = this.packageInventory.getQualityRecommendations().filter(element => {
+//TODO: suppress API is not used
+        let recommendations = this.packageInventory.getQualityRecommendations();
+        if (recommendations.length > 0) {
+          this.ux.styledHeader('Quality Rules:');
+          for (var recommendation of recommendations) {
+            let message = `${recommendation.label}:\n${recommendation.message}\n`;
+            if (recommendation.url != undefined) {
+              message += `URL:${recommendation.url}\n`;
+            }
+            if (recommendation.exceptions != undefined && recommendation.exceptions.length >0) {
+              message += `Components: ${recommendation.exceptions.join(', ')}\n`;
+            }
+            this.ux.log(message);
+          }
+        }
+        
+ /*       let notes = this.packageInventory.getQualityRecommendations().filter(element => {
           return (!this.suppressAPI || element.metadataType.split('.')[0] !== 'apiVersions');
         });
         if (notes.length > 0) {
@@ -173,11 +206,24 @@ For more information, please connect in the ISV Technical Enablement Plugin
               this.ux.log(`${note.label}:\n${note.message}\nComponents: ${note.exceptions.join(', ')}\n`);
             }
           }
-        }
-
+        }*/
       }
       if (!this.suppressAlerts) {
-        let alerts = this.packageInventory.getAlerts();
+        let recommendations = this.packageInventory.getAlertsNew();
+        if (recommendations.length > 0) {
+          this.ux.styledHeader('Partner Alerts:');
+          for (var recommendation of recommendations) {
+            let message = `${recommendation.label}:\n${recommendation.message}\n`;
+            if (recommendation.url != undefined) {
+              message += `URL:${recommendation.url}\n`;
+            }
+            if (recommendation.exceptions != undefined && recommendation.exceptions.length >0) {
+              message += `Components: ${recommendation.exceptions.join(', ')}\n`;
+            }
+            this.ux.log(message);
+          }
+        }
+       /* let alerts = this.packageInventory.getAlerts();
         this.ux.styledHeader('Partner Alerts:');
           this.ux.log('Sign up here to be notified of all Partner Alerts: \nURL:https://partners.salesforce.com/partnerAlert?id=a033A00000FtFWqQAN\n');
         if (alerts.length > 0) {
@@ -187,6 +233,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
           }
           this.ux.log('\n');
         }
+*/      
       }
       if (!this.suppressWarnings) {
         this.ux.styledHeader('Installation Warnings:');
@@ -216,10 +263,24 @@ For more information, please connect in the ISV Technical Enablement Plugin
         }
       }
 
+     this.ux.styledHeader('New Rules Engine!!!!');
+      for (var recommendation of this.packageInventory.getAlertsNew()) {
+        let message = `${recommendation.label}:\n${recommendation.message}\n`;
+        if (recommendation.url != undefined) {
+          message += `URL:${recommendation.url}\n`;
+        }
+        if (recommendation.exceptions != undefined && recommendation.exceptions.length >0) {
+          message += `Components: ${recommendation.exceptions.join(', ')}\n`;
+        }
+        this.ux.log(message);
+        }
+
+      
+
       // this.ux.log(this.packageInventory.getInstallationWarnings());
     }
 
-    return this.packageInventory.getJSONOutput();
+   // return this.packageInventory.getJSONOutput();
 
   }
 
