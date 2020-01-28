@@ -891,95 +891,82 @@ const editionWarningRules = [{
 ];
 
 const techAdoptionRules = [
-
   {
-    metadataType: 'CustomObject',
-    label: 'Custom Objects as Primary Data Store',
-    threshold: 0,
-    recPos: {
-      score: 10
-    }
+    categoryName: 'DataStore',
+    categoryLabel: 'Which platform technology does your application use as its primary data store?',
+    items: [
+      {
+        metadataType: 'CustomObject',
+        label: 'Custom Objects'
+      }
+    ]
   },
   {
-    metadataType: 'CustomObject',
-    label: 'Custom Objects to Store and Process Data',
-    threshold: 0,
-    recPos: {
-      score: 5
-    }
+    categoryName: 'DataProcess',
+    categoryLabel: 'Which other platform technologies does your application use to process and store data?',
+    items: [
+      {
+        metadataType: 'CustomObject',
+        label: 'Custom Objects'
+      },
+      {
+        metadataType: 'CustomObject.BigObject',
+        label: 'Big Objects'
+      },
+      {
+        metadataType: 'PlatformEvent__c',
+        label: 'Platform Events'     
+      },
+      {
+        metadataType: 'PlatformEventChannel',
+        label: 'Change Data Capture'     
+      }
+    ]
   },
   {
-    metadataType: 'CustomObject.BigObject',
-    label: 'Big Objects to Store and Process Data',
-    threshold: 0,
-    recPos: {
-      score: 5
-    }
+    categoryName: 'UX',
+    categoryLabel: 'Which user interface technologies does your application use to deliver the end-user experience?',
+    items: [
+      {
+        metadataType: 'LightningComponentBundle',
+        label: 'Lightning Web Components',
+      },
+      {
+        metadataType: 'AuraDefinitionBundle',
+        label: 'Aura Lightning Components',
+      },
+      {
+        metadataType: 'ApexPage',
+        label: 'Visualforce Pages',
+      }
+    ]
   },
   {
-    metadataType: 'PlatformEventChannelMember',
-    label: 'Change Data Capture for Processing Data',
-    threshold: 0,
-    recPos: {
-      score: 5
-    }
-  },
-  {
-    metadataType: 'LightningComponentBundle',
-    label: 'Lightning Web Components for User Experience',
-    threshold: 0,
-    recPos: {
-      score: 10
-    }
-  },
-  {
-    metadataType: 'AuraDefinitionBundle',
-    label: 'Aura Lightning Components for User Experience',
-    threshold: 0,
-    recPos: {
-      score: 5
-    }
-  },
-  {
-    metadataType: 'ApexPage',
-    label: 'Visualforce Pages for User Experience',
-    threshold: 0,
-    recPos: {
-      score: 5
-    }
-  },
-  {
-    metadataType: 'Flow.Workflow',
-    label: 'Process Builder for Application Processing',
-    threshold: 0,
-    recPos: {
-      score: 5
-    }
-  },
-  {
-    metadataType: 'Flow.Flow',
-    label: 'Flows for Data Processing',
-    threshold: 0,
-    recPos: {
-      score: 10
-    }
-  },
-  {
-    metadataType: 'ApexClass',
-    label: 'Apex for Data Processing',
-    threshold: 0,
-    recPos: {
-      score: 5
-    }
-  },
-  {
-    metadataType: 'PlatformCachePartition',
-    label: 'Platform Cache for Processing Performance',
-    threshold: 0,
-    recPos: {
-      score: 10
-    }
-  },
+    categoryName: 'ApplicationProcessing',
+    categoryLabel: 'Which technologies does your app use for application processing and security?',
+    items: [
+      {
+        metadataType: 'Flow.Workflow',
+        label: 'Process Builder',
+      },
+      {
+        metadataType: 'Flow.Flow',
+        label: 'Screen Flows',
+      },
+      {
+        metadataType: 'Flow.AutoLaunchedFlow',
+        label: 'Autolaunched Flows',
+      },
+      {
+        metadataType: 'ApexClass',
+        label: 'Apex',
+      },
+      {
+        metadataType: 'PlatformCachePartition',
+        label: 'Platform Cache',
+      }
+    ]
+  }
 ];
 
 export {

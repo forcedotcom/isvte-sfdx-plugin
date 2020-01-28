@@ -23,6 +23,9 @@ import {
 import {
   minAPI
 } from '../../common/rules';
+import {
+  mdmap
+} from '../../common/mdmap';
 
 
 
@@ -255,11 +258,13 @@ For more information, please connect in the ISV Technical Enablement Plugin
       }
 
       if (!this.suppressAdoptionScore) {
-        this.ux.styledHeader('Technology Adoption Score:');
-        let adoptionScore = this.packageInventory.getTechAdoptionScore();
-        this.ux.log('Tech Adoption Score: ' + adoptionScore.score);
-        for (var detail of adoptionScore.details) {
-          this.ux.log(`Metadata Type: ${detail.label}, Value: ${detail.score}\n`);
+        this.ux.styledHeader('Technology Adoption:');
+        for (var category of this.packageInventory.getTechAdoptionScore()) {
+          this.ux.log(`${category.categoryLabel}\n`);
+          for (var item of category.items) {
+            this.ux.log(`   ${item.label}: ${item.isIncluded ? 'Found' : 'Not Found'}`)
+          }
+          this.ux.log('\n');
         }
       }
 
@@ -274,23 +279,12 @@ For more information, please connect in the ISV Technical Enablement Plugin
         }
         this.ux.log(message);
         }
-
-      
-
-      // this.ux.log(this.packageInventory.getInstallationWarnings());
     }
 
-   // return this.packageInventory.getJSONOutput();
+    return this.packageInventory.getJSONOutput();
 
   }
-
-  // private checkPackage(p) {
-
-  //   this.loggit.loggit('-Getting Inventory');
-  //   this.packageInventory.setMetadata(this.inventoryPackage(p));
-  //  // this.packageInventory.setAPIVersion(parseFloat(p.version[0]));
-  // }
-
+  
   private inventoryPackage(p) {
     let types = p.types;
     let inventory = {};
@@ -304,16 +298,19 @@ For more information, please connect in the ISV Technical Enablement Plugin
       let typeInv = {};
 
       typeInv['index'] = typeIdx;
-      typeInv['count'] = types[typeIdx]['members'].length;
-
+      
       this.loggit.loggit('Checking MetadataType: ' + metadataType);
-      this.loggit.loggit('  Found ' + types[typeIdx]['members'].length + ' members');
-      this.loggit.loggit('Members: ' + JSON.stringify(types[typeIdx]['members']));
+
       //Check for wildcard members
       if (types[typeIdx]['members'].includes('*')) {
         this.loggit.loggit('Found Wildcard Members');
         types[typeIdx]['members'] = this.getMembers(types[typeIdx]);
       }
+      typeInv['count'] = types[typeIdx]['members'].length;
+
+      this.loggit.loggit('  Found ' + types[typeIdx]['members'].length + ' members');
+      this.loggit.loggit('Members: ' + JSON.stringify(types[typeIdx]['members']));
+
       switch (String(metadataType)) {
         case 'CustomField':
           //Do per object field counts
@@ -452,25 +449,12 @@ For more information, please connect in the ISV Technical Enablement Plugin
           //Check for Flow Templates
 
           this.loggit.loggit('Checking flows');
-          // let flowTemplate = {count:0};
 
-          // const flowPath = `${this.flags.sourcefolder}/flows`;
-          // for (var flowIdx in types[typeIdx]['members']) {
-          //   let flowName = types[typeIdx]['members'][flowIdx];
-          //   let flowXml = `${flowPath}/${flowName}.flow`;
-          //   let flowJSON = this.parseXML(flowXml)['Flow'];
-          //   if (flowJSON['isTemplate'] && flowJSON['isTemplate'][0] === 'true') {
-          //     flowTemplate['count']++;
-          //   }
-          // }
-          // inventory['FlowTemplate__c'] = flowTemplate;
           let templateCount = 0;
           let screenTemplateCount = 0;
           let autolaunchedTemplateCount = 0;
           let objects = {};
-          //let autolaunchCount = 0;
-          //let processBuilderCount = 0;
-          //let screenFlowCount = 0;
+
           const flowPath = `${this.flags.sourcefolder}/flows`;
           for (var flowIdx in types[typeIdx]['members']) {
             let flowName = types[typeIdx]['members'][flowIdx];
@@ -556,8 +540,6 @@ For more information, please connect in the ISV Technical Enablement Plugin
                   classicConsoleCount++;
                 }
               }
-              //<uiType>Lightning</uiType>
-              //<navType>Console</navType>
             }
           }
           typeInv['LightingAppCount'] = lightningCount;
@@ -706,11 +688,8 @@ For more information, please connect in the ISV Technical Enablement Plugin
               }
             }
           }
-          //  this.loggit(triggerInv,'JSON');
           typeInv['objects'] = triggerInv;
           typeInv['AsyncTrigger'] = asyncCount;
-          //inventory['AsyncTrigger__c'] = asyncTrigger;
-
           break;
         case 'LightningComponentBundle':
           this.loggit.loggit('Interrogating LWC');
@@ -827,11 +806,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
     //Check Person Accounts
     let pafile = `${this.flags.sourcefolder}/objects/PersonAccount.object`;
-    //let paType = {
-    //  count: 0
-    //};
-
-    if (fs.existsSync(pafile)) {
+      if (fs.existsSync(pafile)) {
       //paType['count'] = 1;
       inventory['PersonAccount__c'] = {
         count: 1
@@ -844,20 +819,15 @@ For more information, please connect in the ISV Technical Enablement Plugin
   }
 
   private getMembers(mdTypeDef) {
-    this.loggit.loggit('Getting wildcard members')
-    //  this.loggit(mdTypeDef, 'json');
-    switch (String(mdTypeDef['name'])) {
-      case 'ApexClass':
-        return this.getMembersFromFiles('classes', 'cls');
-      case 'CustomObject':
-        return this.getMembersFromFiles('objects', 'object');
-      case 'CustomObject':
-        return this.getMembersFromFiles('objects', 'object');
-      case 'CustomObject':
-        return this.getMembersFromFiles('objects', 'object');
-      default:
-        return mdTypeDef['members'];
+    this.loggit.loggit('Getting wildcard members for ' + mdTypeDef.name) ;
+    let retVal = mdTypeDef['members'];
+    if (mdmap[mdTypeDef.name] != undefined) {
+      if (mdmap[mdTypeDef.name]['folder'] != 'null' && mdmap[mdTypeDef.name]['extension'] != 'null') {
+        retVal = this.getMembersFromFiles(mdmap[mdTypeDef.name]['folder'], mdmap[mdTypeDef.name]['extension']);
+//        this.loggit.loggit("Added Members from files.:" + JSON.stringify(retVal));
+      }
     }
+   return retVal;
   }
 
   private getMembersFromFiles(folder, extension) {
@@ -876,12 +846,12 @@ For more information, please connect in the ISV Technical Enablement Plugin
       if (ext === extension) {
         members.push(fileName);
       }
-      return members;
     });
 
     this.loggit.loggit('Found Members: ' + JSON.stringify(members));
+    return members;
   }
-
+  
   private getMatches(searchString, regex) {
     let matches = [];
     let match;

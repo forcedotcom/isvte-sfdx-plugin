@@ -55,7 +55,7 @@ export class packageInventory {
     }
     if (cond.metadataType != undefined) {
       this.loggit.loggit('Checking Condition Metadata type:' + cond.metadataType);
-      let mdTypeCount = this.getCountByMetadataType2(cond.metadataType);
+      let mdTypeCount = this.getCountByMetadataType(cond.metadataType);
       if (mdTypeCount.length == 0) {
         this.loggit.loggit('Checking Condition. empty response receieved. We should not end up here');
         mdTypeCount.push({
@@ -304,18 +304,21 @@ export class packageInventory {
     return alerts;
   };
 */
-  public getTechAdoptionScore() {
-    this.loggit.loggit('Checking Tech Adoption Score');
-    let adoptionResult = {};
-    adoptionResult['score'] = 0
-    adoptionResult['details'] = this.checkRules(techAdoptionRules);
-    for (var detail of adoptionResult['details']) {
-      if (detail['score'] != undefined) {
-        adoptionResult['score'] += detail['score'];
+public getTechAdoptionScore() {
+  this.loggit.loggit('Checking Tech Adoption Score');
+  let adoptionResult = [...techAdoptionRules];
+  for (var adoptionCategory of adoptionResult) {
+    for (var item of adoptionCategory.items) {
+      item['isIncluded'] = false;
+      for (var counts of this.getCountByMetadataType(item.metadataType)) {
+        if (counts.value > 0) {
+          item['isIncluded'] = true;
+        }
       }
     }
-    return adoptionResult;
   }
+  return adoptionResult;
+}
 
   public getAlerts() {
     this.loggit.loggit('Checking Partner Alerts');
@@ -338,7 +341,7 @@ export class packageInventory {
   };
 
 
-
+/*
   public checkRules(ruleSet) {
     this.loggit.loggit('Diving into Rules');
     let recomendations = [];
@@ -409,7 +412,9 @@ export class packageInventory {
     return recomendations;
   };
 
-  public getCountByMetadataType2(metadataType) {
+  */
+
+  public getCountByMetadataType(metadataType) {
     this.loggit.loggit('getCountByMetadataType - Getting Count of Metadata by type: ' + metadataType);
     let mdDefArray = metadataType.split('.');
     let retVal = [];
@@ -424,6 +429,7 @@ export class packageInventory {
     return retVal;
   };
 
+  /*
   public getCountByMetadataType(metadataType) {
     this.loggit.loggit('getCountByMetadataType - Getting Count of Metadata by type: ' + metadataType);
     let mdDefArray = metadataType.split('.');
@@ -440,7 +446,7 @@ export class packageInventory {
     }
     return retVal;
   };
-
+*/
   public traverseMetadata(mdArray, mdObject, wildcard = '') {
     //  Recurses through mdArray -- a sequential list of properties to navigate down the object, mdObject
     //
