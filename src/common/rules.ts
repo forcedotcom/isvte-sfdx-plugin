@@ -18,7 +18,7 @@
 */
 const minAPI = 43;
 
-const rulesVersion = '20191023';
+const rulesVersion = '20200116';
 
 const mdTypes = [{
     name: 'Permission Sets',
@@ -269,6 +269,15 @@ const enablementRules = [{
       url: 'https://partners.salesforce.com/partnerEvent?id=a033A00000FYOQOQA5'
     }
   },
+  {
+    metadataType: 'Report',
+    label: 'Learn about Einstein Analytics Template Bundles',
+    threshold: 0,
+    recPos: {
+      message: 'For more information on Creating & Distributing Analytics Apps using Templates see this webinar.',
+      url: 'https://partners.salesforce.com/partnerEvent?id=a033A00000FYOQOQA5'
+    }
+  },
 
 ];
 
@@ -490,6 +499,84 @@ const editionWarningRules = [{
 
 ];
 
+const techAdoptionRules = [
+  {
+    categoryName: 'DataStore',
+    categoryLabel: 'Which platform technology does your application use as its primary data store?',
+    items: [
+      {
+        metadataType: 'CustomObject',
+        label: 'Custom Objects'
+      }
+    ]
+  },
+  {
+    categoryName: 'DataProcess',
+    categoryLabel: 'Which other platform technologies does your application use to process and store data?',
+    items: [
+      {
+        metadataType: 'CustomObject',
+        label: 'Custom Objects'
+      },
+      {
+        metadataType: 'CustomObject.BigObject',
+        label: 'Big Objects'
+      },
+      {
+        metadataType: 'PlatformEvent__c',
+        label: 'Platform Events'     
+      },
+      {
+        metadataType: 'PlatformEventChannel',
+        label: 'Change Data Capture'     
+      }
+    ]
+  },
+  {
+    categoryName: 'UX',
+    categoryLabel: 'Which user interface technologies does your application use to deliver the end-user experience?',
+    items: [
+      {
+        metadataType: 'LightningComponentBundle',
+        label: 'Lightning Web Components',
+      },
+      {
+        metadataType: 'AuraDefinitionBundle',
+        label: 'Aura Lightning Components',
+      },
+      {
+        metadataType: 'ApexPage',
+        label: 'Visualforce Pages',
+      }
+    ]
+  },
+  {
+    categoryName: 'ApplicationProcessing',
+    categoryLabel: 'Which technologies does your app use for application processing and security?',
+    items: [
+      {
+        metadataType: 'Flow.Workflow',
+        label: 'Process Builder',
+      },
+      {
+        metadataType: 'Flow.Flow',
+        label: 'Screen Flows',
+      },
+      {
+        metadataType: 'Flow.AutoLaunchedFlow',
+        label: 'Autolaunched Flows',
+      },
+      {
+        metadataType: 'ApexClass',
+        label: 'Apex',
+      },
+      {
+        metadataType: 'PlatformCachePartition',
+        label: 'Platform Cache',
+      }
+    ]
+  }
+];
 
 export {
   mdTypes,
@@ -498,6 +585,7 @@ export {
   alertRules,
   qualityRules,
   minAPI,
+  techAdoptionRules,
   rulesVersion
 };
 

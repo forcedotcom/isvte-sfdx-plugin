@@ -10,7 +10,8 @@ import {
   enablementRules,
   qualityRules,
   alertRules,
-  minAPI
+  minAPI,
+  techAdoptionRules
 } from './rules';
 import {
   loggit
@@ -109,6 +110,22 @@ export class packageInventory {
     return alerts;
   };
 
+  public getTechAdoptionScore() {
+    this.loggit.loggit('Checking Tech Adoption Score');
+    let adoptionResult = [...techAdoptionRules];
+    for (var adoptionCategory of adoptionResult) {
+      for (var item of adoptionCategory.items) {
+        item['isIncluded'] = false;
+        for (var counts of this.getCountByMetadataType(item.metadataType)) {
+          if (counts.value > 0) {
+            item['isIncluded'] = true;
+          }
+        }
+      }
+    }
+    return adoptionResult;
+  }
+
   public getQualityRecommendations() {
     this.loggit.loggit('Checking Quality Recommendation Rules');
     return this.checkRules(qualityRules);
@@ -140,7 +157,8 @@ export class packageInventory {
             metadataType: ruleDef.metadataType,
             label: ruleDef['label'],
             message: ruleDef['recNeg']['message'],
-            url: ruleDef['recNeg']['url']
+            url: ruleDef['recNeg']['url'],
+            score: ruleDef['recNeg']['score']
           });
         } else {
           for (var count of counts) {
@@ -156,7 +174,8 @@ export class packageInventory {
               label: ruleDef['label'],
               message: ruleDef['recNeg']['message'],
               'exceptions': exceptions,
-              url: ruleDef['recNeg']['url']
+              url: ruleDef['recNeg']['url'],
+              score: ruleDef['recNeg']['score']
             });
           }
         }
@@ -177,7 +196,8 @@ export class packageInventory {
             label: ruleDef['label'],
             message: ruleDef['recPos']['message'],
             'exceptions': exceptions,
-            url: ruleDef['recPos']['url']
+            url: ruleDef['recPos']['url'],
+            score: ruleDef['recPos']['score']
           });
         }
       }
@@ -315,6 +335,7 @@ export class packageInventory {
     retVal['CodeQualityNotes'] = this.getQualityRecommendations();
     retVal['InstallationWarnings'] = this.getInstallationWarnings();
     retVal['Alerts'] = this.getAlerts();
+    retVal['AdoptionScore'] = this.getTechAdoptionScore();
     return retVal;
   };
 
