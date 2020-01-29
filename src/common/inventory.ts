@@ -12,7 +12,7 @@ import {
   alertRules,
   minAPI,
   techAdoptionRules,
-  
+
 } from './rules';
 import {
   loggit
@@ -25,6 +25,12 @@ export class packageInventory {
   private _mdMonitoredInvArray;
   private loggit;
   private _minAPI = minAPI;
+  private _enablementMessages;
+  private _alerts;
+  private _installationWarnings;
+  private _qualityRules;
+  private _techAdoption;
+
 
   public constructor() {
     this.loggit = new loggit('isvtePlugin:PackageInventory');
@@ -235,184 +241,93 @@ export class packageInventory {
 
   public getInstallationWarnings() {
     this.loggit.loggit('Getting Installation Warnings');
-    let warnings = [];
-    for (var edition of editionWarningRules) {
-      this.loggit.loggit('Checking Edition Rule:' + JSON.stringify(edition));
-      let editionBlock = [];
-      for (var blockingType of edition['blockingItems']) {
-        this.loggit.loggit('Checking Blocing Item: ' + JSON.stringify(blockingType));
-        if (this.getInventoryCountByMetadataType(blockingType['metadataType']) > blockingType['threshold']) {
-          if (blockingType['requiresSR']) {
-            editionBlock.push({
-              metadataType: blockingType['metadataType'],
-              label: blockingType['label'],
-              requiresSR: blockingType['requiresSR'],
-              threshold: blockingType['threshold'],
-              count: this.getInventoryCountByMetadataType(blockingType['metadataType'])
-            });
-          } else {
-            editionBlock.push({
-              metadataType: blockingType['metadataType'],
-              label: blockingType['label'],
-              threshold: blockingType['threshold'],
-              count: this.getInventoryCountByMetadataType(blockingType['metadataType'])
-            });
+    if (!this._installationWarnings) {
+      this.loggit.loggit('Results not cached.');
+      this._installationWarnings = [];
+      for (var edition of editionWarningRules) {
+        this.loggit.loggit('Checking Edition Rule:' + JSON.stringify(edition));
+        let editionBlock = [];
+        for (var blockingType of edition['blockingItems']) {
+          this.loggit.loggit('Checking Blocing Item: ' + JSON.stringify(blockingType));
+          if (this.getInventoryCountByMetadataType(blockingType['metadataType']) > blockingType['threshold']) {
+            if (blockingType['requiresSR']) {
+              editionBlock.push({
+                metadataType: blockingType['metadataType'],
+                label: blockingType['label'],
+                requiresSR: blockingType['requiresSR'],
+                threshold: blockingType['threshold'],
+                count: this.getInventoryCountByMetadataType(blockingType['metadataType'])
+              });
+            } else {
+              editionBlock.push({
+                metadataType: blockingType['metadataType'],
+                label: blockingType['label'],
+                threshold: blockingType['threshold'],
+                count: this.getInventoryCountByMetadataType(blockingType['metadataType'])
+              });
+            }
           }
         }
-      }
-      if (editionBlock.length > 0) {
-        this.loggit.loggit('Blocks Found for edition ' + edition['name']);
-        warnings.push({
-          'edition': edition['name'],
-          blockingItems: editionBlock
-        });
-      }
-    }
-    return warnings;
-  };
-
-
- /* public getAlertsDeprecated() {
-    this.loggit.loggit('Getting Alerts');
-    let alerts = [];
-    const now = new Date().toJSON();
-    for (var alertDef of alertRules) {
-      this.loggit.loggit('Checking Relevance of alert: ' + JSON.stringify(alertDef));
-      let exceptions = [];
-      /*   if ((alertDef.expiration > now) && this.getInventoryCountByMetadataType(alertDef['metadataType']) > 0) {
-           alerts.push(alertDef);
-         }*/
-   /*   if (alertDef.expiration > now) {
-        for (var count of this.getCountByMetadataType(alertDef['metadataType'])) {
-          if (count.value > 0) {
-            exceptions.push(count.property);
-          }
-        }
-        if (exceptions.length > 0) {
-          alerts.push({
-            metadataType: alertDef.metadataType,
-            label: alertDef.label,
-            message: alertDef.message,
-            exceptions: exceptions,
-            url: alertDef.url
+        if (editionBlock.length > 0) {
+          this.loggit.loggit('Blocks Found for edition ' + edition['name']);
+          this._installationWarnings.push({
+            'edition': edition['name'],
+            blockingItems: editionBlock
           });
-
         }
       }
-
     }
-    return alerts;
+    return this._installationWarnings;
   };
-*/
-public getTechAdoptionScore() {
-  this.loggit.loggit('Checking Tech Adoption Score');
-  let adoptionResult = [...techAdoptionRules];
-  for (var adoptionCategory of adoptionResult) {
-    for (var item of adoptionCategory.items) {
-      item['isIncluded'] = false;
-      for (var counts of this.getCountByMetadataType(item.metadataType)) {
-        if (counts.value > 0) {
-          item['isIncluded'] = true;
+
+  public getTechAdoptionScore() {
+    this.loggit.loggit('Checking Tech Adoption Score');
+    if (!this._techAdoption) {
+      this.loggit.loggit('Results not Cached');
+    
+    this._techAdoption = [...techAdoptionRules];
+    for (var adoptionCategory of this._techAdoption) {
+      for (var item of adoptionCategory.items) {
+        item['isIncluded'] = false;
+        for (var counts of this.getCountByMetadataType(item.metadataType)) {
+          if (counts.value > 0) {
+            item['isIncluded'] = true;
+          }
         }
       }
     }
   }
-  return adoptionResult;
-}
+    return this._techAdoption;
+  }
 
   public getAlerts() {
     this.loggit.loggit('Checking Partner Alerts');
-    this.loggit.loggit('Using New Rules Engine');
-    return this.processRules(alertRules);
+    if (!this._alerts) {
+      this.loggit.loggit('Results not Cached. Using New Rules Engine');
+      this._alerts = this.processRules(alertRules);
+    }
+    return this._alerts;
   }
 
   public getQualityRecommendations() {
     this.loggit.loggit('Checking Quality Recommendation Rules');
- //   return this.checkRules(qualityRules);
-    this.loggit.loggit('Using New Rules Engine');
-    return this.processRules(qualityRules);
+    //   return this.checkRules(qualityRules);
+    if (!this._qualityRules) {
+      this.loggit.loggit('Results not Cached. Using New Rules Engine');
+      this._qualityRules = this.processRules(qualityRules);
+    }
+    return this._qualityRules;
   };
 
   public getEnablementMessages() {
     this.loggit.loggit('Checking Enablement Content Rules');
     //  return this.checkRules(enablementRules)
-    this.loggit.loggit('Using New Rules Engine');
-    return this.processRules(enablementRules);
-  };
-
-
-/*
-  public checkRules(ruleSet) {
-    this.loggit.loggit('Diving into Rules');
-    let recomendations = [];
-    for (var ruleDef of ruleSet) {
-      this.loggit.loggit('Rule: ' + JSON.stringify(ruleDef));
-      let threshold = ruleDef.threshold;
-      if (ruleDef.metadataType.split('.')[0] == 'apiVersions') {
-        this.loggit.loggit('-------Checking an API type rule');
-        threshold = this._minAPI;
-      }
-      this.loggit.loggit('Threshold is: ' + threshold);
-      let counts = this.getCountByMetadataType(ruleDef.metadataType);
-      this.loggit.loggit('Counts: ' + JSON.stringify(counts));
-      if (ruleDef.recNeg) {
-        let exceptions = [];
-        if (counts.length == 0 && threshold == -1) {
-          this.loggit.loggit('No results found and Threshold is -1. Pushing Negative exception');
-          recomendations.push({
-            metadataType: ruleDef.metadataType,
-            label: ruleDef['label'],
-            message: ruleDef['recNeg']['message'],
-            url: ruleDef['recNeg']['url'],
-            score: ruleDef['recNeg']['score']
-          });
-        } else {
-          for (var count of counts) {
-            this.loggit.loggit(`Comparing count: ${count.value} against threshold ${threshold}`);
-            if (count.value <= threshold) {
-              this.loggit.loggit(`Property Name: ${count.property} count ${count.value} is less than ${threshold}`);
-              exceptions.push(count.property);
-            }
-          }
-          if (exceptions.length > 0) {
-            recomendations.push({
-              metadataType: ruleDef.metadataType,
-              label: ruleDef['label'],
-              message: ruleDef['recNeg']['message'],
-              'exceptions': exceptions,
-              url: ruleDef['recNeg']['url'],
-              score: ruleDef['recNeg']['score']
-            });
-          }
-        }
-      }
-      if (ruleDef.recPos) {
-        let exceptions = [];
-        for (var count of counts) {
-          this.loggit.loggit(`Comparing count: ${count.value} against threshold ${threshold}`);
-          if (count.value > threshold) {
-            this.loggit.loggit(`Property Name: ${count.property} count ${count.value} is greater than ${threshold}`);
-
-            exceptions.push(count.property);
-          }
-        }
-        if (exceptions.length > 0) {
-          recomendations.push({
-            metadataType: ruleDef.metadataType,
-            label: ruleDef['label'],
-            message: ruleDef['recPos']['message'],
-            'exceptions': exceptions,
-            url: ruleDef['recPos']['url'],
-            score: ruleDef['recPos']['score']
-          });
-        }
-      }
+    if (!this._enablementMessages) {
+      this.loggit.loggit('Results not Cached. Using New Rules Engine');
+      this._enablementMessages = this.processRules(enablementRules);
     }
-    this.loggit.loggit('Final Recommendations: ' + JSON.stringify(recomendations));
-    return recomendations;
+    return this._enablementMessages;
   };
-
-  */
 
   public getCountByMetadataType(metadataType) {
     this.loggit.loggit('getCountByMetadataType - Getting Count of Metadata by type: ' + metadataType);
@@ -429,24 +344,6 @@ public getTechAdoptionScore() {
     return retVal;
   };
 
-  /*
-  public getCountByMetadataType(metadataType) {
-    this.loggit.loggit('getCountByMetadataType - Getting Count of Metadata by type: ' + metadataType);
-    let mdDefArray = metadataType.split('.');
-    let retVal = [];
-    let mdCount = this.traverseMetadata(mdDefArray, this._mdInv);
-    if (Array.isArray(mdCount)) {
-      this.loggit.loggit('Found an Array of results. We must have passed a wildcard search');
-      retVal = mdCount;
-    } else {
-      this.loggit.loggit('Found a single result');
-      if (mdCount.value == -1) {
-        retVal = [];
-      } else retVal.push(mdCount);
-    }
-    return retVal;
-  };
-*/
   public traverseMetadata(mdArray, mdObject, wildcard = '') {
     //  Recurses through mdArray -- a sequential list of properties to navigate down the object, mdObject
     //
@@ -486,7 +383,7 @@ public getTechAdoptionScore() {
               property: topLevel,
               value: -1
             };
-          } 
+          }
         }
         this.loggit.loggit('We can safely Recurse');
         this.loggit.loggit(`  ObjectKey: ${topLevel} ParamArray: ${mdArray}, Wildcard: ${wildcard}`);
@@ -495,10 +392,19 @@ public getTechAdoptionScore() {
         this.loggit.loggit('This is last portion. Looking for value');
         let count = undefined;
         if (isNaN(mdObject[topLevel])) {
-          this.loggit.loggit(`${mdObject[topLevel]} is not a number. Checking .count`);
+          this.loggit.loggit(`${JSON.stringify(mdObject[topLevel])} is not a number.`);
           if (mdObject[topLevel]['count'] != undefined && isFinite(mdObject[topLevel]['count'])) {
+            this.loggit.loggit('')
             count = mdObject[topLevel]['count'];
-          } else {
+          } else if (mdObject[topLevel] === Object(mdObject[topLevel])) {
+            //if it's an object, return the number of keys
+            this.loggit.loggit(`${topLevel} appears to be an object. Returning count of keys`);
+            count = Object.keys(mdObject[topLevel]).length;
+          } else if (Array.isArray(mdObject[topLevel])) {
+            this.loggit.loggit(`${topLevel} appears to be an array. Returning array count`);
+            count = mdObject[topLevel].length;
+          }
+          else {
             this.loggit.loggit(' Cannot find a valid number returning empty object');
             return {};
           }

@@ -268,17 +268,6 @@ For more information, please connect in the ISV Technical Enablement Plugin
         }
       }
 
-     this.ux.styledHeader('New Rules Engine!!!!');
-      for (var recommendation of this.packageInventory.getAlerts()) {
-        let message = `${recommendation.label}:\n${recommendation.message}\n`;
-        if (recommendation.url != undefined) {
-          message += `URL:${recommendation.url}\n`;
-        }
-        if (recommendation.exceptions != undefined && recommendation.exceptions.length >0) {
-          message += `Components: ${recommendation.exceptions.join(', ')}\n`;
-        }
-        this.ux.log(message);
-        }
     }
 
     return this.packageInventory.getJSONOutput();
