@@ -26,14 +26,17 @@ import {
 import {
   mdmap
 } from '../../common/mdmap';
-
-
-
+import *
+  as util
+  from 'util'
+import ExecuteFilterMetadatas
+  from 'sfdx-essentials/lib/commands/essentials/filter-metadatas';
 
 export default class mdscan extends SfdxCommand {
 
   private showFullInventory = false;
   private sourceFolder = '';
+  private sfdxPackageXml: string;
   private suppressZeroInv = false;
   private suppressAllInv = false;
   private suppressEnablement = false;
@@ -44,12 +47,17 @@ export default class mdscan extends SfdxCommand {
   private suppressAdoptionScore = false;
   private loggit;
   private packageInventory;
+  private sfdxConvertFolder = './tmp/mdapi';
+  private sfdxConvertFolderFilter = './tmp/mdapiFiltered';
 
   public static description = 'scan a package and provide recommendations based on package inventory';
 
   public static examples = [
     `Scan a package and provide inventory of monitored metadata items and enablement messages:
 \t$sfdx isvte:mdscan -d ./mdapi
+
+Scan a package using a SFDX project and a package.xml file:
+\t$sfdx isvte:mdscan -d ./force-app/main/default -p ./config/package.xml
 
 Scan a package and provide a complete inventory of package metadata:
 \t$sfdx isvte:mdscan -d ./mdapi -y
@@ -72,6 +80,10 @@ For more information, please connect in the ISV Technical Enablement Plugin
       description: 'directory containing package metadata',
       default: 'mdapiout'
     }),
+    sfdxpackagexml: flags.string({
+      char: 'p',
+      description: 'path to a package.xml file if current folder is a SFDX Project'
+    }),
     showfullinventory: flags.boolean({
       char: 'y',
       description: 'show package inventory only'
@@ -88,12 +100,13 @@ For more information, please connect in the ISV Technical Enablement Plugin
   };
 
 
-  public async run(): Promise < any > { // tslint:disable-line:no-any
+  public async run(): Promise<any> { // tslint:disable-line:no-any
 
     this.loggit = new loggit('isvtePlugin');
 
     this.showFullInventory = this.flags.showfullinventory;
     this.sourceFolder = this.flags.sourcefolder;
+    this.sfdxPackageXml = this.flags.sfdxpackagexml;
 
     //Check Suppress Flags
     if (this.flags.suppress) {
@@ -114,6 +127,40 @@ For more information, please connect in the ISV Technical Enablement Plugin
       throw new SfdxError(`Source Folder ${this.sourceFolder} does not exist`, 'SourceNotExistError');
     }
 
+    // If argument packageXml is sent, convert SFDX project into metadatas folder then filter it 
+    if (this.sfdxPackageXml) {
+      const exec = util.promisify(require('child_process').exec);
+
+      try {
+        // force:source:convert in a temporary folder
+        const sfdxConvertCommand = `sfdx force:source:convert -d ${this.sfdxConvertFolder} --json -r ${(this.sourceFolder != mdscan.flagsConfig.sourcefolder.default) ? this.sourceFolder : '.'}`;
+        this.loggit.loggit(`Converting ${this.sourceFolder} into metadata...`);
+        const { stderr } = await exec(sfdxConvertCommand);
+        if (stderr) {
+          throw new SfdxError(`Unable to convert ${this.sourceFolder} to metadatas`, 'ConversionToMetadataError');
+        }
+        else {
+          this.loggit.loggit(`Converted ${this.sourceFolder} into metadata`);
+        }
+
+        // Filter metadatas folder using package.xml
+        await ExecuteFilterMetadatas.run([
+          '-i', this.sfdxConvertFolder,
+          '-o', this.sfdxConvertFolderFilter,
+          '-p', this.sfdxPackageXml]);
+        this.sourceFolder = this.sfdxConvertFolderFilter; // Set filtered mdapi folder as sourceFolder 
+      }
+      catch (e) {
+        throw e;
+      }
+      // Remove filtered metadata folder if existing
+      if (fs.existsSync(this.sfdxConvertFolder)) {
+        fs.removeSync(this.sfdxConvertFolder);
+      }
+    }
+
+    // Process MD Scan
+
     const packagexml = `${this.sourceFolder}/package.xml`;
 
     let packageJSON = this.parseXML(packagexml, true);
@@ -127,7 +174,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
     this.loggit.loggit('Parsing Package');
     this.packageInventory = new packageInventory();
-    
+
     if (this.flags.minapi) {
       this.loggit.loggit(`Setting Minimum API version for quality checks to ${this.flags.minapi}`);
       this.packageInventory.setMinAPI(this.flags.minapi);
@@ -182,7 +229,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
       if (!this.suppressAlerts) {
         let alerts = this.packageInventory.getAlerts();
         this.ux.styledHeader('Partner Alerts:');
-          this.ux.log('Sign up here to be notified of all Partner Alerts: \nURL:https://partners.salesforce.com/partnerAlert?id=a033A00000FtFWqQAN\n');
+        this.ux.log('Sign up here to be notified of all Partner Alerts: \nURL:https://partners.salesforce.com/partnerAlert?id=a033A00000FtFWqQAN\n');
         if (alerts.length > 0) {
 
           for (var alert of alerts) {
@@ -223,7 +270,15 @@ For more information, please connect in the ISV Technical Enablement Plugin
       // this.ux.log(this.packageInventory.getInstallationWarnings());
     }
 
-    return this.packageInventory.getJSONOutput();
+    // Get MdScan JSON Output
+    const outputRes = this.packageInventory.getJSONOutput();
+
+    // Remove filtered metadata folder if existing
+    if (fs.existsSync(this.sfdxConvertFolderFilter)) {
+      fs.removeSync(this.sfdxConvertFolderFilter);
+    }
+
+    return outputRes;
 
   }
 
@@ -256,7 +311,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
       if (types[typeIdx]['members'].includes('*')) {
         this.loggit.loggit('Found Wildcard Members');
         types[typeIdx]['members'] = this.getMembers(types[typeIdx]);
-//        this.loggit.loggit('Members: ' + JSON.stringify(types[typeIdx]['members']));
+        //        this.loggit.loggit('Members: ' + JSON.stringify(types[typeIdx]['members']));
       }
       typeInv['count'] = types[typeIdx]['members'].length;
 
@@ -288,7 +343,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
             }
 
             //Check field descriptions
-             //Only check custom fields or standard fields on custom objects, not standard
+            //Only check custom fields or standard fields on custom objects, not standard
             if (objectType == 'Custom' || objectType == 'External' || fieldName.slice(-3) == '__c') {
               const objectPath = `${this.flags.sourcefolder}/objects`;
               let objectXml = `${objectPath}/${objectName}.object`;
@@ -639,7 +694,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
                 };
               }
             }
-            
+
             let triggerMetaFile = `${triggerPath}/${triggerName}.trigger-meta.xml`;
             if (fs.existsSync(triggerMetaFile)) {
               let triggerMetaJSON = this.parseXML(triggerMetaFile);
@@ -733,10 +788,10 @@ For more information, please connect in the ISV Technical Enablement Plugin
             if (fs.existsSync(auraCmpFile)) {
 
               let auraBody = fs.readFileSync(auraCmpFile, 'utf8');
-              
+
               const componentsReg = /<(\w+:\w+)/ig;
               this.loggit.loggit('Performing Regex search against component');
-              let referencedComponents = this.getMatches(auraBody,componentsReg);
+              let referencedComponents = this.getMatches(auraBody, componentsReg);
               if (referencedComponents.length > 0) {
                 this.loggit.loggit(`Found the following Components: ${JSON.stringify(referencedComponents)}`);
                 if (componentProperties['AuraDefinitionBundle'] == undefined) {
@@ -749,7 +804,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
                   componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'] = {};
                 }
                 referencedComponents.forEach(element => {
-                  let ns = element.split(":",2)[0];
+                  let ns = element.split(":", 2)[0];
                   if (componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] == undefined) {
                     componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] = 1;
                   }
@@ -758,7 +813,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
                   }
                 });
 
-                
+
               }
             }
             else {
@@ -790,15 +845,15 @@ For more information, please connect in the ISV Technical Enablement Plugin
   }
 
   private getMembers(mdTypeDef) {
-    this.loggit.loggit('Getting wildcard members for ' + mdTypeDef.name) ;
+    this.loggit.loggit('Getting wildcard members for ' + mdTypeDef.name);
     let retVal = mdTypeDef['members'];
     if (mdmap[mdTypeDef.name] != undefined) {
       if (mdmap[mdTypeDef.name]['folder'] != 'null' && mdmap[mdTypeDef.name]['extension'] != 'null') {
         retVal = this.getMembersFromFiles(mdmap[mdTypeDef.name]['folder'], mdmap[mdTypeDef.name]['extension']);
-//        this.loggit.loggit("Added Members from files.:" + JSON.stringify(retVal));
+        //        this.loggit.loggit("Added Members from files.:" + JSON.stringify(retVal));
       }
     }
-   return retVal;
+    return retVal;
   }
 
   private getMembersFromFiles(folder, extension) {
