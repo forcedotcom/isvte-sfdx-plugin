@@ -852,7 +852,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
       }
     }
 
-    let xmlData = fs.readFileSync(xmlfile, 'ascii');
+    let xmlData = fs.readFileSync(xmlfile, 'utf8');
     parser.parseString(xmlData.substring(0, xmlData.length), function (err, result) {
       error = err;
       json = result;
