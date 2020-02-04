@@ -19,6 +19,11 @@ This plugin is not digitally signed and its authenticity cannot be verified. Con
 
 To whitelist this plugin, [add an entry for it in $HOME/.config/sfdx/unsignedPluginWhiteList.json](https://developer.salesforce.com/blogs/2017/10/salesforce-dx-cli-plugin-update.html).
 
+CI Users: As the plugin is not signed, to install it from a Dockerfile or a script:
+```
+    echo 'y' | sfdx plugins:install isvte-sfdx-plugin
+```
+
 ### **Install from source**
 1. Clone the repository
 ```  
