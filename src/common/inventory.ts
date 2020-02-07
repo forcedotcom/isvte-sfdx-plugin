@@ -38,8 +38,7 @@ export class packageInventory {
   };
 
   public setMinAPI(newAPIVersion) {
-    //set this to be just below the minimum because recNeg uses less than or equal. We just want less than for API checks 
-    this._minAPI = newAPIVersion - .01;
+    this._minAPI = newAPIVersion;
   };
 
   public setMetadata(md) {
@@ -59,8 +58,6 @@ export class packageInventory {
       this.loggit.loggit('Condition is not valid. Returning false')
       return response;
     }
-    if (cond.metadataType != undefined) {
-      this.loggit.loggit('Checking Condition Metadata type:' + cond.metadataType);
       let mdTypeCount = this.getCountByMetadataType(cond.metadataType);
       if (mdTypeCount.length == 0) {
         this.loggit.loggit('Checking Condition. empty response receieved. We should not end up here');
@@ -69,13 +66,28 @@ export class packageInventory {
           value: -1
         });
       }
-      let compare = cond.metadataType.split('.')[0] == 'apiVersions' ? this._minAPI : cond.compare;
+      //replace string 'minAPI' in operand with the minumum API specified
+      if (Array.isArray(cond.operand)) {
+        for (let i = 0; i < cond.operand.length; i++) {
+          if (cond.operand[i] === 'minAPI') {
+            this.loggit.loggit('Replacing minAPI placeholder with ' + this._minAPI);
+            cond.operand[i] = this._minAPI;
+          }
+        }
+      }
+      else {
+        if (cond.operand === 'minAPI') {
+          this.loggit.loggit('Replacing minAPI placeholder with ' + this._minAPI);
+
+          cond.operand = this._minAPI;
+        }
+      }
 
       for (var itemCount of mdTypeCount) {
         this.loggit.loggit('Validating item:' + itemCount.property);
         this.loggit.loggit('  Value:' + itemCount.value);
         this.loggit.loggit('  Operator:' + cond.operator);
-        this.loggit.loggit('  CompareTo:' + compare);
+        this.loggit.loggit('  CompareTo:' + cond.operand);
         let itemPass = false;
         switch (cond.operator) {
           case 'always':
@@ -94,20 +106,24 @@ export class packageInventory {
             itemPass = itemCount.value < 0;
             break;
           case 'gt':
-            itemPass = compare < itemCount.value;
+            itemPass = cond.operand < itemCount.value;
             break;
           case 'gte':
-            itemPass = compare <= itemCount.value;
+            itemPass = cond.operand <= itemCount.value;
             break;
           case 'lt':
-            itemPass = compare > itemCount.value;
+            itemPass = cond.operand > itemCount.value;
             break;
           case 'lte':
-            itemPass = compare >= itemCount.value;
+            itemPass = cond.operand >= itemCount.value;
             break;
           case 'eq':
-            itemPass = compare == itemCount.value;
+            itemPass = cond.operand == itemCount.value;
             break;
+          case 'between':
+            //Not inclusive
+            itemPass = (cond.operand[0] < itemCount.value) && (cond.operand[1] > itemCount.value);
+            break; 
         }
         if (itemPass) {
           this.loggit.loggit('    Condition Passed');
@@ -151,15 +167,16 @@ export class packageInventory {
           }
         }
       }
-    }
+    
     return response;
   }
 
   private isConditionValid(cond) {
     this.loggit.loggit('Checking validity of Condition:' + JSON.stringify(cond));
     let isValid = true;
-    let validOperators = ['always', 'never', 'exists', 'notexists', 'null', 'gt', 'gte', 'lt', 'lte', 'eq'];
-    let operatorsNeedCompare = ['gt', 'gte', 'lt', 'lte', 'eq'];
+    let validOperators = ['always', 'never', 'exists', 'notexists', 'null', 'gt', 'gte', 'lt', 'lte', 'eq','between'];
+    let operatorsNeedOperand = ['gt', 'gte', 'lt', 'lte', 'eq'];
+    
     //Check Expiration
     if (cond['expiration'] != undefined) {
       const now = new Date().toJSON();
@@ -179,12 +196,30 @@ export class packageInventory {
       isValid = false;
     }
     //Make sure Operators that require a comparitor have one
-    if (operatorsNeedCompare.includes(cond['operator']) && isNaN(cond['compare'])) {
-      this.loggit.loggit('Operator ' + cond['operator'] + ' requires a value to compare against. Compare:' + cond['compare']);
+    if (operatorsNeedOperand.includes(cond['operator']) && isNaN(cond['operand'])) {
+      this.loggit.loggit('Operator ' + cond['operator'] + ' requires a value to operate against. Operand:' + JSON.stringify(cond['operand']));
+      isValid = false;
+    }
+
+    //Make sure 'between' has 2 operands and that the first is the lowest
+    if (cond.operator === 'between') {
+      if (Array.isArray(cond.operand) && cond.operand.length == 2) {
+        cond.operand.sort();
+      }
+      else {
+        this.loggit.loggit('Operator ' + cond['operator'] + ' requires 2 operands');
+        isValid = false;
+      }
+    }
+
+    //We need a metadata type unless operator is always or never
+    if ((cond.operator != 'always' && cond.operator != 'never') && cond.metadataType == undefined) {
+      this.loggit.loggit('Operator ' + cond['operator'] + ' requires a metadataType');
       isValid = false;
     }
     return isValid;
   }
+
 
   private isRuleValid(rule) {
 
@@ -237,9 +272,33 @@ export class packageInventory {
     return results;
   };
 
-
-
   public getInstallationWarnings() {
+    this.loggit.loggit('Getting Installation Warnings New Ruleset');
+    let installWarnings = [];
+    for (var edition of editionWarningRules) {
+      this.loggit.loggit('Checking Edition rule: ' + JSON.stringify(edition));
+      let editionBlock = [];
+      for (var blockingItem of edition.blockingItems) {
+        this.loggit.loggit('Checking item:' + JSON.stringify(blockingItem));
+        let result = this.checkCondition(blockingItem.condition);
+        if (result.conditionPass) {
+          editionBlock.push({
+            label: blockingItem.label,
+
+          })
+        }
+      }
+      if (editionBlock.length > 0) {
+        installWarnings.push( {
+          'edition': edition.name,
+          blockingItems: editionBlock
+        });
+      }
+    }
+    return installWarnings;
+  };
+
+  public getInstallationWarningsDeprecated() {
     this.loggit.loggit('Getting Installation Warnings');
     if (!this._installationWarnings) {
       this.loggit.loggit('Results not cached.');

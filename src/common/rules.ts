@@ -7,22 +7,126 @@
 
 
 /*
- Note about Thresholds:
- -recNeg fires if Count is less than or Equal to the threshold
- -recPos fires if Count is greater than threshold
- -if threshold is -1 recNeg fires if count is zero OR undefined
- -if threshold is 0 recNeg fires if count is zero, but not if it is undefined
- e.g
-   If Flows are not found, then no subchecks are done on flow types (screen flow, autolaunched flow, flow template, etc) so FlowTemplate count will be undefined
-   But, if Flows are found and there are no Flow templates, then FlowTemplate count will be 0
+Rules explained:
+ruleSet = [rule,rule,...]
+
+rule = {
+  name: The Rule Name
+  label: Friendly output to display when rule is triggered (This should probably move into the result section)
+  condition: ruleCondition
+  resultTrue: result 
+  resultFalse: result
+}
+
+If condition resolves to True, then resultTrue is fired. If Condition resolves to false, then resultFalse is fired.
+a rule must have a name, a label and a condition. AlertRules, EnablementRules and QualityRules must have  a resultTrue and/or a resultFalse
+
+ruleCondition = {
+  metadataType: The Metadata Type to query
+  operator: One of: ['always', 'never', 'exists', 'notexists', 'null', 'gt', 'gte', 'lt', 'lte', 'eq','between']
+  operand: value that operator works on.
+  expiration: dateTime
+  processAlways: boolean (only within a conditionOr OR a conditionAnd)
+  conditionPerItem: boolean (only within a conditionAnd)
+  conditionOr: ruleCondition
+  conditionAnd: ruleCondition
+}
+
+A ruleCondition must have an operator
+If operator is anything other than 'always' or 'never' then ruleCondition must have an operand and a metadataType
+If operator is 'between', then operand must be a 2 element array noting the bounds of the between (non inclusive)
+ruleCondition cannot have both a conditionAnd AND a conditionOR, but both are optional
+
+OR:
+If conditionOr exists, then the result is an OR of the result of the main condition and the conditionOr condition
+If processAlways is true within the conditionOr, then conditionOr will be evaluated even if the main condition is already true
+
+AND:
+If conditionAnd exists then the resuls is an AND of the result of the main condition and the conditionAnd condition
+If process Always is true within the conditionAnd, then conditionAnd will be evaluated even if the main condition is already false.
+If conditionPerItem is true within the conditionAnd, then the ultimate result is based on the union of items which pass each side of the condition
+  e.g.:
+    condition: {
+      metadataType: 'ApexTrigger.objects.*',
+      operator: 'gte',
+      operand: 1,
+      conditionAnd: {
+        metadataType: 'Flow.objects.*',
+        operator: 'gte',
+        operand: 1,
+      },
+    },
+    the above condition will resolve to true if there is any object with an apex trigger and if there is any object with a process builder trigger
+
+    If the condition looks like:
+    condition: {
+      metadataType: 'ApexTrigger.objects.*',
+      operator: 'gte',
+      operand: 1,
+      conditionAnd: {
+        metadataType: 'Flow.objects.*',
+        operator: 'gte',
+        operand: 1,
+        conditionPerItem: true
+      },
+    },
+    the condition will resolve to true if any object has both an apex trigger and a process builder trigger.
+   
+result = {
+  message: Text to display
+  url: link to content
+  showDetails: boolean
+}
+A result must have a message
+if showDetails is true, then the individual components which pass the condition are included in the result 
+e.g the first will output just the message. The second will output the message as well as each individual class with and API version that meets the criteria
+{
+    name: 'Metadata API Version',
+    label: 'Using old Metadata API Version',
+    condition: {
+      metadataType: 'apiVersions.mdapi',
+      operator: 'between',
+      operand: [20,'minAPI'],
+    },
+    resultTrue: {
+      message: `You appear to be using a version of Metadata API less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
+    },
+  },
+  {
+    name: 'Apex API Version',
+    label: 'Using old Apex API Version',
+    condition: {
+      metadataType: 'apiVersions.ApexClass.*',
+      operator: 'between',
+      operand: [20,'minAPI'],
+    },
+    resultTrue: {
+      message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
+      showDetails: true
+    }
+  },
 */
+
+
 const minAPI = 43;
 
-const rulesVersion = '20200127';
+const rulesVersion = '20200204';
 
 
 
 const enablementRules = [{
+    name: 'ISV Technical Success Center',
+    label: 'Visit the ISV Technical Success Center',
+    condition: {
+        metadataType: 'any',
+        operator: 'always'
+    },
+    resultTrue: {
+      message: 'For more resources to help build a successful app, visit the ISV Technical Success Center on the Partner Community',
+      url: 'http://p.force.com/TECenter'
+    }
+  },
+  {
     name: 'Flows',
     label: 'Take Advantage of Flows',
     condition: {
@@ -93,7 +197,7 @@ const enablementRules = [{
     condition: {
       metadataType: 'CustomField.objects.Activity',
       operator: 'gte',
-      compare: 1
+      operand: 1
     },
     resultTrue: {
       message: 'Please be aware that there is a hard limit of 100 fields on the Activity object including all managed and unmanaged fields. Your package will not install if this raises the number of fields on the Activity object past this threshold in your subscriber\'s org.'
@@ -322,12 +426,8 @@ const qualityRules = [{
     label: 'Using old Metadata API Version',
     condition: {
       metadataType: 'apiVersions.mdapi',
-      operator: 'exists',
-      conditionAnd: {
-        metadataType: 'apiVersions.mdapi',
-        operator: 'lt',
-        compare: minAPI
-      }
+      operator: 'between',
+      operand: [20,'minAPI'],
     },
     resultTrue: {
       message: `You appear to be using a version of Metadata API less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
@@ -337,13 +437,9 @@ const qualityRules = [{
     name: 'Apex API Version',
     label: 'Using old Apex API Version',
     condition: {
-      metadataType: 'apiVersions.ApexClass',
-      operator: 'exists',
-      conditionAnd: {
-        metadataType: 'apiVersions.ApexClass.*',
-        operator: 'lt',
-        compare: minAPI
-      }
+      metadataType: 'apiVersions.ApexClass.*',
+      operator: 'between',
+      operand: [20,'minAPI'],
     },
     resultTrue: {
       message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
@@ -354,13 +450,9 @@ const qualityRules = [{
     name: 'Trigger API Version',
     label: 'Using old Trigger API Version',
     condition: {
-      metadataType: 'apiVersions.ApexTrigger',
-      operator: 'exists',
-      conditionAnd: {
-        metadataType: 'apiVersions.ApexTrigger.*',
-        operator: 'lt',
-        compare: minAPI
-      }
+      metadataType: 'apiVersions.ApexTrigger.*',
+      operator: 'between',
+      operand: [20,'minAPI'],
     },
     resultTrue: {
       message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
@@ -371,13 +463,9 @@ const qualityRules = [{
     name: 'Aura Component API Version',
     label: 'Using old Aura Component API Version',
     condition: {
-      metadataType: 'apiVersions.AuraDefinitionBundle',
-      operator: 'exists',
-      conditionAnd: {
-        metadataType: 'apiVersions.AuraDefinitionBundle.*',
-        operator: 'lt',
-        compare: minAPI
-      }
+      metadataType: 'apiVersions.AuraDefinitionBundle.*',
+      operator: 'between',
+      operand: [20,'minAPI'],
     },
     resultTrue: {
       message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
@@ -388,13 +476,9 @@ const qualityRules = [{
     name: 'LWC API Version',
     label: 'Using old Lightning Web Component API Version',
     condition: {
-      metadataType: 'apiVersions.LightningComponentBundle',
-      operator: 'exists',
-      conditionAnd: {
-        metadataType: 'apiVersions.LightningComponentBundle.*',
-        operator: 'lt',
-        compare: minAPI
-      }
+      metadataType: 'apiVersions.LightningComponentBundle.*',
+      operator: 'between',
+      operand: [20,'minAPI'],
     },
     resultTrue: {
       message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
@@ -431,7 +515,7 @@ const qualityRules = [{
     condition: {
       metadataType: 'ApexTrigger.objects.*',
       operator: 'gt',
-      compare: 1
+      operand: 1
     },
     resultTrue: {
       message: 'It is a best practice to have 1 trigger per object. Please check triggers on the objects below to see if you can use triggers and trigger handlers to reduce the number of triggers per object.',
@@ -444,7 +528,7 @@ const qualityRules = [{
     condition: {
       metadataType: 'Flow.objects.*',
       operator: 'gt',
-      compare: 1
+      operand: 1
     },
     resultTrue: {
       message: 'It is a best best practice to have 1 record-change process per object. Please check Process Builders on the objects below to see if you can combine all processes into one.',
@@ -457,11 +541,11 @@ const qualityRules = [{
     condition: {
       metadataType: 'ApexTrigger.objects.*',
       operator: 'gte',
-      compare: 1,
+      operand: 1,
       conditionAnd: {
         metadataType: 'Flow.objects.*',
         operator: 'gte',
-        compare: 1,
+        operand: 1,
         conditionPerItem: true
       },
     },
@@ -567,7 +651,135 @@ const alertRules = [{
     }
  },
 ];
+
 const editionWarningRules = [{
+  name: 'Essentials',
+  blockingItems: [{
+      label: 'Record Types',
+      condition: {
+        metadataType: 'RecordType',
+        operator: 'exists'  
+      }
+    },
+    {
+      label: 'Person Accounts',
+      condition: {
+        metadataType: 'PersonAccount__c',
+        operator: 'exists'
+      }
+    },
+    {
+      label: 'Classes with Invocable Apex',
+      condition: {
+        metadataType: 'ApexClass.InvocableApex',
+        operator: 'exists'
+      }
+    },
+    {
+      label: 'Platform Events',
+      condition: {
+        metadataType: 'PlatformEventChannel',
+        operator: 'exists'
+      }
+    },
+    {
+      label: 'Custom Profiles',
+      condition: {
+        metadataType: 'Profile',
+        operator: 'exists'  
+      }
+    },
+    {
+      label: 'Sharing Rules',
+      condition: {
+        metadataType: 'SharingRules',
+        operator: 'exists'  
+      }
+    },
+
+  ]
+},
+{
+  name: 'Group Edition',
+  blockingItems: [{
+      label: 'Record Types',
+      condition: {
+        metadataType: 'RecordType',
+        operator: 'exists'  
+      }
+    },
+    {
+      label: 'Person Accounts',
+      condition: {
+        metadataType: 'PersonAccount__c',
+        operator: 'exists'
+      }
+    },
+    {
+      label: 'Custom Report Types',
+      condition: {
+        metadataType: 'ReportType',
+        operator: 'exists'  
+      }
+    },
+    {
+      label: 'Classes with SOAP Apex Web Services',
+      condition: {
+        metadataType: 'ApexClass.ApexSoap',
+        operator: 'exists'  
+      }
+    },
+    {
+      label: 'Custom Profiles',
+      condition: {
+        metadataType: 'Profile',
+        operator: 'exists'  
+      }
+    },
+    {
+      label: 'Sharing Rules',
+      condition: {
+        metadataType: 'SharingRules',
+        operator: 'exists'  
+      }
+    },
+  ]
+},
+{
+  name: 'Professional Edition',
+  blockingItems: [{
+    label: 'Classes with SOAP Apex Web Services',
+    condition: {
+      metadataType: 'ApexClass.ApexSoap',
+      operator: 'exists'  
+    }
+    },
+    {
+      label: 'Custom Report Types',
+      condition: {
+        metadataType: 'ReportType',
+        operator: 'gt',
+        operand: 50 
+      }
+    },
+  ]
+},
+{
+  name: 'Enterprise Edition',
+  blockingItems: [{
+    label: 'Custom Report Types',
+    condition: {
+      metadataType: 'ReportType',
+      operator: 'gt',
+      operand: 100 
+    }
+  },
+ ]
+},
+
+];
+
+const editionWarningRulesOld = [{
     name: 'Essentials',
     blockingItems: [{
         metadataType: 'RecordType',

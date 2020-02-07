@@ -239,7 +239,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
 */      
       }
       if (!this.suppressWarnings) {
-        this.ux.styledHeader('Installation Warnings:');
+  /*      this.ux.styledHeader('Installation Warnings:');
         let warnings = this.packageInventory.getInstallationWarnings();
         if (warnings.length > 0) {
           for (var warning of warnings) {
@@ -255,6 +255,21 @@ For more information, please connect in the ISV Technical Enablement Plugin
         } else {
           this.ux.log('Can be installed in any Edition\n');
         }
+*/
+        this.ux.styledHeader('Installation Warnings');
+        let warnings = this.packageInventory.getInstallationWarnings();
+        if (warnings.length > 0) {
+          for (var warning of warnings) {
+            this.ux.log(`Package cannot be installed in ${warning['edition']} due to:`)
+            for (var blockingItem of warning['blockingItems']) {
+              this.ux.log(`  ${blockingItem['label']} `);
+            }
+            this.ux.log('\n');
+          }
+        } else {
+          this.ux.log('Can be installed in any Edition\n');
+        }
+
       }
 
       if (!this.suppressAdoptionScore) {
