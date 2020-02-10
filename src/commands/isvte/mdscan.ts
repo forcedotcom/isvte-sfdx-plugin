@@ -29,8 +29,8 @@ import {
 import *
   as util
   from 'util'
-import ExecuteFilterMetadatas
-  from 'sfdx-essentials/lib/commands/essentials/filter-metadatas';
+import MetadataFilterFromPackageXml
+  from 'sfdx-essentials/lib/commands/essentials/metadata/filter-from-packagexml';
 
 export default class mdscan extends SfdxCommand {
 
@@ -144,7 +144,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
         }
 
         // Filter metadatas folder using package.xml
-        await ExecuteFilterMetadatas.run([
+        await MetadataFilterFromPackageXml.run([
           '-i', this.sfdxConvertFolder,
           '-o', this.sfdxConvertFolderFilter,
           '-p', this.sfdxPackageXml]);
