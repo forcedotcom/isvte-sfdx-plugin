@@ -224,9 +224,7 @@ export class packageInventory {
   private isRuleValid(rule) {
 
     return (rule['name'] != undefined &&
-      rule['label'] != undefined &&
       rule['condition'] != undefined
-      //          && rule['metadataType'] != undefined
       &&
       (rule['resultTrue'] != undefined || rule['resultFalse'] != undefined))
   }
@@ -245,7 +243,7 @@ export class packageInventory {
       if (conditionResult.conditionPass && rule.resultTrue != undefined) {
         let result = {};
         //        result['metadataType'] = rule.metadataType;
-        result['label'] = rule.label;
+        result['label'] = rule.resultTrue.label;
         result['message'] = rule.resultTrue.message;
         if (rule.resultTrue.url != undefined) {
           result['url'] = rule.resultTrue.url;
@@ -258,7 +256,7 @@ export class packageInventory {
       if (!conditionResult.conditionPass && rule.resultFalse != undefined) {
         let result = {};
         //      result['metadataType'] = rule.metadataType;
-        result['label'] = rule.label;
+        result['label'] = rule.resultFalse.label;
         result['message'] = rule.resultFalse.message;
         if (rule.resultFalse.url != undefined) {
           result['url'] = rule.resultTrue.url;

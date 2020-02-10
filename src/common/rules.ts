@@ -12,7 +12,6 @@ ruleSet = [rule,rule,...]
 
 rule = {
   name: The Rule Name
-  label: Friendly output to display when rule is triggered (This should probably move into the result section)
   condition: ruleCondition
   resultTrue: result 
   resultFalse: result
@@ -73,34 +72,35 @@ If conditionPerItem is true within the conditionAnd, then the ultimate result is
     the condition will resolve to true if any object has both an apex trigger and a process builder trigger.
    
 result = {
+  label: Friendly output to display when rule is triggered 
   message: Text to display
   url: link to content
   showDetails: boolean
 }
-A result must have a message
+A result must have a message and a label
 if showDetails is true, then the individual components which pass the condition are included in the result 
 e.g the first will output just the message. The second will output the message as well as each individual class with and API version that meets the criteria
 {
     name: 'Metadata API Version',
-    label: 'Using old Metadata API Version',
     condition: {
       metadataType: 'apiVersions.mdapi',
       operator: 'between',
       operand: [20,'minAPI'],
     },
     resultTrue: {
+      label: 'Using old Metadata API Version',
       message: `You appear to be using a version of Metadata API less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
     },
   },
   {
     name: 'Apex API Version',
-    label: 'Using old Apex API Version',
     condition: {
       metadataType: 'apiVersions.ApexClass.*',
       operator: 'between',
       operand: [20,'minAPI'],
     },
     resultTrue: {
+      label: 'Using old Apex API Version',
       message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
       showDetails: true
     }
@@ -110,37 +110,184 @@ e.g the first will output just the message. The second will output the message a
 
 const minAPI = 43;
 
-const rulesVersion = '20200204';
+const rulesVersion = '20200207';
 
-
+const mdTypes = [{
+  name: 'Permission Sets',
+  metadataType: 'PermissionSet'
+},
+{
+  name: 'Custom Profiles',
+  metadataType: 'Profile'
+},
+{
+  name: 'Custom Metadata',
+  metadataType: 'CustomMetadata'
+},
+{
+  name: 'Feature Parameters (Boolean)',
+  metadataType: 'FeatureParameterBoolean'
+},
+{
+  name: 'Feature Parameters (Date)',
+  metadataType: 'FeatureParameterDate'
+},
+{
+  name: 'Feature Parameters (Integer)',
+  metadataType: 'FeatureParameterInteger'
+},
+{
+  name: 'Custom Settings',
+  metadataType: 'CustomSetting__c'
+},
+{
+  name: 'Custom Labels',
+  metadataType: 'CustomLabel'
+},
+{
+  name: 'Tabs',
+  metadataType: 'CustomTab'
+},
+{
+  name: 'Flows',
+  metadataType: 'Flow'
+},
+{
+  name: 'Apex Classes',
+  metadataType: 'ApexClass'
+},
+{
+  name: 'Apex Triggers',
+  metadataType: 'ApexTrigger'
+},
+{
+  name: 'Custom Reports',
+  metadataType: 'Report'
+},
+{
+  name: 'Custom Report Types',
+  metadataType: 'ReportType'
+},
+{
+  name: 'Custom Apps',
+  metadataType: 'CustomApplication'
+},
+{
+  name: 'Connected Apps',
+  metadataType: 'ConnectedApp'
+},
+{
+  name: 'In-App Prompts',
+  metadataType: 'Prompt'
+},
+{
+  name: 'Static Resources',
+  metadataType: 'StaticResource'
+},
+{
+  name: 'Sharing Rules',
+  metadataType: 'SharingRules'
+},
+{
+  name: 'Validation Rules',
+  metadataType: 'ValidationRule'
+},
+{
+  name: 'Custom Objects',
+  metadataType: 'CustomObject'
+},
+{
+  name: 'Custom Fields',
+  metadataType: 'CustomField'
+},
+{
+  name: 'Platform Events',
+  metadataType: 'PlatformEventChannel'
+},
+{
+  name: 'Territory Management',
+  metadataType: 'Territory'
+},
+{
+  name: 'Territory Management 2.0',
+  metadataType: 'Territory2'
+},
+{
+  name: 'Visualforce Pages',
+  metadataType: 'ApexPage'
+},
+{
+  name: 'Aura Web Components',
+  metadataType: 'AuraDefinitionBundle'
+},
+{
+  name: 'Lightning Web Components',
+  metadataType: 'LightningComponentBundle'
+},
+{
+  name: 'Einstein Analytics Applications',
+  metadataType: 'WaveApplication'
+},
+{
+  name: 'Einstein Analytics Dashboards',
+  metadataType: 'WaveDashboard'
+},
+{
+  name: 'Einstein Analytics Dataflows',
+  metadataType: 'WaveDataflow'
+},
+{
+  name: 'Einstein Analytics Datasets',
+  metadataType: 'WaveDataset'
+},
+{
+  name: 'Einstein Analytics Lenses',
+  metadataType: 'WaveLens'
+},
+{
+  name: 'Einstein Analytics Template Bundles',
+  metadataType: 'WaveTemplateBundle'
+},
+{
+  name: 'Einstein Analytics Dashboards',
+  metadataType: 'WaveDashboard'
+},
+{
+  name: 'Person Accounts Enabled?',
+  metadataType: 'PersonAccount__c'
+},
+{
+  name: 'Record Types',
+  metadataType: 'RecordType'
+}
+];
 
 const enablementRules = [{
     name: 'ISV Technical Success Center',
-    label: 'Visit the ISV Technical Success Center',
     condition: {
         metadataType: 'any',
         operator: 'always'
     },
     resultTrue: {
+      label: 'Visit the ISV Technical Success Center',
       message: 'For more resources to help build a successful app, visit the ISV Technical Success Center on the Partner Community',
       url: 'http://p.force.com/TECenter'
     }
   },
   {
     name: 'Flows',
-    label: 'Take Advantage of Flows',
     condition: {
       metadataType: 'Flow',
       operator: 'notexists',
     },
     resultTrue: {
+      label: 'Take Advantage of Flows',
       message: 'Flows are a powerful tool to enable forms based workflows and process automation to your users. See this webinar for more information.',
       url: 'https://partners.salesforce.com/0693A000007S2Dq'
     },
   },
   {
     name: 'Flow Templates',
-    label: 'Include your Flows as Templates',
     condition: {
       metadataType: 'Flow.FlowTemplate',
       operator: 'notexists',
@@ -151,85 +298,85 @@ const enablementRules = [{
       }
     },
     resultTrue: {
+      label: 'Include your Flows as Templates',
       message: 'When packaging a Flow, consider using a Flow Template to allow your subscribers to modify the flow to suit their needs. For more information about Flow Templates see this blog post.',
       url: 'https://medium.com/inside-the-salesforce-ecosystem/pre-built-business-processes-how-isvs-use-flow-templates-ddc9910ff93a'
     },
   },
   {
     name: 'Batch Apex',
-    label: 'Follow best practices for Batch Apex',
     condition: {
       metadataType: 'ApexClass.BatchApex',
       operator: 'exists'
     },
     resultTrue: {
+      label: 'Follow best practices for Batch Apex',
       message: 'For more information on Batch Apex Design patterns and how best to package Batch Apex, see this webinar.',
       url: 'https://partners.salesforce.com/0693A000006aF9G',
     },
   },
   {
     name: 'In App Prompts',
-    label: 'Take Advantage of In-App Prompts',
     condition: {
       metadataType: 'Prompt',
       operator: 'notexists'
     },
     resultTrue: {
+      label: 'Take Advantage of In-App Prompts',
       message: 'For more information about how to use In-App Prompts to keep your users informed, see this blog.',
       url: 'https://medium.com/inside-the-salesforce-ecosystem/in-app-prompts-for-isvs-e9b013969016'
     },
   },
   {
     name: 'Platform Cache',
-    label: 'Take Advantage of Platform Cache',
     condition: {
       metadataType: 'PlatformCachePartition',
       operator: 'notexists'
     },
     resultTrue: {
+      label: 'Take Advantage of Platform Cache',
       message: 'Use Platform Cache to improve the performance of your application.',
       url: 'https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_cache_namespace_overview.htm'
     }
   },
   {
     name: 'Custom Fields on Activity',
-    label: 'Be aware of limits on Custom Fields on Activity',
     condition: {
       metadataType: 'CustomField.objects.Activity',
       operator: 'gte',
       operand: 1
     },
     resultTrue: {
+      label: 'Be aware of limits on Custom Fields on Activity',
       message: 'Please be aware that there is a hard limit of 100 fields on the Activity object including all managed and unmanaged fields. Your package will not install if this raises the number of fields on the Activity object past this threshold in your subscriber\'s org.'
     }
   },
   {
     name: 'Platform Events',
-    label: 'Be aware of Platform Events Best Practices',
     condition: {
       metadataType: 'PlatformEventChannel',
       operator: 'exists'
     },
     resultTrue: {
+      label: 'Be aware of Platform Events Best Practices',
       message: 'For more information on Platform Events and how to use them within your application, see this webinar.',
       url: 'https://partners.salesforce.com/partnerEvent?id=a033A00000GF5BPQA1'
     }
   },
   {
     name: 'Change Data Capture',
-    label: 'Be aware of Change Data Capture Best Practices',
     condition: {
       metadataType: 'PlatformEventChannelMember',
       operator: 'exists'
     },
     resultTrue: {
+      label: 'Be aware of Change Data Capture Best Practices',
       message: 'For more information on Change Data Capture and how to use it in your application, please see this webinar.',
       url: 'https://developer.salesforce.com/events/webinars/change-data-capture'
     }
   },
   {
     name: 'Aura Components',
-    label: 'Learn about migrating from Aura Web Components to Lightning Web Components',
     condition: {
       metadataType: 'AuraDefinitionBundle',
       operator: 'exists',
@@ -239,305 +386,174 @@ const enablementRules = [{
       },
     },
     resultTrue: {
+      label: 'Learn about migrating from Aura Web Components to Lightning Web Components',
       message: 'Lightning Web Components are the new Salesforce standard for Lightning Components featuring easier devlopment, better performance and standards compliance. For a decision matrix on whether you should be considering migrating to LWC see this blog.',
       url: 'https://medium.com/inside-the-salesforce-ecosystem/lightning-web-components-an-isv-partner-digest-59d9191f3248'
     }
   },
   {
     name: 'Lightning Web Components',
-    label: 'Take advantage of Lightning Web Components',
     condition: {
       metadataType: 'LightningComponentBundle',
       operator: 'notexists'
     },
     resultTrue: {
+      label: 'Take advantage of Lightning Web Components',
       message: 'Find more information about how to leverage the power of LWC and for best practices, see this webinar.',
       url: 'https://partners.salesforce.com/0693A000007Kd7oQAC'
     }
   },
   {
     name: 'Einstein Analytics Templates',
-    label: 'Learn about Einstein Analytics Template Bundles',
     condition: {
       metadataType: 'WaveTemplateBundle',
       operator: 'exists'
     },
     resultTrue: {
+      label: 'Learn about Einstein Analytics Template Bundles',
       message: 'For more information on Creating & Distributing Analytics Apps using Templates see this webinar.',
       url: 'https://partners.salesforce.com/partnerEvent?id=a033A00000FYOQOQA5'
     }
+  },
+  {
+    name: 'Feature Management',
+    condition: {
+      metadataType: 'FeatureParameterBoolean',
+      operator: 'exists',
+      conditionOr: {
+        metadataType: 'FeatureParameterDate',
+        operator: 'exists',
+        conditionOr: {
+          metadataType: 'FeatureParameterInteger',
+          operator: 'exists'
+        }
+      }
+    },
+    resultTrue: {
+      label: 'Learn more about using Feature Management',
+      message: 'See this webinar for more information on using Feature Management within your package.',
+      url: 'http://salesforce.vidyard.com/watch/pXTQPKtMkF8vmZDJoBidx9'
+    }
   }
+
 ];
-
-const mdTypes = [{
-    name: 'Permission Sets',
-    metadataType: 'PermissionSet'
-  },
-  {
-    name: 'Custom Profiles',
-    metadataType: 'Profile'
-  },
-  {
-    name: 'Custom Metadata',
-    metadataType: 'CustomMetadata'
-  },
-  {
-    name: 'Feature Parameters (Boolean)',
-    metadataType: 'FeatureParameterBoolean'
-  },
-  {
-    name: 'Feature Parameters (Date)',
-    metadataType: 'FeatureParameterDate'
-  },
-  {
-    name: 'Feature Parameters (Integer)',
-    metadataType: 'FeatureParameterInteger'
-  },
-  {
-    name: 'Custom Settings',
-    metadataType: 'CustomSetting__c'
-  },
-  {
-    name: 'Custom Labels',
-    metadataType: 'CustomLabel'
-  },
-  {
-    name: 'Tabs',
-    metadataType: 'CustomTab'
-  },
-  {
-    name: 'Flows',
-    metadataType: 'Flow'
-  },
-  {
-    name: 'Apex Classes',
-    metadataType: 'ApexClass'
-  },
-  {
-    name: 'Apex Triggers',
-    metadataType: 'ApexTrigger'
-  },
-  {
-    name: 'Custom Reports',
-    metadataType: 'Report'
-  },
-  {
-    name: 'Custom Report Types',
-    metadataType: 'ReportType'
-  },
-  {
-    name: 'Custom Apps',
-    metadataType: 'CustomApplication'
-  },
-  {
-    name: 'Connected Apps',
-    metadataType: 'ConnectedApp'
-  },
-  {
-    name: 'In-App Prompts',
-    metadataType: 'Prompt'
-  },
-  {
-    name: 'Static Resources',
-    metadataType: 'StaticResource'
-  },
-  {
-    name: 'Sharing Rules',
-    metadataType: 'SharingRules'
-  },
-  {
-    name: 'Validation Rules',
-    metadataType: 'ValidationRule'
-  },
-  {
-    name: 'Custom Objects',
-    metadataType: 'CustomObject'
-  },
-  {
-    name: 'Custom Fields',
-    metadataType: 'CustomField'
-  },
-  {
-    name: 'Platform Events',
-    metadataType: 'PlatformEventChannel'
-  },
-  {
-    name: 'Territory Management',
-    metadataType: 'Territory'
-  },
-  {
-    name: 'Territory Management 2.0',
-    metadataType: 'Territory2'
-  },
-  {
-    name: 'Visualforce Pages',
-    metadataType: 'ApexPage'
-  },
-  {
-    name: 'Aura Web Components',
-    metadataType: 'AuraDefinitionBundle'
-  },
-  {
-    name: 'Lightning Web Components',
-    metadataType: 'LightningComponentBundle'
-  },
-  {
-    name: 'Einstein Analytics Applications',
-    metadataType: 'WaveApplication'
-  },
-  {
-    name: 'Einstein Analytics Dashboards',
-    metadataType: 'WaveDashboard'
-  },
-  {
-    name: 'Einstein Analytics Dataflows',
-    metadataType: 'WaveDataflow'
-  },
-  {
-    name: 'Einstein Analytics Datasets',
-    metadataType: 'WaveDataset'
-  },
-  {
-    name: 'Einstein Analytics Lenses',
-    metadataType: 'WaveLens'
-  },
-  {
-    name: 'Einstein Analytics Template Bundles',
-    metadataType: 'WaveTemplateBundle'
-  },
-  {
-    name: 'Einstein Analytics Dashboards',
-    metadataType: 'WaveDashboard'
-  },
-  {
-    name: 'Person Accounts Enabled?',
-    metadataType: 'PersonAccount__c'
-  },
-  {
-    name: 'Record Types',
-    metadataType: 'RecordType'
-  }
-];
-
-
 
 const qualityRules = [{
     name: 'Metadata API Version',
-    label: 'Using old Metadata API Version',
     condition: {
       metadataType: 'apiVersions.mdapi',
       operator: 'between',
       operand: [20,'minAPI'],
     },
     resultTrue: {
+      label: 'Using old Metadata API Version',
       message: `You appear to be using a version of Metadata API less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
     },
   },
   {
     name: 'Apex API Version',
-    label: 'Using old Apex API Version',
     condition: {
       metadataType: 'apiVersions.ApexClass.*',
       operator: 'between',
       operand: [20,'minAPI'],
     },
     resultTrue: {
+      label: 'Using old Apex API Version',
       message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
       showDetails: true
     }
   },
   {
     name: 'Trigger API Version',
-    label: 'Using old Trigger API Version',
     condition: {
       metadataType: 'apiVersions.ApexTrigger.*',
       operator: 'between',
       operand: [20,'minAPI'],
     },
     resultTrue: {
+      label: 'Using old Trigger API Version',
       message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
       showDetails: true
     }
   },
   {
     name: 'Aura Component API Version',
-    label: 'Using old Aura Component API Version',
     condition: {
       metadataType: 'apiVersions.AuraDefinitionBundle.*',
       operator: 'between',
       operand: [20,'minAPI'],
     },
     resultTrue: {
+      label: 'Using old Aura Component API Version',
       message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
       showDetails: true
     }
   },
   {
     name: 'LWC API Version',
-    label: 'Using old Lightning Web Component API Version',
     condition: {
       metadataType: 'apiVersions.LightningComponentBundle.*',
       operator: 'between',
       operand: [20,'minAPI'],
     },
     resultTrue: {
+      label: 'Using old Lightning Web Component API Version',
       message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
       showDetails: true
     }
   },
   {
     name: 'Custom Object Description',
-    label: 'Custom Objects should have a description',
     condition: {
       metadataType: 'componentProperties.CustomObject.*.descriptionExists',
       operator: 'notexists'
     },
     resultTrue: {
+      label: 'Custom Objects should have a description',
       message: `It is a best practice that Custom Objects have a description.`,
       showDetails: true
     }
   },
   {
     name: 'Custom Field Description',
-    label: 'Custom Fields should have a description',
     condition: {
       metadataType: 'componentProperties.CustomField.*.descriptionExists',
       operator: 'exists'
     },
     resultFalse: {
+      label: 'Custom Fields should have a description',
       message: `It is a best practice that Custom Fields have a description.`,
       showDetails: true
     }
   },
   {
     name: 'Triggers per Object',
-    label: 'Multiple Triggers per Object',
     condition: {
       metadataType: 'ApexTrigger.objects.*',
       operator: 'gt',
       operand: 1
     },
     resultTrue: {
+      label: 'Multiple Triggers per Object',
       message: 'It is a best practice to have 1 trigger per object. Please check triggers on the objects below to see if you can use triggers and trigger handlers to reduce the number of triggers per object.',
       showDetails: true
     }
   },
   {
     name: 'Process Builders per Object',
-    label: 'Multiple Process Builders per Object',
     condition: {
       metadataType: 'Flow.objects.*',
       operator: 'gt',
       operand: 1
     },
     resultTrue: {
+      label: 'Multiple Process Builders per Object',
       message: 'It is a best best practice to have 1 record-change process per object. Please check Process Builders on the objects below to see if you can combine all processes into one.',
       showDetails: true
     }
   },
   {
     name: 'Change Processes per Object',
-    label: 'Multiple Change Processes per Object',
     condition: {
       metadataType: 'ApexTrigger.objects.*',
       operator: 'gte',
@@ -551,34 +567,34 @@ const qualityRules = [{
     },
 
     resultTrue: {
+      label: 'Multiple Change Processes per Object',
       message: 'It is a best best practice to have 1 record-change process per object. Avoid using both Triggers and Process Builders on the same object.',
       showDetails: true
     }
   },
 ];
 
-
 const alertRules = [{
     name: 'Alerts Signup',
-    label: 'Stay on Top of Alerts',
     condition: {
       metadataType: 'any',
       operator: 'always'
     },
     resultTrue: {
+      label: 'Stay on Top of Alerts',
       message: 'Sign up here to be notified of all Partner Alerts',
       url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000FtFWqQAN'
     }
   },
   {
     name: '@AuraEnabled Methods',
-    label: '@AuraEnabled Methods',
     condition: {
       metadataType: 'ApexClass.AuraEnabledCalls',
       operator: 'exists',
       expiration: '2020-10-01T00:00:00.000Z'
     },
     resultTrue: {
+      label: '@AuraEnabled Methods',
       message: 'New Permissions Required to Access Apex Classes containing @AuraEnabled methods.',
       url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000Fvo12QAB',  
       showDetails: true
@@ -586,13 +602,13 @@ const alertRules = [{
   },
   {
     name: 'Aura UI Namespace',
-    label: 'Aura Components in UI Namespace Retiring in Summer \'21',
     condition: {
       metadataType: 'componentProperties.AuraDefinitionBundle.*.namespaceReferences.ui',
       operator: 'exists',
       expiration: '2020-10-01T00:00:00.000Z'
     },
     resultTrue: {
+      label: 'Aura Components in UI Namespace Retiring in Summer \'21',
       message: 'In Summer \'21, Lightning Base Components in the ui namespace will be retired.',
       url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GXNKsQAP',
       showDetails: true
@@ -600,52 +616,52 @@ const alertRules = [{
   },
   {
     name: 'Custom Metadata Permissions',
-    label: 'Custom Metadata',
     condition: {
       metadataType: 'CustomMetadata',
       operator: 'exists',
       expiration: '2020-10-01T00:00:00.000Z'
     },
     resultTrue: {
+      label: 'Custom Metadata',
       message: 'New Permissions Required for Direct Read Access to Custom Metadata Types.',
       url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GimUSQAZ',
     }
   },
   {
     name: 'Custom Settings Direct Read',
-    label: 'Custom Settings',
     condition: {
       metadataType: 'CustomSetting__c',
       operator: 'exists',
       expiration: '2020-10-01T00:00:00.000Z'
     },
     resultTrue: {
+      label: 'Custom Settings',
       message: 'New Permissions Required for Direct Read Access to Custom Settings.',
       url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GimQ6QAJ',
     }
   },
   {
     name: 'Territory 1 EOL',
-    label: 'Territory Management 1.0',
     condition: {
       metadataType: 'Territory',
       operator: 'exists',
       expiration: '2020-10-01T00:00:00.000Z'
     },
     resultTrue: {
+      label: 'Territory Management 1.0',
       message: 'Territory Management will be End of Life starting in Winter \'20. Please migrate to Territory Management 2.0.',
       url: 'https://help.salesforce.com/articleView?id=000318370&type=1&mode=1',
     }
  },
  {
     name: 'RecordType Access',
-    label: 'Change to Record Type Access',
     condition: {
       metadataType: 'RecordType',
       operator: 'exists',
       expiration: '2020-22-01T00:00:00.000Z'
     },
     resultTrue: {
+      label: 'Change to Record Type Access',
       message: 'There have been changes to Record Type access in permission sets within Managed Packages for Winter \'20 in response to a Known Issue. Subscribers may need to upgrade your package to see this fix.',
       url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GSdBoQAL',
     }
@@ -776,103 +792,6 @@ const editionWarningRules = [{
   },
  ]
 },
-
-];
-
-const editionWarningRulesOld = [{
-    name: 'Essentials',
-    blockingItems: [{
-        metadataType: 'RecordType',
-        label: 'Record Types',
-        threshold: 0
-      },
-      {
-        metadataType: 'PersonAccount__c',
-        label: 'Person Accounts',
-        threshold: 0
-      },
-      {
-        metadataType: 'ApexClass.InvocableApex',
-        label: 'Classes with Invocable Apex',
-        threshold: 0
-      },
-      {
-        metadataType: 'PlatformEventChannel',
-        label: 'Platform Events',
-        threshold: 0
-      },
-      {
-        metadataType: 'Profile',
-        label: 'Custom Profiles',
-        threshold: 0
-      },
-      {
-        metadataType: 'SharingRules',
-        label: 'Sharing Rules',
-        threshold: 0
-      },
-
-    ]
-  },
-  {
-    name: 'Group Edition',
-    blockingItems: [{
-        metadataType: 'RecordType',
-        label: 'Record Types',
-        threshold: 0
-      },
-      {
-        metadataType: 'PersonAccount__c',
-        label: 'Person Accounts',
-        threshold: 0
-      },
-      {
-        metadataType: 'ReportType',
-        label: 'Report Types',
-        threshold: 0
-      },
-      {
-        metadataType: 'ApexClass.ApexSoap',
-        label: 'Classes with SOAP Apex Web Services',
-        threshold: 0
-      },
-      {
-        metadataType: 'Profile',
-        label: 'Custom Profiles',
-        threshold: 0
-      },
-      {
-        metadataType: 'SharingRules',
-        label: 'Sharing Rules',
-        threshold: 0
-      },
-
-    ]
-  },
-  {
-    name: 'Professional Edition',
-    blockingItems: [{
-        metadataType: 'ApexClass.ApexSoap',
-        label: 'Classes with SOAP Apex Web Services',
-        threshold: 0
-      },
-      {
-        metadataType: 'ReportType',
-        label: 'Report Types',
-        threshold: 50
-      },
-
-    ]
-  },
-  {
-    name: 'Enterprise Edition',
-    blockingItems: [{
-      metadataType: 'ReportType',
-      label: 'Custom Report Types',
-      threshold: 100
-    }, ]
-  },
-
 ];
 
 const techAdoptionRules = [
@@ -965,42 +884,6 @@ export {
   rulesVersion,
 };
 
-/*
-http://salesforce.vidyard.com/watch/pXTQPKtMkF8vmZDJoBidx9?
-Feature Management!!!
-*/
 
-/*{
-    metadataType: 'ApexTrigger.AsyncTrigger',
-    label: 'Take Advantage of Async Triggers',
-    threshold: 0,
-    recPos: {
-      message: 'For more information on Async Triggers and how to use them to enable asychronous trigger proccessing, see this blog',
-      url: 'https://developer.salesforce.com/blogs/2019/06/get-buildspiration-with-asynchronous-apex-triggers-in-summer-19.html'
-    }
-  },*/
 
-/*
-      {
-      metadataType: 'CustomMetadata',
-      label: 'Custom Metadata',
-      requiresSR: true
-    },
-    {
-      metadataType: 'ApexClass',
-      label: 'Apex',
-      threshold: 0,
-      requiresSR: true
-    },
-    {
-      metadataType: 'ApexClass.SchedulableApex',
-      label: 'Scheduled Apex',
-      threshold: 0,
-      requiresSR: true
-    },
-    {
-      metadataType: 'CustomObject',
-      label: 'Custom Objects',
-      threshold: 0,
-      requiresSR: true
-    },*/
+
