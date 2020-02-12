@@ -252,10 +252,7 @@ const mdTypes = [{
   name: 'Einstein Analytics Dashboards',
   metadataType: 'WaveDashboard'
 },
-{
-  name: 'Person Accounts Enabled?',
-  metadataType: 'PersonAccount__c'
-},
+
 {
   name: 'Record Types',
   metadataType: 'RecordType'
@@ -680,7 +677,7 @@ const editionWarningRules = [{
     {
       label: 'Person Accounts',
       condition: {
-        metadataType: 'PersonAccount__c',
+        metadataType: 'dependencies.features.PersonAccount',
         operator: 'exists'
       }
     },
@@ -873,6 +870,40 @@ const techAdoptionRules = [
   }
 ];
 
+const dependencyRules = [{
+  name: 'CommunityCloud',
+  label: 'Community Cloud',
+  condition: {
+    metadataType: 'LightningComponentBundle.targets.lightningCommunity__Page',
+    operator: 'exists',
+    conditionOr: {
+      metadataType: 'LightningComponentBundle.targets.lightningCommunity__Default',
+      operator: 'exists',
+      conditionOr: {
+        metadataType: 'ExperienceBundle',
+        operator: 'exists',
+        conditionOr: {
+          metadataType: 'CommunityTemplateDefinition',
+          operator: 'exists',
+          conditionOr: {
+            metadataType: 'componentProperties.AuraDefinitionBundle.*.interfaces.forceCommunity:availableForAllPageTypes',
+            operator: 'exists'
+          }
+        }
+      }
+    }
+  }
+},
+{
+    name: 'PersonAccount',
+    label: 'Person Accounts',
+    condition: {
+      metadataType: 'dependencies.features.PersonAccount',
+      operator: 'exists'
+    }
+}
+]
+
 export {
   mdTypes,
   enablementRules,
@@ -882,6 +913,7 @@ export {
   minAPI,
   techAdoptionRules,
   rulesVersion,
+  dependencyRules
 };
 
 

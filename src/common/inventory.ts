@@ -12,6 +12,7 @@ import {
   alertRules,
   minAPI,
   techAdoptionRules,
+  dependencyRules,
 
 } from './rules';
 import {
@@ -30,6 +31,7 @@ export class packageInventory {
   private _installationWarnings;
   private _qualityRules;
   private _techAdoption;
+  private _dependencies;
 
 
   public constructor() {
@@ -229,6 +231,26 @@ export class packageInventory {
       (rule['resultTrue'] != undefined || rule['resultFalse'] != undefined))
   }
 
+  public getDependencies() {
+    this.loggit.loggit('Checking Feature and License Dependencies');
+    if (!this._dependencies) {
+      this._dependencies = [];
+      this.loggit.loggit('Adding Dependencies from Rules');
+      for (var dependencyRule of dependencyRules) {
+        if (this.isConditionValid(dependencyRule.condition)) {
+          if (this.checkCondition(dependencyRule.condition).conditionPass) {
+            this._dependencies.push({
+              name: dependencyRule.name,
+              label: dependencyRule.label
+            })
+          };
+        }
+      }
+    }
+
+    return this._dependencies;
+  }
+
   public processRules(ruleSet) {
     //Replaces   public checkRules(ruleSet) 
     let results = [];
@@ -272,67 +294,29 @@ export class packageInventory {
 
   public getInstallationWarnings() {
     this.loggit.loggit('Getting Installation Warnings New Ruleset');
-    let installWarnings = [];
-    for (var edition of editionWarningRules) {
-      this.loggit.loggit('Checking Edition rule: ' + JSON.stringify(edition));
-      let editionBlock = [];
-      for (var blockingItem of edition.blockingItems) {
-        this.loggit.loggit('Checking item:' + JSON.stringify(blockingItem));
-        let result = this.checkCondition(blockingItem.condition);
-        if (result.conditionPass) {
-          editionBlock.push({
-            label: blockingItem.label,
-
-          })
-        }
-      }
-      if (editionBlock.length > 0) {
-        installWarnings.push( {
-          'edition': edition.name,
-          blockingItems: editionBlock
-        });
-      }
-    }
-    return installWarnings;
-  };
-
-  public getInstallationWarningsDeprecated() {
-    this.loggit.loggit('Getting Installation Warnings');
     if (!this._installationWarnings) {
-      this.loggit.loggit('Results not cached.');
       this._installationWarnings = [];
       for (var edition of editionWarningRules) {
-        this.loggit.loggit('Checking Edition Rule:' + JSON.stringify(edition));
+        this.loggit.loggit('Checking Edition rule: ' + JSON.stringify(edition));
         let editionBlock = [];
-        for (var blockingType of edition['blockingItems']) {
-          this.loggit.loggit('Checking Blocing Item: ' + JSON.stringify(blockingType));
-          if (this.getInventoryCountByMetadataType(blockingType['metadataType']) > blockingType['threshold']) {
-            if (blockingType['requiresSR']) {
-              editionBlock.push({
-                metadataType: blockingType['metadataType'],
-                label: blockingType['label'],
-                requiresSR: blockingType['requiresSR'],
-                threshold: blockingType['threshold'],
-                count: this.getInventoryCountByMetadataType(blockingType['metadataType'])
-              });
-            } else {
-              editionBlock.push({
-                metadataType: blockingType['metadataType'],
-                label: blockingType['label'],
-                threshold: blockingType['threshold'],
-                count: this.getInventoryCountByMetadataType(blockingType['metadataType'])
-              });
-            }
+        for (var blockingItem of edition.blockingItems) {
+          this.loggit.loggit('Checking item:' + JSON.stringify(blockingItem));
+          let result = this.checkCondition(blockingItem.condition);
+          if (result.conditionPass) {
+            editionBlock.push({
+              label: blockingItem.label,
+  
+            })
           }
         }
         if (editionBlock.length > 0) {
-          this.loggit.loggit('Blocks Found for edition ' + edition['name']);
-          this._installationWarnings.push({
-            'edition': edition['name'],
+          this._installationWarnings.push( {
+            'edition': edition.name,
             blockingItems: editionBlock
           });
         }
       }
+  
     }
     return this._installationWarnings;
   };
@@ -535,6 +519,7 @@ export class packageInventory {
     retVal['InstallationWarnings'] = this.getInstallationWarnings();
     retVal['Alerts'] = this.getAlerts();
     retVal['AdoptionScore'] = this.getTechAdoptionScore();
+    retVal['Dependencies'] = this.getDependencies();
     return retVal;
   };
 
@@ -783,7 +768,16 @@ export class packageInventory {
                   'Metadata Type': '  Exposed Components',
                   count: this._mdInv[element.metadataType]['ExposedComponents']
                 });
-                extras.push({
+                
+                for (var [target,targetCount] of Object.entries(this._mdInv[element.metadataType]['targets'])) {
+                  let friendlyName = target.replace(/lightning(__)?/g,'');
+                  extras.push({
+                    metadataSubType: target,
+                    'Metadata Type': `  ${friendlyName}`,
+                    count: targetCount
+                  });
+                }
+              /*  extras.push({
                   metadataSubType: 'RecordPageComponents',
                   'Metadata Type': '  Record Page Components',
                   count: this._mdInv[element.metadataType]['RecordPageComponents']
@@ -803,7 +797,7 @@ export class packageInventory {
                   'Metadata Type': '  Flow Screen Components',
                   count: this._mdInv[element.metadataType]['FlowScreenComponents']
                 });
-
+*/
               }
               break;
             default:

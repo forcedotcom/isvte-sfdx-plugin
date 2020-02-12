@@ -239,23 +239,6 @@ For more information, please connect in the ISV Technical Enablement Plugin
 */      
       }
       if (!this.suppressWarnings) {
-  /*      this.ux.styledHeader('Installation Warnings:');
-        let warnings = this.packageInventory.getInstallationWarnings();
-        if (warnings.length > 0) {
-          for (var warning of warnings) {
-            this.ux.log(`Package cannot be installed in ${warning['edition']} due to:`)
-            for (var blockingItem of warning['blockingItems']) {
-              this.ux.log(`  ${blockingItem['label']} count (${blockingItem['count']}) is greater than the edition limit (${blockingItem['threshold']})`);
-              if (blockingItem['requiresSR']) {
-                this.ux.log('\tThis restriction is lifted when your package passes Security Review');
-              }
-            }
-            this.ux.log('\n');
-          }
-        } else {
-          this.ux.log('Can be installed in any Edition\n');
-        }
-*/
         this.ux.styledHeader('Installation Warnings');
         let warnings = this.packageInventory.getInstallationWarnings();
         if (warnings.length > 0) {
@@ -270,6 +253,14 @@ For more information, please connect in the ISV Technical Enablement Plugin
           this.ux.log('Can be installed in any Edition\n');
         }
 
+        let dependencies = this.packageInventory.getDependencies();
+        if (dependencies.length > 0) {
+          this.ux.log('Feature and License Dependencies:');
+          for (var dependency of dependencies) {
+            this.ux.log(`  ${dependency.label}`);
+          }
+          this.ux.log('\n');
+        }
       }
 
       if (!this.suppressAdoptionScore) {
@@ -294,6 +285,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
     let inventory = {};
     let apiVersions = {};
     let componentProperties = {};
+    let dependencies = {};
     if (p.version) {
       apiVersions['mdapi'] = parseFloat(p.version[0]);
     }
@@ -699,10 +691,8 @@ For more information, please connect in the ISV Technical Enablement Plugin
           this.loggit.loggit('Interrogating LWC');
           const lwcPath = `${this.flags.sourcefolder}/lwc`;
           let exposedCount = 0;
-          let appPageCount = 0;
-          let recordPageCount = 0;
-          let homePageCount = 0;
-          let flowScreenCount = 0;
+          let targets = {}
+
 
           for (var lwcIdx in types[typeIdx]['members']) {
             const lwcName = types[typeIdx]['members'][lwcIdx];
@@ -726,27 +716,19 @@ For more information, please connect in the ISV Technical Enablement Plugin
                 this.loggit.loggit('Checking Targets');
                 this.loggit.loggit(lwcJSON['targets'][0]);
                 for (let target of lwcJSON['targets'][0]['target']) {
-                  if (target === 'lightning__RecordPage') {
-                    recordPageCount++;
+                  if (targets[target] != undefined) {
+                    targets[target]++
                   }
-                  if (target === 'lightning__AppPage') {
-                    appPageCount++;
-                  }
-                  if (target === 'lightning__HomePage') {
-                    homePageCount++;
-                  }
-                  if (target === 'lightning__FlowScreen') {
-                    flowScreenCount++;
+                  else {
+                    targets[target] = 1;
                   }
                 }
               }
             }
           }
           typeInv['ExposedComponents'] = exposedCount;
-          typeInv['RecordPageComponents'] = recordPageCount;
-          typeInv['AppPageComponents'] = appPageCount;
-          typeInv['HomePageComponents'] = homePageCount;
-          typeInv['FlowScreenComponents'] = flowScreenCount;
+          typeInv['targets'] = targets;
+
 
           break;
         case 'AuraDefinitionBundle':
@@ -765,14 +747,14 @@ For more information, please connect in the ISV Technical Enablement Plugin
             }
             //Count Used Components by Namespace
             let auraCmpFile = `${auraPath}/${auraName}/${auraName}.cmp`;
-            this.loggit.loggit(`Checking ${auraCmpFile} for ui namespace components`);
+            this.loggit.loggit(`Extracting info from ${auraCmpFile}`);
 
             if (fs.existsSync(auraCmpFile)) {
 
               let auraBody = fs.readFileSync(auraCmpFile, 'utf8');
-              
+
+              this.loggit.loggit('Performing Regex search against component for namespaces');
               const componentsReg = /<(\w+:\w+)/ig;
-              this.loggit.loggit('Performing Regex search against component');
               let referencedComponents = this.getMatches(auraBody,componentsReg);
               if (referencedComponents.length > 0) {
                 this.loggit.loggit(`Found the following Components: ${JSON.stringify(referencedComponents)}`);
@@ -794,8 +776,27 @@ For more information, please connect in the ISV Technical Enablement Plugin
                     componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] += 1
                   }
                 });
-
-                
+              }
+              this.loggit.loggit('Extracting implemented and extended interfaces');
+              const interfaceReg = /(?:implements|extends)\s*=\s*"([\w ,:]+)"/igm;
+              let interfaceMatches=this.getMatches(auraBody,interfaceReg);
+              if (interfaceMatches.length > 0) {
+                this.loggit.loggit(`Found the following Interfaces: ${JSON.stringify(interfaceMatches)}`);
+                if (componentProperties['AuraDefinitionBundle'] == undefined) {
+                  componentProperties['AuraDefinitionBundle'] = {};
+                }
+                if (componentProperties['AuraDefinitionBundle'][auraName] == undefined) {
+                  componentProperties['AuraDefinitionBundle'][auraName] = {};
+                }
+                if (componentProperties['AuraDefinitionBundle'][auraName]['interfaces'] == undefined) {
+                  componentProperties['AuraDefinitionBundle'][auraName]['interfaces'] = {};
+                }
+                interfaceMatches.forEach(element => {
+                  let interfaces = element.split(/ *, */);
+                  interfaces.forEach(element => {
+                    componentProperties['AuraDefinitionBundle'][auraName]['interfaces'][element] = 1;
+                  });
+                })
               }
             }
             else {
@@ -812,15 +813,21 @@ For more information, please connect in the ISV Technical Enablement Plugin
     let pafile = `${this.flags.sourcefolder}/objects/PersonAccount.object`;
       if (fs.existsSync(pafile)) {
       //paType['count'] = 1;
-      inventory['PersonAccount__c'] = {
-        count: 1
-      };
+      if (inventory['dependencies'] == undefined) {
+        inventory['dependencies'] = {};
+      }
+      if (inventory['dependencies']['features'] == undefined) {
+        inventory['dependencies']['features'] = {};
+      }
+      inventory['dependencies']['features']['PersonAccount'] = 1;
     }
     //Add Version Info
     inventory['apiVersions'] = apiVersions;
     inventory['componentProperties'] = componentProperties;
+    inventory['dependencies'] = dependencies;
     return inventory;
   }
+
 
   private getMembers(mdTypeDef) {
     this.loggit.loggit('Getting wildcard members for ' + mdTypeDef.name) ;
@@ -898,20 +905,4 @@ For more information, please connect in the ISV Technical Enablement Plugin
     return json;
   }
 
-  // private loggit(logMessage, type = '') {
-  //   switch(type) { 
-  //     case 'Error': { 
-  //       this.isvteLogger.error(logMessage);
-  //        break; 
-  //     } 
-  //     case 'Warn': {
-  //       this.isvteLogger.warn(logMessage);
-  //       break;
-  //     }
-  //     default: { 
-  //       this.isvteLogger.debug(logMessage);
-  //       break; 
-  //     } 
-  //  } 
-  // }
 }

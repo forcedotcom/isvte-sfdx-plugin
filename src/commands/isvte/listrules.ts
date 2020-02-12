@@ -51,7 +51,6 @@ For more information, please connect in the ISV Technical Enablement Plugin
     this.ux.styledHeader('Best Practices and Feature Recommendations:');
     let i=1;
     for (var enablementRule of enablementRules) {
-   //   this.ux.log(`${i++}. ${enablementRule.name}\n Condition: ${this.conditionToString(enablementRule.condition)}`);
       if (enablementRule.resultFalse != undefined) {
         this.ux.log(`${i++}. ${this.resultToString(enablementRule.resultFalse)}\n`);
       }
@@ -63,7 +62,6 @@ For more information, please connect in the ISV Technical Enablement Plugin
     i=1;
     this.ux.styledHeader('Quality Rules:');
     for (var qualityRule of qualityRules) {
- //     this.ux.log(`${i++}.  ${qualityRule.name}\n Condition: ${this.conditionToString(qualityRule.condition)}`);
       if (qualityRule.resultFalse != undefined) {
         this.ux.log(`${i++}. ${this.resultToString(qualityRule.resultFalse)}\n`);
       }
@@ -75,7 +73,6 @@ For more information, please connect in the ISV Technical Enablement Plugin
     i=1;
     this.ux.styledHeader('Partner Alerts:');
     for (var alert of alertRules) {
-//      this.ux.log(`${i++}.  ${alert.name}\n Condition: ${this.conditionToString(alert.condition)}`);
       if (alert.resultFalse != undefined) {
         this.ux.log(`${i++}. ${this.resultToString(alert.resultFalse)}\n`);
       }
@@ -144,7 +141,6 @@ For more information, please connect in the ISV Technical Enablement Plugin
         retVal = `${cond.metadataType} is Equal to ${cond.operand}`;
         break;
       case 'between':
-        //Not inclusive
         retVal = `${cond.metadataType} is Between ${cond.operand[0]} And ${cond.operand[1]}`;
         break; 
     }
@@ -158,35 +154,6 @@ For more information, please connect in the ISV Technical Enablement Plugin
     return retVal;
   };
 
-  /*
-  private getAllRules = function (ruleDefs) {
-    this.loggit.loggit('Formatting Rules for export');
-    let output = [];
-    for (let mdType of ruleDefs) {
-      if (mdType['threshold'] != undefined) {
-        if (mdType['recPos'] != undefined) {
-          output.push({
-            metadataType: mdType['metadataType'],
-            label: mdType['label'],
-            threshold: `> ${mdType['threshold']}`,
-            message: mdType['recPos']['message'],
-            url: mdType['recPos']['url']
-          });
-        }
-        if (mdType['recNeg'] != undefined) {
-          output.push({
-            metadataType: mdType['metadataType'],
-            label: mdType['label'],
-            threshold: `<= ${mdType['threshold']}`,
-            message: mdType['recNeg']['message'],
-            url: mdType['recNeg']['url']
-          });
-        }
-      }
-    }
-    return output;
-  };
-*/
   private getAllEditionWarnings = function () {
     this.loggit.loggit('Formatting Edition Warnings for export');
     let retVal = [];
