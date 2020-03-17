@@ -333,7 +333,7 @@ const enablementRules = [{
     resultTrue: {
       label: 'Take Advantage of Platform Cache',
       message: 'Use Platform Cache to improve the performance of your application.',
-      url: 'https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_cache_namespace_overview.htm'
+      url: 'https://medium.com/inside-the-salesforce-ecosystem/leverage-platform-cache-to-reduce-transaction-time-and-increase-customer-satisfaction-cd3616c9c6ee'
     }
   },
   {
@@ -386,6 +386,18 @@ const enablementRules = [{
       label: 'Learn about migrating from Aura Web Components to Lightning Web Components',
       message: 'Lightning Web Components are the new Salesforce standard for Lightning Components featuring easier devlopment, better performance and standards compliance. For a decision matrix on whether you should be considering migrating to LWC see this blog.',
       url: 'https://medium.com/inside-the-salesforce-ecosystem/lightning-web-components-an-isv-partner-digest-59d9191f3248'
+    }
+  },
+  {
+    name: 'Local LWC Development',
+    condition: {
+      metadataType: 'LightningComponentBundle',
+      operator: 'exists'
+    },
+    resultTrue: {
+      label: 'Lightning Web Component Local Development',
+      message: 'Lightning Component Development can be significantly improved using local development. See this webinar for more information',
+      url: 'https://developer.salesforce.com/event/salesforce-lightning-base-components-open-source'
     }
   },
   {
@@ -502,8 +514,12 @@ const qualityRules = [{
   {
     name: 'Custom Object Description',
     condition: {
-      metadataType: 'componentProperties.CustomObject.*.descriptionExists',
-      operator: 'notexists'
+      metadataType: 'componentProperties.CustomObject',
+      operator: 'exists',
+      conditionAnd: {
+        metadataType: 'componentProperties.CustomObject.*.descriptionExists',
+        operator: 'notexists'
+      }
     },
     resultTrue: {
       label: 'Custom Objects should have a description',
@@ -514,10 +530,14 @@ const qualityRules = [{
   {
     name: 'Custom Field Description',
     condition: {
-      metadataType: 'componentProperties.CustomField.*.descriptionExists',
-      operator: 'exists'
+      metadataType: 'componentProperties.CustomField',
+      operator: 'exists',
+      conditionAnd: {
+        metadataType: 'componentProperties.CustomField.*.descriptionExists',
+        operator: 'notexists'
+      }
     },
-    resultFalse: {
+    resultTrue: {
       label: 'Custom Fields should have a description',
       message: `It is a best practice that Custom Fields have a description.`,
       showDetails: true
@@ -655,12 +675,38 @@ const alertRules = [{
     condition: {
       metadataType: 'RecordType',
       operator: 'exists',
-      expiration: '2020-22-01T00:00:00.000Z'
+      expiration: '2020-05-01T00:00:00.000Z'
     },
     resultTrue: {
       label: 'Change to Record Type Access',
       message: 'There have been changes to Record Type access in permission sets within Managed Packages for Winter \'20 in response to a Known Issue. Subscribers may need to upgrade your package to see this fix.',
       url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GSdBoQAL',
+    }
+ },
+ {
+    name: 'Lightning Platform API Versions 7-20',
+    condition: {
+      metadataType: 'apiVersions.*.*',
+      operator: 'between',
+      operand: [7,20],
+    },
+    resultTrue: {
+      label: 'Lightning Platform API Versions 7-20 Retiring in Summer ‘21',
+      message: 'With the Summer ‘21 release, SOAP, REST, and Bulk API legacy versions 7 through 20 will be retired and no longer supported by Salesforce. When these legacy versions are retired, applications consuming impacted versions of the APIs will experience a disruption as the requests will fail and result in an error indicating that the requested endpoint has been deactivated.',
+      url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GXNIDQA5'
+    }
+ },
+ {
+    name: 'External Sharing Model set to Private for all entities',
+    condition: {
+      expiration: '2020-10-9T00:00:00.000Z',
+      metadataType: 'any',
+      operator: 'always'
+    },
+    resultTrue: {
+      label: 'All new orgs will sign up with External Sharing Model set to Private for all entities in Spring’20',
+      message: 'The external sharing model is automatically enabled in Salesforce orgs created in Spring ’20 or after. Also, external access levels are initially set to Private for all objects in these orgs. These changes don’t affect existing customers.',
+      url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GNnm3QAD'
     }
  },
 ];
@@ -901,6 +947,42 @@ const dependencyRules = [{
       metadataType: 'dependencies.features.PersonAccount',
       operator: 'exists'
     }
+},
+{
+  name: 'EinsteinAnalytics',
+  label: 'Einstein Analytics',
+  condition: {
+    metadataType: 'WaveApplication',
+    operator: 'exists',
+    conditionOr: {
+      metadataType: 'WaveDataflow',
+      operator: 'exists',
+      conditionOr: {
+        metadataType: 'WaveDashboard',
+        operator: 'exists',
+        conditionOr: {
+          metadataType: 'WaveDataset',
+          operator: 'exists',
+          conditionOr: {
+            metadataType: 'WaveLens',
+            operator: 'exists',
+            conditionOr: {
+              metadataType: 'WaveRecipe',
+              operator: 'exists',
+              conditionOr: {
+                metadataType: 'WaveTemplateBundle',
+                operator: 'exists',
+                conditionOr: {
+                  metadataType: 'WaveXmd',
+                  operator: 'exists'
+                }
+                }
+              }
+            }
+          }
+        }
+    }
+  }
 }
 ]
 

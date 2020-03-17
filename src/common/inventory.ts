@@ -226,9 +226,8 @@ export class packageInventory {
   private isRuleValid(rule) {
 
     return (rule['name'] != undefined &&
-      rule['condition'] != undefined
-      &&
-      (rule['resultTrue'] != undefined || rule['resultFalse'] != undefined))
+            rule['condition'] != undefined &&
+            (rule['resultTrue'] != undefined || rule['resultFalse'] != undefined));
   }
 
   public getDependencies() {
