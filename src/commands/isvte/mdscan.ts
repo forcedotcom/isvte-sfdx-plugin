@@ -265,6 +265,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
       if (types[typeIdx]['members'].includes('*')) {
         this.loggit.loggit('Found Wildcard Members');
         types[typeIdx]['members'] = this.getMembers(types[typeIdx]);
+//        this.loggit.loggit('Members: ' + JSON.stringify(types[typeIdx]['members']));
       }
       typeInv['count'] = types[typeIdx]['members'].length;
 
@@ -852,7 +853,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
       }
     }
 
-    let xmlData = fs.readFileSync(xmlfile, 'ascii');
+    let xmlData = fs.readFileSync(xmlfile, 'utf8');
     parser.parseString(xmlData.substring(0, xmlData.length), function (err, result) {
       error = err;
       json = result;

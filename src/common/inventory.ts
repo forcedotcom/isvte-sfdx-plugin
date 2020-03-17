@@ -327,6 +327,7 @@ export class packageInventory {
     
     this._techAdoption = [...techAdoptionRules];
     for (var adoptionCategory of this._techAdoption) {
+
       for (var item of adoptionCategory.items) {
         item['isIncluded'] = false;
         for (var counts of this.getCountByMetadataType(item.metadataType)) {

@@ -110,7 +110,7 @@ e.g the first will output just the message. The second will output the message a
 
 const minAPI = 43;
 
-const rulesVersion = '20200207';
+const rulesVersion = '20200317';
 
 const mdTypes = [{
   name: 'Permission Sets',
