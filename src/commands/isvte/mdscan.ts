@@ -147,98 +147,109 @@ For more information, please connect in the ISV Technical Enablement Plugin
         this.ux.table(inventoryArray, ['Metadata Type', 'count']);
         this.ux.log('\n');
       }
+
+
       if (!this.suppressEnablement) {
         let recommendations = this.packageInventory.getEnablementMessages();
         if (recommendations.length > 0) {
           this.ux.styledHeader('Best Practices and Feature Recommendations:');
           for (var recommendation of recommendations) {
+            let message = `${recommendation.label}:\n${recommendation.message}\n`;
             if (recommendation.url != undefined) {
-              this.ux.log(`${recommendation.label}:\n${recommendation.message}\nURL:${recommendation.url}\n`);
-            } else {
-              this.ux.log(`${recommendation.label}:\n${recommendation.message}\n`);
+              message += `URL:${recommendation.url}\n`;
             }
+            if (recommendation.exceptions != undefined && recommendation.exceptions.length >0) {
+              message += `Components: ${recommendation.exceptions.join(', ')}\n`;
+            }
+            this.ux.log(message);
           }
-          this.ux.log('\n');
         }
+
       }
 
       if (!this.suppressQuality) {
-        let notes = this.packageInventory.getQualityRecommendations().filter(element => {
-          return (!this.suppressAPI || element.metadataType.split('.')[0] !== 'apiVersions');
-        });
-        if (notes.length > 0) {
+//TODO: suppress API is not used
+        let recommendations = this.packageInventory.getQualityRecommendations();
+        if (recommendations.length > 0) {
           this.ux.styledHeader('Quality Rules:');
-          for (var note of notes) {
-            if (note.metadataType.split('.')[0] == 'apiVersions') {
-              this.ux.log(`${note.label} < ${this.flags.minapi}:\n${note.message}\nComponents: ${note.exceptions.join(', ')}\n`);
+          for (var recommendation of recommendations) {
+            let message = `${recommendation.label}:\n${recommendation.message}\n`;
+            if (recommendation.url != undefined) {
+              message += `URL:${recommendation.url}\n`;
             }
-            else {
-              this.ux.log(`${note.label}:\n${note.message}\nComponents: ${note.exceptions.join(', ')}\n`);
+            if (recommendation.exceptions != undefined && recommendation.exceptions.length >0) {
+              message += `Components: ${recommendation.exceptions.join(', ')}\n`;
             }
+            this.ux.log(message);
           }
         }
 
       }
       if (!this.suppressAlerts) {
-        let alerts = this.packageInventory.getAlerts();
-        this.ux.styledHeader('Partner Alerts:');
-          this.ux.log('Sign up here to be notified of all Partner Alerts: \nURL:https://partners.salesforce.com/partnerAlert?id=a033A00000FtFWqQAN\n');
-        if (alerts.length > 0) {
-
-          for (var alert of alerts) {
-            this.ux.log(`${alert.label}:\n${alert.message}\nURL:${alert.url}\nComponents: ${alert.exceptions.join(', ')}\n`);
+        let recommendations = this.packageInventory.getAlerts();
+        if (recommendations.length > 0) {
+          this.ux.styledHeader('Partner Alerts:');
+          for (var recommendation of recommendations) {
+            let message = `${recommendation.label}:\n${recommendation.message}\n`;
+            if (recommendation.url != undefined) {
+              message += `URL:${recommendation.url}\n`;
+            }
+            if (recommendation.exceptions != undefined && recommendation.exceptions.length >0) {
+              message += `Components: ${recommendation.exceptions.join(', ')}\n`;
+            }
+            this.ux.log(message);
           }
-          this.ux.log('\n');
         }
+     
       }
       if (!this.suppressWarnings) {
-        this.ux.styledHeader('Installation Warnings:');
+        this.ux.styledHeader('Installation Warnings');
         let warnings = this.packageInventory.getInstallationWarnings();
         if (warnings.length > 0) {
           for (var warning of warnings) {
             this.ux.log(`Package cannot be installed in ${warning['edition']} due to:`)
             for (var blockingItem of warning['blockingItems']) {
-              this.ux.log(`  ${blockingItem['label']} count (${blockingItem['count']}) is greater than the edition limit (${blockingItem['threshold']})`);
-              if (blockingItem['requiresSR']) {
-                this.ux.log('\tThis restriction is lifted when your package passes Security Review');
-              }
+              this.ux.log(`  ${blockingItem['label']} `);
             }
             this.ux.log('\n');
           }
         } else {
           this.ux.log('Can be installed in any Edition\n');
         }
+
+        let dependencies = this.packageInventory.getDependencies();
+        if (dependencies.length > 0) {
+          this.ux.log('Feature and License Dependencies:');
+          for (var dependency of dependencies) {
+            this.ux.log(`  ${dependency.label}`);
+          }
+          this.ux.log('\n');
+        }
       }
 
       if (!this.suppressAdoptionScore) {
         this.ux.styledHeader('Technology Adoption:');
         for (var category of this.packageInventory.getTechAdoptionScore()) {
-          this.ux.log(`\n${category.categoryLabel}\n`);
+          this.ux.log(`${category.categoryLabel}\n`);
           for (var item of category.items) {
             this.ux.log(`   ${item.label}: ${item.isIncluded ? 'Found' : 'Not Found'}`)
           }
+          this.ux.log('\n');
         }
       }
 
-      // this.ux.log(this.packageInventory.getInstallationWarnings());
     }
 
     return this.packageInventory.getJSONOutput();
 
   }
-
-  // private checkPackage(p) {
-
-  //   this.loggit.loggit('-Getting Inventory');
-  //   this.packageInventory.setMetadata(this.inventoryPackage(p));
-  //  // this.packageInventory.setAPIVersion(parseFloat(p.version[0]));
-  // }
-
+  
   private inventoryPackage(p) {
     let types = p.types;
     let inventory = {};
     let apiVersions = {};
     let componentProperties = {};
+    let dependencies = {};
     if (p.version) {
       apiVersions['mdapi'] = parseFloat(p.version[0]);
     }
@@ -247,11 +258,9 @@ For more information, please connect in the ISV Technical Enablement Plugin
       let typeInv = {};
 
       typeInv['index'] = typeIdx;
-      typeInv['count'] = types[typeIdx]['members'].length;
-
+      
       this.loggit.loggit('Checking MetadataType: ' + metadataType);
-      this.loggit.loggit('  Found ' + types[typeIdx]['members'].length + ' members');
-      this.loggit.loggit('Members: ' + JSON.stringify(types[typeIdx]['members']));
+
       //Check for wildcard members
       if (types[typeIdx]['members'].includes('*')) {
         this.loggit.loggit('Found Wildcard Members');
@@ -259,6 +268,9 @@ For more information, please connect in the ISV Technical Enablement Plugin
 //        this.loggit.loggit('Members: ' + JSON.stringify(types[typeIdx]['members']));
       }
       typeInv['count'] = types[typeIdx]['members'].length;
+
+      this.loggit.loggit('  Found ' + types[typeIdx]['members'].length + ' members');
+      this.loggit.loggit('Members: ' + JSON.stringify(types[typeIdx]['members']));
 
       switch (String(metadataType)) {
         case 'CustomField':
@@ -279,7 +291,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
               objectType = 'External';
             }
             if (objectFields[objectName]) {
-              objectFields[objectName]['count']++
+              objectFields[objectName]['count'] += 1;
             } else {
               objectFields[objectName] = {
                 'count': 1,
@@ -337,22 +349,22 @@ For more information, please connect in the ISV Technical Enablement Plugin
             //Check external Objects
             if (objectName.slice(-3) == '__x') {
               //xoType['count']++;
-              xoCount++;
+              xoCount += 1;
             }
             //Check Big Objects
             if (objectName.slice(-3) == '__b') {
               //  boType['count']++;
-              boCount++;
+              boCount +=1;
             }
 
             //Check Platform Events
             if (objectName.slice(-3) == '__e') {
-              peType['count']++;
+              peType['count'] +=1;
             }
 
             //Check Feature Management Parameters
             if (String(objectName).includes('FeatureParameter')) {
-              fmType['count']++;
+              fmType['count'] +=1;
             }
 
             let objectXml = `${objectPath}/${objectName}.object`;
@@ -360,7 +372,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
             //Check Custom Settings
             if (objectJSON['CustomObject'] && objectJSON['CustomObject']['customSettingsType']) {
-              csType['count']++;
+              csType['count'] +1;
             }
             //Check for Descriptions
             if (objectName.slice(-3) == '__c') {
@@ -398,25 +410,12 @@ For more information, please connect in the ISV Technical Enablement Plugin
           //Check for Flow Templates
 
           this.loggit.loggit('Checking flows');
-          // let flowTemplate = {count:0};
 
-          // const flowPath = `${this.flags.sourcefolder}/flows`;
-          // for (var flowIdx in types[typeIdx]['members']) {
-          //   let flowName = types[typeIdx]['members'][flowIdx];
-          //   let flowXml = `${flowPath}/${flowName}.flow`;
-          //   let flowJSON = this.parseXML(flowXml)['Flow'];
-          //   if (flowJSON['isTemplate'] && flowJSON['isTemplate'][0] === 'true') {
-          //     flowTemplate['count']++;
-          //   }
-          // }
-          // inventory['FlowTemplate__c'] = flowTemplate;
           let templateCount = 0;
           let screenTemplateCount = 0;
           let autolaunchedTemplateCount = 0;
           let objects = {};
-          //let autolaunchCount = 0;
-          //let processBuilderCount = 0;
-          //let screenFlowCount = 0;
+
           const flowPath = `${this.flags.sourcefolder}/flows`;
           for (var flowIdx in types[typeIdx]['members']) {
             let flowName = types[typeIdx]['members'][flowIdx];
@@ -424,18 +423,18 @@ For more information, please connect in the ISV Technical Enablement Plugin
             let flowJSON = this.parseXML(flowXml);
             this.loggit.loggit('Checking file:' + flowXml);
             if (flowJSON['Flow'] && flowJSON['Flow']['isTemplate'] && flowJSON['Flow']['isTemplate'][0] === 'true') {
-              templateCount++;
+              templateCount +=1;
               if (flowJSON['Flow']['processType'] && flowJSON['Flow']['processType'] == 'Flow') {
-                screenTemplateCount++;
+                screenTemplateCount +=1;
               }
               if (flowJSON['Flow']['processType'] && flowJSON['Flow']['processType'] == 'AutoLaunchedFlow') {
-                autolaunchedTemplateCount++;
+                autolaunchedTemplateCount +=1;
               }
             }
             if (flowJSON['Flow'] && flowJSON['Flow']['processType']) {
               this.loggit.loggit('Flow Type:' + flowJSON['Flow']['processType']);
               if (typeInv[flowJSON['Flow']['processType']]) {
-                typeInv[flowJSON['Flow']['processType']]++;
+                typeInv[flowJSON['Flow']['processType']] +=1;
 
               } else {
                 typeInv[flowJSON['Flow']['processType']] = 1;
@@ -452,7 +451,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
                     let objectName = processMetadataValue['value'][0]['stringValue'][0];
                     this.loggit.loggit('Extracted Object Name:' + objectName);
                     if (objects[objectName]) {
-                      objects[objectName]['count']++;
+                      objects[objectName]['count'] +=1;
                     } else {
                       objects[objectName] = {
                         count: 1
@@ -492,18 +491,16 @@ For more information, please connect in the ISV Technical Enablement Plugin
                 navType = appJSON['CustomApplication']['navType'][0];
               }
               if (uiType === 'Lightning') {
-                lightningCount++;
+                lightningCount +=1;
                 if (navType === 'Console') {
-                  lightingConsoleCount++;
+                  lightingConsoleCount +=1;
                 }
               } else if (uiType === 'Aloha') {
-                classicCount++;
+                classicCount +=1;
                 if (navType === 'Console') {
-                  classicConsoleCount++;
+                  classicConsoleCount +=1;
                 }
               }
-              //<uiType>Lightning</uiType>
-              //<navType>Console</navType>
             }
           }
           typeInv['LightingAppCount'] = lightningCount;
@@ -522,7 +519,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
             let caXml = `${caPath}/${caName}.connectedApp`;
             let caJSON = this.parseXML(caXml);
             if (caJSON['ConnectedApp'] && caJSON['ConnectedApp']['canvasConfig']) {
-              canvasCount++;
+              canvasCount +=1;
             }
           }
           typeInv['CanvasApp'] = canvasCount;
@@ -561,27 +558,27 @@ For more information, please connect in the ISV Technical Enablement Plugin
               //    testCount++;
               //  }
               if (futureReg.test(classBody)) {
-                futureCount++;
+                futureCount +=1;
               }
               if (auraEnabledReg.test(classBody)) {
-                auraEnabledCount++;
+                auraEnabledCount +=1;
               }
               if (invocableReg.test(classBody)) {
-                invocableCount++;
+                invocableCount +=1;
               }
               if (restReg.test(classBody)) {
-                apexRestCount++;
+                apexRestCount +=1;
               }
               if (soapReg.test(classBody)) {
-                apexSoapCount++;
+                apexSoapCount +=1;
               }
               if (scheduleReg.test(classBody)) {
-                schedulableCount++;
+                schedulableCount +=1;
               }
               if (batchReg.test(classBody)) {
-                batchCount++;
+                batchCount +=1;
               }
-              //batchCount += ((classBody || '').match(batchReg) || []).length;
+
             }
 
             let classMetaFile = `${apexPath}/${className}.cls-meta.xml`;
@@ -629,10 +626,10 @@ For more information, please connect in the ISV Technical Enablement Plugin
               this.loggit.loggit('Trigger Type: ' + triggerType);
               if (triggerObj.slice(-11).toLowerCase() === 'changeevent') {
                 //  asyncTrigger['count']++;
-                asyncCount++;
+                asyncCount +=1;
               }
               if (triggerInv[triggerObj]) {
-                triggerInv[triggerObj]['count']++;
+                triggerInv[triggerObj]['count'] += 1;
               } else {
                 triggerInv[triggerObj] = {
                   count: 1
@@ -652,20 +649,15 @@ For more information, please connect in the ISV Technical Enablement Plugin
               }
             }
           }
-          //  this.loggit(triggerInv,'JSON');
           typeInv['objects'] = triggerInv;
           typeInv['AsyncTrigger'] = asyncCount;
-          //inventory['AsyncTrigger__c'] = asyncTrigger;
-
           break;
         case 'LightningComponentBundle':
           this.loggit.loggit('Interrogating LWC');
           const lwcPath = `${this.flags.sourcefolder}/lwc`;
           let exposedCount = 0;
-          let appPageCount = 0;
-          let recordPageCount = 0;
-          let homePageCount = 0;
-          let flowScreenCount = 0;
+          let targets = {}
+
 
           for (var lwcIdx in types[typeIdx]['members']) {
             const lwcName = types[typeIdx]['members'][lwcIdx];
@@ -683,33 +675,25 @@ For more information, please connect in the ISV Technical Enablement Plugin
                 apiVersions['LightningComponentBundle'][lwcName] = parseFloat(lwcJSON['apiVersion'][0]);
               }
               if (lwcJSON['isExposed'] && lwcJSON['isExposed'][0] === 'true') {
-                exposedCount++;
+                exposedCount +=1;
               }
               if (lwcJSON['targets'] && lwcJSON['targets'][0]['target']) {
                 this.loggit.loggit('Checking Targets');
                 this.loggit.loggit(lwcJSON['targets'][0]);
                 for (let target of lwcJSON['targets'][0]['target']) {
-                  if (target === 'lightning__RecordPage') {
-                    recordPageCount++;
+                  if (targets[target] != undefined) {
+                    targets[target] +=1;
                   }
-                  if (target === 'lightning__AppPage') {
-                    appPageCount++;
-                  }
-                  if (target === 'lightning__HomePage') {
-                    homePageCount++;
-                  }
-                  if (target === 'lightning__FlowScreen') {
-                    flowScreenCount++;
+                  else {
+                    targets[target] = 1;
                   }
                 }
               }
             }
           }
           typeInv['ExposedComponents'] = exposedCount;
-          typeInv['RecordPageComponents'] = recordPageCount;
-          typeInv['AppPageComponents'] = appPageCount;
-          typeInv['HomePageComponents'] = homePageCount;
-          typeInv['FlowScreenComponents'] = flowScreenCount;
+          typeInv['targets'] = targets;
+
 
           break;
         case 'AuraDefinitionBundle':
@@ -728,14 +712,14 @@ For more information, please connect in the ISV Technical Enablement Plugin
             }
             //Count Used Components by Namespace
             let auraCmpFile = `${auraPath}/${auraName}/${auraName}.cmp`;
-            this.loggit.loggit(`Checking ${auraCmpFile} for ui namespace components`);
+            this.loggit.loggit(`Extracting info from ${auraCmpFile}`);
 
             if (fs.existsSync(auraCmpFile)) {
 
               let auraBody = fs.readFileSync(auraCmpFile, 'utf8');
-              
+
+              this.loggit.loggit('Performing Regex search against component for namespaces');
               const componentsReg = /<(\w+:\w+)/ig;
-              this.loggit.loggit('Performing Regex search against component');
               let referencedComponents = this.getMatches(auraBody,componentsReg);
               if (referencedComponents.length > 0) {
                 this.loggit.loggit(`Found the following Components: ${JSON.stringify(referencedComponents)}`);
@@ -757,8 +741,27 @@ For more information, please connect in the ISV Technical Enablement Plugin
                     componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] += 1
                   }
                 });
-
-                
+              }
+              this.loggit.loggit('Extracting implemented and extended interfaces');
+              const interfaceReg = /(?:implements|extends)\s*=\s*"([\w ,:]+)"/igm;
+              let interfaceMatches=this.getMatches(auraBody,interfaceReg);
+              if (interfaceMatches.length > 0) {
+                this.loggit.loggit(`Found the following Interfaces: ${JSON.stringify(interfaceMatches)}`);
+                if (componentProperties['AuraDefinitionBundle'] == undefined) {
+                  componentProperties['AuraDefinitionBundle'] = {};
+                }
+                if (componentProperties['AuraDefinitionBundle'][auraName] == undefined) {
+                  componentProperties['AuraDefinitionBundle'][auraName] = {};
+                }
+                if (componentProperties['AuraDefinitionBundle'][auraName]['interfaces'] == undefined) {
+                  componentProperties['AuraDefinitionBundle'][auraName]['interfaces'] = {};
+                }
+                interfaceMatches.forEach(element => {
+                  let interfaces = element.split(/ *, */);
+                  interfaces.forEach(element => {
+                    componentProperties['AuraDefinitionBundle'][auraName]['interfaces'][element] = 1;
+                  });
+                })
               }
             }
             else {
@@ -773,21 +776,19 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
     //Check Person Accounts
     let pafile = `${this.flags.sourcefolder}/objects/PersonAccount.object`;
-    //let paType = {
-    //  count: 0
-    //};
-
     if (fs.existsSync(pafile)) {
-      //paType['count'] = 1;
-      inventory['PersonAccount__c'] = {
-        count: 1
-      };
+      if (dependencies['features'] == undefined) {
+        dependencies['features'] = {};
+      }
+      dependencies['features']['PersonAccount'] = 1;
     }
-    //Add Version Info
+
     inventory['apiVersions'] = apiVersions;
     inventory['componentProperties'] = componentProperties;
+    inventory['dependencies'] = dependencies;
     return inventory;
   }
+
 
   private getMembers(mdTypeDef) {
     this.loggit.loggit('Getting wildcard members for ' + mdTypeDef.name) ;
@@ -822,7 +823,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
     this.loggit.loggit('Found Members: ' + JSON.stringify(members));
     return members;
   }
-
+  
   private getMatches(searchString, regex) {
     let matches = [];
     let match;
@@ -865,20 +866,4 @@ For more information, please connect in the ISV Technical Enablement Plugin
     return json;
   }
 
-  // private loggit(logMessage, type = '') {
-  //   switch(type) { 
-  //     case 'Error': { 
-  //       this.isvteLogger.error(logMessage);
-  //        break; 
-  //     } 
-  //     case 'Warn': {
-  //       this.isvteLogger.warn(logMessage);
-  //       break;
-  //     }
-  //     default: { 
-  //       this.isvteLogger.debug(logMessage);
-  //       break; 
-  //     } 
-  //  } 
-  // }
 }

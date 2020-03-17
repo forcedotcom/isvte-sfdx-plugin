@@ -14,7 +14,8 @@ import {
   editionWarningRules,
   alertRules,
   qualityRules,
-  rulesVersion
+  rulesVersion,
+  techAdoptionRules
 } from '../../common/rules';
 import {
   loggit
@@ -48,76 +49,141 @@ For more information, please connect in the ISV Technical Enablement Plugin
     this.ux.table(mdTypes, ['name', 'metadataType']);
     this.ux.log('\n\n');
     this.ux.styledHeader('Best Practices and Feature Recommendations:');
-    for (var enablementRule of this.getAllRules(enablementRules)) {
-      this.ux.log(`Rule: ${enablementRule.label}\n Trigger: ${enablementRule.metadataType} ${enablementRule.threshold}\n Message: ${enablementRule.message}\n URL: ${enablementRule.url}\n`);
+    let i=1;
+    for (var enablementRule of enablementRules) {
+      if (enablementRule.resultFalse != undefined) {
+        this.ux.log(`${i++}. ${this.resultToString(enablementRule.resultFalse)}\n`);
+      }
+      if (enablementRule.resultTrue != undefined) {
+        this.ux.log(`${i++}. ${this.resultToString(enablementRule.resultTrue)}\n`);
+      }
     }
     this.ux.log('\n\n');
+    i=1;
     this.ux.styledHeader('Quality Rules:');
-    for (var qualityRule of this.getAllRules(qualityRules)) {
-      this.ux.log(`Rule: ${qualityRule.label}\n Trigger: ${qualityRule.metadataType} ${qualityRule.threshold}\n Message: ${qualityRule.message}\n`);
+    for (var qualityRule of qualityRules) {
+      if (qualityRule.resultFalse != undefined) {
+        this.ux.log(`${i++}. ${this.resultToString(qualityRule.resultFalse)}\n`);
+      }
+      if (qualityRule.resultTrue != undefined) {
+        this.ux.log(`${i++}. ${this.resultToString(qualityRule.resultTrue)}\n`);
+      }
     }
     this.ux.log('\n\n');
-    
+    i=1;
     this.ux.styledHeader('Partner Alerts:');
     for (var alert of alertRules) {
-      this.ux.log(`Alert Name: ${alert.label}\n Message: ${alert.message}\n URL: ${alert.url}\n Expiration: ${alert.expiration}\n`);
+      if (alert.resultFalse != undefined) {
+        this.ux.log(`${i++}. ${this.resultToString(alert.resultFalse)}\n`);
+      }
+      if (alert.resultTrue != undefined) {
+        this.ux.log(`${i++}. ${this.resultToString(alert.resultTrue)}\n`);
+      }
     }
     this.ux.styledHeader('Installation Warnings:');
-    this.ux.table(this.getAllEditionWarnings(), ['Edition', 'Item', 'Threshold']);
+    this.ux.table(this.getAllEditionWarnings(), ['Edition', 'Item', 'Condition']);
+    this.ux.log('\n\n');
+    this.ux.styledHeader('Tech Adoption');
+    this.ux.table(this.getAllAdoptionRules(),['Category','MetadataType']);
     this.ux.log('\n\n');
     return {
-      'Rules Version' : rulesVersion,
-      'Monitored Types': mdTypes,
-      'Enablement Rules': this.getAllRules(enablementRules),
-      'Quality Rules': this.getAllRules(qualityRules),
-      'Alerts': alertRules,
-      'Edition Warnings': editionWarningRules
+      'rulesVersion' : rulesVersion,
+      'monitoredTypes': mdTypes,
+      'enablementRules': enablementRules,
+      'qualityRules': qualityRules,
+      'partnerAlerts': alertRules,
+      'editionWarnings': editionWarningRules,
+      'techAdoptionRules': techAdoptionRules
     };
 
   };
 
-  private getAllRules = function (ruleDefs) {
-    this.loggit.loggit('Formatting Rules for export');
-    let output = [];
-    for (let mdType of ruleDefs) {
-      if (mdType['threshold'] != undefined) {
-        if (mdType['recPos'] != undefined) {
-          output.push({
-            metadataType: mdType['metadataType'],
-            label: mdType['label'],
-            threshold: `> ${mdType['threshold']}`,
-            message: mdType['recPos']['message'],
-            url: mdType['recPos']['url']
-          });
-        }
-        if (mdType['recNeg'] != undefined) {
-          output.push({
-            metadataType: mdType['metadataType'],
-            label: mdType['label'],
-            threshold: `<= ${mdType['threshold']}`,
-            message: mdType['recNeg']['message'],
-            url: mdType['recNeg']['url']
-          });
-        }
-      }
+  private resultToString = function(result) {
+    let retVal = `${result.label}:\n  ${result.message}`;
+    if (result.url != undefined) {
+      retVal += `\n  ${result.url}`
     }
-    return output;
+    return retVal + '\n';
+  }
+
+  private conditionToString = function(cond) {
+    let retVal = '';
+    
+    switch (cond.operator) {
+      case 'always':
+        retVal = 'Always';
+        break;
+      case 'never':
+        retVal = 'Never';
+        break;
+      case 'exists':
+        retVal = `${cond.metadataType} Exists`;
+        break;
+      case 'notexists':
+        retVal = `${cond.metadataType} Does Not Exist`;
+        break;
+      case 'null':
+        retVal = `${cond.metadataType} is Null`;
+        break;
+      case 'gt':
+        retVal = `${cond.metadataType} is Greater Than ${cond.operand}`;
+        break;
+      case 'gte':
+        retVal = `${cond.metadataType} is Greater Than or Equal to ${cond.operand}`;
+        break;
+      case 'lt':
+        retVal = `${cond.metadataType} is Less Than ${cond.operand}`;
+        break;
+      case 'lte':
+        retVal = `${cond.metadataType} is Less Than or Equal to ${cond.operand}`;
+        break;
+      case 'eq':
+        retVal = `${cond.metadataType} is Equal to ${cond.operand}`;
+        break;
+      case 'between':
+        retVal = `${cond.metadataType} is Between ${cond.operand[0]} And ${cond.operand[1]}`;
+        break; 
+    }
+
+    if (cond.conditionOr != undefined) {
+      retVal += ' Or (' + this.conditionToString(cond.conditionOr) + ')';
+    }
+    if (cond.conditionAnd != undefined) {
+      retVal += ' And (' + this.conditionToString(cond.conditionAnd) + ')';
+    }
+    return retVal;
   };
 
   private getAllEditionWarnings = function () {
     this.loggit.loggit('Formatting Edition Warnings for export');
-    let output = [];
+    let retVal = [];
     for (let edition of editionWarningRules) {
-      output.push({
+      retVal.push({
         Edition: edition['name']
       });
       for (let blockingRule of edition['blockingItems']) {
-        output.push({
-          Item: blockingRule['label'],
-          Threshold: blockingRule['threshold']
+        retVal.push({
+          Item: blockingRule.label,
+          Condition: this.conditionToString(blockingRule.condition)
         });
       }
     }
-    return output;
+    return retVal;
   };
+
+  private getAllAdoptionRules = function() {
+    this.loggit.loggit('Formatting Tech Adoption Rules for export');
+    let retVal = [];
+    for (let category of techAdoptionRules) {
+      retVal.push({
+        Category: category['categoryName']
+      });
+      for (let rule of category['items']) {
+        retVal.push({
+          MetadataType: rule.label
+        })
+      }
+    }
+    return retVal;
+  }
 }
