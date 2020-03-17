@@ -11,7 +11,9 @@ import {
   qualityRules,
   alertRules,
   minAPI,
-  techAdoptionRules
+  techAdoptionRules,
+  dependencyRules,
+
 } from './rules';
 import {
   loggit
@@ -24,6 +26,13 @@ export class packageInventory {
   private _mdMonitoredInvArray;
   private loggit;
   private _minAPI = minAPI;
+  private _enablementMessages;
+  private _alerts;
+  private _installationWarnings;
+  private _qualityRules;
+  private _techAdoption;
+  private _dependencies;
+
 
   public constructor() {
     this.loggit = new loggit('isvtePlugin:PackageInventory');
@@ -31,8 +40,7 @@ export class packageInventory {
   };
 
   public setMinAPI(newAPIVersion) {
-    //set this to be just below the minimum because recNeg uses less than or equal. We just want less than for API checks 
-    this._minAPI = newAPIVersion - .01; 
+    this._minAPI = newAPIVersion;
   };
 
   public setMetadata(md) {
@@ -40,80 +48,286 @@ export class packageInventory {
     this._mdInv = md;
   };
 
-  public getInstallationWarnings() {
-    this.loggit.loggit('Getting Installation Warnings');
-    let warnings = [];
-    for (var edition of editionWarningRules) {
-      this.loggit.loggit('Checking Edition Rule:' + JSON.stringify(edition));
-      let editionBlock = [];
-      for (var blockingType of edition['blockingItems']) {
-        this.loggit.loggit('Checking Blocing Item: ' + JSON.stringify(blockingType));
-        if (this.getInventoryCountByMetadataType(blockingType['metadataType']) > blockingType['threshold']) {
-          if (blockingType['requiresSR']) {
-            editionBlock.push({
-              metadataType: blockingType['metadataType'],
-              label: blockingType['label'],
-              requiresSR: blockingType['requiresSR'],
-              threshold: blockingType['threshold'],
-              count: this.getInventoryCountByMetadataType(blockingType['metadataType'])
-            });
-          } else {
-            editionBlock.push({
-              metadataType: blockingType['metadataType'],
-              label: blockingType['label'],
-              threshold: blockingType['threshold'],
-              count: this.getInventoryCountByMetadataType(blockingType['metadataType'])
-            });
-          }
-        }
-      }
-      if (editionBlock.length > 0) {
-        this.loggit.loggit('Blocks Found for edition ' + edition['name']);
-        warnings.push({
-          'edition': edition['name'],
-          blockingItems: editionBlock
+
+  private checkCondition(cond) {
+    this.loggit.loggit('Checking Condition:' + JSON.stringify(cond));
+    let response = {
+      conditionPass: false,
+      passItems: [],
+      failItems: []
+    };
+    if (!this.isConditionValid(cond)) {
+      this.loggit.loggit('Condition is not valid. Returning false')
+      return response;
+    }
+      let mdTypeCount = this.getCountByMetadataType(cond.metadataType);
+      if (mdTypeCount.length == 0) {
+        this.loggit.loggit('Checking Condition. empty response receieved. We should not end up here');
+        mdTypeCount.push({
+          property: cond.metadataType,
+          value: -1
         });
       }
-    }
-    return warnings;
-  };
-
-  public getAlerts() {
-    this.loggit.loggit('Getting Alerts');
-    let alerts = [];
-    const now = new Date().toJSON();
-    for (var alertDef of alertRules) {
-      this.loggit.loggit('Checking Relevance of alert: ' + JSON.stringify(alertDef));
-      let exceptions = [];
-   /*   if ((alertDef.expiration > now) && this.getInventoryCountByMetadataType(alertDef['metadataType']) > 0) {
-        alerts.push(alertDef);
-      }*/
-      if (alertDef.expiration > now) {
-        for (var count of this.getCountByMetadataType(alertDef['metadataType'])) {
-          if (count.value > 0) {
-            exceptions.push(count.property);
+      //replace string 'minAPI' in operand with the minumum API specified
+      if (Array.isArray(cond.operand)) {
+        for (let i = 0; i < cond.operand.length; i++) {
+          if (cond.operand[i] === 'minAPI') {
+            this.loggit.loggit('Replacing minAPI placeholder with ' + this._minAPI);
+            cond.operand[i] = this._minAPI;
           }
         }
-        if (exceptions.length > 0) {
-          alerts.push({
-              metadataType: alertDef.metadataType,
-              label: alertDef.label,
-              message: alertDef.message,
-              exceptions: exceptions,
-              url: alertDef.url
-            });
-         
+      }
+      else {
+        if (cond.operand === 'minAPI') {
+          this.loggit.loggit('Replacing minAPI placeholder with ' + this._minAPI);
+
+          cond.operand = this._minAPI;
         }
       }
-       
+
+      for (var itemCount of mdTypeCount) {
+        this.loggit.loggit('Validating item:' + itemCount.property);
+        this.loggit.loggit('  Value:' + itemCount.value);
+        this.loggit.loggit('  Operator:' + cond.operator);
+        this.loggit.loggit('  CompareTo:' + cond.operand);
+        let itemPass = false;
+        switch (cond.operator) {
+          case 'always':
+            itemPass = true;
+            break;
+          case 'never':
+            itemPass = false;
+            break;
+          case 'exists':
+            itemPass = itemCount.value > 0;
+            break;
+          case 'notexists':
+            itemPass = itemCount.value <= 0;
+            break;
+          case 'null':
+            itemPass = itemCount.value < 0;
+            break;
+          case 'gt':
+            itemPass = cond.operand < itemCount.value;
+            break;
+          case 'gte':
+            itemPass = cond.operand <= itemCount.value;
+            break;
+          case 'lt':
+            itemPass = cond.operand > itemCount.value;
+            break;
+          case 'lte':
+            itemPass = cond.operand >= itemCount.value;
+            break;
+          case 'eq':
+            itemPass = cond.operand == itemCount.value;
+            break;
+          case 'between':
+            //Not inclusive
+            itemPass = (cond.operand[0] < itemCount.value) && (cond.operand[1] > itemCount.value);
+            break; 
+        }
+        if (itemPass) {
+          this.loggit.loggit('    Condition Passed');
+          response.conditionPass = true;
+          response.passItems.push(itemCount.property);
+        } else {
+          this.loggit.loggit('    Condition Failed');
+          response.failItems.push(itemCount.property);
+        }
+      }
+      if (cond.conditionOr != undefined) {
+        this.loggit.loggit('Checking OR condition');
+        //By default, don't process the OR if the condition has already passed
+        if (cond.conditionOr.processAlways == true || !response.conditionPass) {
+          let orResponse = this.checkCondition(cond.conditionOr);
+          response.conditionPass = response.conditionPass || orResponse.conditionPass;
+
+          response.passItems.push(...orResponse.passItems);
+          response.failItems.push(...orResponse.failItems);
+        }
+      }
+      if (cond.conditionAnd != undefined) {
+        this.loggit.loggit('Checking AND condition');
+        //By default, don't process the AND if the condition is already false
+        if (cond.conditionAnd.processAlways == true || response.conditionPass) {
+          let andResponse = this.checkCondition(cond.conditionAnd);
+          if (cond.conditionAnd.conditionPerItem) {
+            this.loggit.loggit('Checking condition per item in the AND');
+            this.loggit.loggit('Core Condition passes: ' + JSON.stringify(response.passItems));
+            this.loggit.loggit('And Condition passes: ' + JSON.stringify(andResponse.passItems));
+            //Condition passes if the same property passes in both this condition and in conditionAnd
+            response.passItems = response.passItems.filter(item => andResponse.passItems.includes(item));
+            this.loggit.loggit('Intersection of core and and Conditions: ' + JSON.stringify(response.passItems));
+            //Logic correct here? Fail will return items that do not pass both conditions. Items that pass one condition but not the other are lost.
+            response.failItems = response.failItems.filter(item => andResponse.failItems.includes(item));
+            response.conditionPass = response.passItems.length > 0;
+          } else {
+            response.conditionPass = response.conditionPass && andResponse.conditionPass;
+            response.passItems.push(...andResponse.passItems);
+            response.failItems.push(...andResponse.failItems);
+          }
+        }
+      }
+    
+    return response;
+  }
+
+  private isConditionValid(cond) {
+    this.loggit.loggit('Checking validity of Condition:' + JSON.stringify(cond));
+    let isValid = true;
+    let validOperators = ['always', 'never', 'exists', 'notexists', 'null', 'gt', 'gte', 'lt', 'lte', 'eq','between'];
+    let operatorsNeedOperand = ['gt', 'gte', 'lt', 'lte', 'eq'];
+    
+    //Check Expiration
+    if (cond['expiration'] != undefined) {
+      const now = new Date().toJSON();
+      if (cond.expiration < now) {
+        this.loggit.loggit('Condition has expired. Expiration:' + cond.expiration);
+        isValid = false;
+      }
     }
-    return alerts;
+    //Cannot have both conditionAnd and conditionOr properties
+    if (cond['conditionAnd'] != undefined && cond['conditionOr'] != undefined) {
+      this.loggit.loggit('Condition has both AND and OR sub conditions. Not OK');
+      isValid = false;
+    }
+    //Make sure Operator is valid
+    if (!validOperators.includes(cond['operator'])) {
+      this.loggit.loggit('Condition Operator is not valid: ' + cond['operator']);
+      isValid = false;
+    }
+    //Make sure Operators that require a comparitor have one
+    if (operatorsNeedOperand.includes(cond['operator']) && isNaN(cond['operand'])) {
+      this.loggit.loggit('Operator ' + cond['operator'] + ' requires a value to operate against. Operand:' + JSON.stringify(cond['operand']));
+      isValid = false;
+    }
+
+    //Make sure 'between' has 2 operands and that the first is the lowest
+    if (cond.operator === 'between') {
+      if (Array.isArray(cond.operand) && cond.operand.length == 2) {
+        cond.operand.sort();
+      }
+      else {
+        this.loggit.loggit('Operator ' + cond['operator'] + ' requires 2 operands');
+        isValid = false;
+      }
+    }
+
+    //We need a metadata type unless operator is always or never
+    if ((cond.operator != 'always' && cond.operator != 'never') && cond.metadataType == undefined) {
+      this.loggit.loggit('Operator ' + cond['operator'] + ' requires a metadataType');
+      isValid = false;
+    }
+    return isValid;
+  }
+
+
+  private isRuleValid(rule) {
+
+    return (rule['name'] != undefined &&
+            rule['condition'] != undefined &&
+            (rule['resultTrue'] != undefined || rule['resultFalse'] != undefined));
+  }
+
+  public getDependencies() {
+    this.loggit.loggit('Checking Feature and License Dependencies');
+    if (!this._dependencies) {
+      this._dependencies = [];
+      this.loggit.loggit('Adding Dependencies from Rules');
+      for (var dependencyRule of dependencyRules) {
+        if (this.isConditionValid(dependencyRule.condition)) {
+          if (this.checkCondition(dependencyRule.condition).conditionPass) {
+            this._dependencies.push({
+              name: dependencyRule.name,
+              label: dependencyRule.label
+            })
+          };
+        }
+      }
+    }
+
+    return this._dependencies;
+  }
+
+  public processRules(ruleSet) {
+    //Replaces   public checkRules(ruleSet) 
+    let results = [];
+    this.loggit.loggit('Checking Rules');
+    for (var rule of ruleSet) {
+      this.loggit.loggit('Checking rule: ' + rule.name);
+      if (!this.isRuleValid(rule)) {
+        this.loggit.loggit('Rule is invalid. Skipping it.');
+        continue;
+      }
+      let conditionResult = this.checkCondition(rule.condition);
+      if (conditionResult.conditionPass && rule.resultTrue != undefined) {
+        let result = {};
+        //        result['metadataType'] = rule.metadataType;
+        result['label'] = rule.resultTrue.label;
+        result['message'] = rule.resultTrue.message;
+        if (rule.resultTrue.url != undefined) {
+          result['url'] = rule.resultTrue.url;
+        }
+        if (rule.resultTrue.showDetails) {
+          result['exceptions'] = conditionResult.passItems;
+        }
+        results.push(result);
+      }
+      if (!conditionResult.conditionPass && rule.resultFalse != undefined) {
+        let result = {};
+        //      result['metadataType'] = rule.metadataType;
+        result['label'] = rule.resultFalse.label;
+        result['message'] = rule.resultFalse.message;
+        if (rule.resultFalse.url != undefined) {
+          result['url'] = rule.resultTrue.url;
+        }
+        if (rule.resultFalse.showDetails) {
+          result['exceptions'] = conditionResult.failItems;
+        }
+        results.push(result);
+      }
+    }
+    return results;
+  };
+
+  public getInstallationWarnings() {
+    this.loggit.loggit('Getting Installation Warnings New Ruleset');
+    if (!this._installationWarnings) {
+      this._installationWarnings = [];
+      for (var edition of editionWarningRules) {
+        this.loggit.loggit('Checking Edition rule: ' + JSON.stringify(edition));
+        let editionBlock = [];
+        for (var blockingItem of edition.blockingItems) {
+          this.loggit.loggit('Checking item:' + JSON.stringify(blockingItem));
+          let result = this.checkCondition(blockingItem.condition);
+          if (result.conditionPass) {
+            editionBlock.push({
+              label: blockingItem.label,
+  
+            })
+          }
+        }
+        if (editionBlock.length > 0) {
+          this._installationWarnings.push( {
+            'edition': edition.name,
+            blockingItems: editionBlock
+          });
+        }
+      }
+  
+    }
+    return this._installationWarnings;
   };
 
   public getTechAdoptionScore() {
     this.loggit.loggit('Checking Tech Adoption Score');
-    let adoptionResult = [...techAdoptionRules];
-    for (var adoptionCategory of adoptionResult) {
+    if (!this._techAdoption) {
+      this.loggit.loggit('Results not Cached');
+    
+    this._techAdoption = [...techAdoptionRules];
+    for (var adoptionCategory of this._techAdoption) {
+
       for (var item of adoptionCategory.items) {
         item['isIncluded'] = false;
         for (var counts of this.getCountByMetadataType(item.metadataType)) {
@@ -123,87 +337,37 @@ export class packageInventory {
         }
       }
     }
-    return adoptionResult;
+  }
+    return this._techAdoption;
+  }
+
+  public getAlerts() {
+    this.loggit.loggit('Checking Partner Alerts');
+    if (!this._alerts) {
+      this.loggit.loggit('Results not Cached. Using New Rules Engine');
+      this._alerts = this.processRules(alertRules);
+    }
+    return this._alerts;
   }
 
   public getQualityRecommendations() {
     this.loggit.loggit('Checking Quality Recommendation Rules');
-    return this.checkRules(qualityRules);
+    //   return this.checkRules(qualityRules);
+    if (!this._qualityRules) {
+      this.loggit.loggit('Results not Cached. Using New Rules Engine');
+      this._qualityRules = this.processRules(qualityRules);
+    }
+    return this._qualityRules;
   };
 
   public getEnablementMessages() {
     this.loggit.loggit('Checking Enablement Content Rules');
-    return this.checkRules(enablementRules)
-  };
-
-  public checkRules(ruleSet) {
-    this.loggit.loggit('Diving into Rules');
-    let recomendations = [];
-    for (var ruleDef of ruleSet) {
-      this.loggit.loggit('Rule: ' + JSON.stringify(ruleDef));
-      let threshold = ruleDef.threshold;
-      if (ruleDef.metadataType.split('.')[0] == 'apiVersions') {
-        this.loggit.loggit('-------Checking an API type rule');
-        threshold = this._minAPI;
-      }
-      this.loggit.loggit('Threshold is: ' + threshold);
-      let counts = this.getCountByMetadataType(ruleDef.metadataType);
-      this.loggit.loggit('Counts: ' + JSON.stringify(counts));
-      if (ruleDef.recNeg) {
-        let exceptions = [];
-        if (counts.length == 0 && threshold == -1) {
-          this.loggit.loggit('No results found and Threshold is -1. Pushing Negative exception');
-          recomendations.push({
-            metadataType: ruleDef.metadataType,
-            label: ruleDef['label'],
-            message: ruleDef['recNeg']['message'],
-            url: ruleDef['recNeg']['url'],
-            score: ruleDef['recNeg']['score']
-          });
-        } else {
-          for (var count of counts) {
-            this.loggit.loggit(`Comparing count: ${count.value} against threshold ${threshold}`);
-            if (count.value <= threshold) {
-              this.loggit.loggit(`Property Name: ${count.property} count ${count.value} is less than ${threshold}`);
-              exceptions.push(count.property);
-            }
-          }
-          if (exceptions.length > 0) {
-            recomendations.push({
-              metadataType: ruleDef.metadataType,
-              label: ruleDef['label'],
-              message: ruleDef['recNeg']['message'],
-              'exceptions': exceptions,
-              url: ruleDef['recNeg']['url'],
-              score: ruleDef['recNeg']['score']
-            });
-          }
-        }
-      }
-      if (ruleDef.recPos) {
-        let exceptions = [];
-        for (var count of counts) {
-          this.loggit.loggit(`Comparing count: ${count.value} against threshold ${threshold}`);
-          if (count.value > threshold) {
-            this.loggit.loggit(`Property Name: ${count.property} count ${count.value} is greater than ${threshold}`);
-
-            exceptions.push(count.property);
-          }
-        }
-        if (exceptions.length > 0) {
-          recomendations.push({
-            metadataType: ruleDef.metadataType,
-            label: ruleDef['label'],
-            message: ruleDef['recPos']['message'],
-            'exceptions': exceptions,
-            url: ruleDef['recPos']['url'],
-            score: ruleDef['recPos']['score']
-          });
-        }
-      }
+    //  return this.checkRules(enablementRules)
+    if (!this._enablementMessages) {
+      this.loggit.loggit('Results not Cached. Using New Rules Engine');
+      this._enablementMessages = this.processRules(enablementRules);
     }
-    this.loggit.loggit('Final Recommendations: ' + JSON.stringify(recomendations));
-    return recomendations;
+    return this._enablementMessages;
   };
 
   public getCountByMetadataType(metadataType) {
@@ -216,10 +380,7 @@ export class packageInventory {
       retVal = mdCount;
     } else {
       this.loggit.loggit('Found a single result');
-      if (mdCount.value == -1) {
-        retVal = [];
-      }
-      else retVal.push(mdCount);
+      retVal.push(mdCount);
     }
     return retVal;
   };
@@ -241,6 +402,7 @@ export class packageInventory {
     if (topLevel === '*') {
       let retVal = [];
       this.loggit.loggit('Checking Wildcard');
+
       for (var topArray in mdObject) {
         let tmpArray = [topArray, ...mdArray];
 
@@ -252,17 +414,38 @@ export class packageInventory {
       return retVal;
     } else if (mdObject[topLevel] != undefined) {
       if (mdArray.length > 0) {
-        this.loggit.loggit('There are more components left. Recursing');
+        this.loggit.loggit('There are more components left.');
+        if (mdArray.length == 1 && mdArray[0] === '*') {
+          this.loggit.loggit('Last component is a wildcard. Peeking ahead');
+          //Check to see if the wildcard object has any values
+          if (Object.keys(mdObject[topLevel]).length == 0) {
+            this.loggit.loggit(` Component ${topLevel} is an empty object. We can stop here`);
+            return {
+              property: topLevel,
+              value: -1
+            };
+          }
+        }
+        this.loggit.loggit('We can safely Recurse');
         this.loggit.loggit(`  ObjectKey: ${topLevel} ParamArray: ${mdArray}, Wildcard: ${wildcard}`);
         return this.traverseMetadata(mdArray, mdObject[topLevel], wildcard);
       } else {
         this.loggit.loggit('This is last portion. Looking for value');
         let count = undefined;
         if (isNaN(mdObject[topLevel])) {
-          this.loggit.loggit(`${mdObject[topLevel]} is not a number. Checking .count`);
+          this.loggit.loggit(`${JSON.stringify(mdObject[topLevel])} is not a number.`);
           if (mdObject[topLevel]['count'] != undefined && isFinite(mdObject[topLevel]['count'])) {
+            this.loggit.loggit('')
             count = mdObject[topLevel]['count'];
-          } else {
+          } else if (mdObject[topLevel] === Object(mdObject[topLevel])) {
+            //if it's an object, return the number of keys
+            this.loggit.loggit(`${topLevel} appears to be an object. Returning count of keys`);
+            count = Object.keys(mdObject[topLevel]).length;
+          } else if (Array.isArray(mdObject[topLevel])) {
+            this.loggit.loggit(`${topLevel} appears to be an array. Returning array count`);
+            count = mdObject[topLevel].length;
+          }
+          else {
             this.loggit.loggit(' Cannot find a valid number returning empty object');
             return {};
           }
@@ -336,6 +519,7 @@ export class packageInventory {
     retVal['InstallationWarnings'] = this.getInstallationWarnings();
     retVal['Alerts'] = this.getAlerts();
     retVal['AdoptionScore'] = this.getTechAdoptionScore();
+    retVal['Dependencies'] = this.getDependencies();
     return retVal;
   };
 
@@ -584,7 +768,16 @@ export class packageInventory {
                   'Metadata Type': '  Exposed Components',
                   count: this._mdInv[element.metadataType]['ExposedComponents']
                 });
-                extras.push({
+                
+                for (var [target,targetCount] of Object.entries(this._mdInv[element.metadataType]['targets'])) {
+                  let friendlyName = target.replace(/lightning(__)?/g,'');
+                  extras.push({
+                    metadataSubType: target,
+                    'Metadata Type': `  ${friendlyName}`,
+                    count: targetCount
+                  });
+                }
+              /*  extras.push({
                   metadataSubType: 'RecordPageComponents',
                   'Metadata Type': '  Record Page Components',
                   count: this._mdInv[element.metadataType]['RecordPageComponents']
@@ -604,7 +797,7 @@ export class packageInventory {
                   'Metadata Type': '  Flow Screen Components',
                   count: this._mdInv[element.metadataType]['FlowScreenComponents']
                 });
-
+*/
               }
               break;
             default:
