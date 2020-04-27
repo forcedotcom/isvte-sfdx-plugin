@@ -553,7 +553,7 @@ export class packageInventory {
         let extrasStandard = [];
         let count = 0;
         retObj['metadataType'] = element.metadataType;
-        retObj['Metadata Type'] = element.name;
+        retObj['label'] = element.label;
         if (element.metadataType) {
           switch (String(element.metadataType)) {
 
@@ -564,12 +564,12 @@ export class packageInventory {
                 const objects = Object.keys(this._mdInv[element.metadataType]['objects']);
                 let standardObjFields = {
                   metadataSubType: 'StandardObjectFields',
-                  'Metadata Type': '  Total Fields on Standard Objects',
+                  label: '  Total Fields on Standard Objects',
                   'count': 0
                 };
                 let customObjFields = {
                   metadataSubType: 'CustomObjectFields',
-                  'Metadata Type': '  Total Fields on Custom Objects',
+                  label: '  Total Fields on Custom Objects',
                   'count': 0
                 };
 
@@ -581,14 +581,14 @@ export class packageInventory {
                     customObjFields['count'] += objFieldCount;
                     extrasCustom.push({
                       metadataSubType: `object.${obj}`,
-                      'Metadata Type': `   Fields on ${obj}`,
+                      label: `   Fields on ${obj}`,
                       'count': objFieldCount
                     });
                   } else {
                     standardObjFields['count'] += objFieldCount;
                     extrasStandard.push({
                       metadataSubType: `object.${obj}`,
-                      'Metadata Type': `   Fields on ${obj}`,
+                      label: `   Fields on ${obj}`,
                       'count': objFieldCount
                     });
                   }
@@ -605,22 +605,22 @@ export class packageInventory {
                 count = this._mdInv[element.metadataType]['count'];
                 extras.push({
                   metadataSubType: 'LightningApp',
-                  'Metadata Type': '  Lighting Applications',
+                  label: '  Lighting Applications',
                   count: this._mdInv[element.metadataType]['LightingAppCount']
                 });
                 extras.push({
                   metadataSubType: 'LigthingConsole',
-                  'Metadata Type': '   Lighting Consoles',
+                  label: '   Lighting Consoles',
                   count: this._mdInv[element.metadataType]['LightningConsoleCount']
                 });
                 extras.push({
                   metadataSubType: 'ClassicApp',
-                  'Metadata Type': '  Classic Applications',
+                  label: '  Classic Applications',
                   count: this._mdInv[element.metadataType]['ClassicAppCount']
                 });
                 extras.push({
                   metadataSubType: 'ClassicConsole',
-                  'Metadata Type': '   Classic Consoles',
+                  label: '   Classic Consoles',
                   count: this._mdInv[element.metadataType]['ClassicConsoleCount']
                 });
               }
@@ -628,40 +628,39 @@ export class packageInventory {
             case 'ApexClass':
               if (this._mdInv[element.metadataType]) {
                 count = this._mdInv[element.metadataType]['count'];
-                //  extras.push({metadataSubType:'ApexTest', 'Metadata Type': '  With Tests', count: this._mdInv[element.metadataType]['TestMethods']});
                 extras.push({
                   metadataSubType: 'ApexFuture',
-                  'Metadata Type': '  With Future Methods',
+                  label: '  With Future Methods',
                   count: this._mdInv[element.metadataType]['FutureCalls']
                 });
                 extras.push({
                   metadataSubType: 'AuraEnabled',
-                  'Metadata Type': '  With Aura Enabled Methods',
+                  label: '  With Aura Enabled Methods',
                   count: this._mdInv[element.metadataType]['AuraEnabledCalls']
                 });
                 extras.push({
                   metadataSubType: 'InvocableApex',
-                  'Metadata Type': '  With Invocable Methods or Variables',
+                  label: '  With Invocable Methods or Variables',
                   count: this._mdInv[element.metadataType]['InvocableCalls']
                 });
                 extras.push({
                   metadataSubType: 'BatchApex',
-                  'Metadata Type': '  Batch Apex',
+                  label: '  Batch Apex',
                   count: this._mdInv[element.metadataType]['BatchApex']
                 });
                 extras.push({
                   metadataSubType: 'ApexRest',
-                  'Metadata Type': '  Apex REST',
+                  label: '  Apex REST',
                   count: this._mdInv[element.metadataType]['ApexRest']
                 });
                 extras.push({
                   metadataSubType: 'ApexSoap',
-                  'Metadata Type': '  SOAP Web Services',
+                  label: '  SOAP Web Services',
                   count: this._mdInv[element.metadataType]['ApexSoap']
                 });
                 extras.push({
                   metadataSubType: 'SchedulableApex',
-                  'Metadata Type': '  Schedulable Apex',
+                  label: '  Schedulable Apex',
                   count: this._mdInv[element.metadataType]['SchedulableApex']
                 });
 
@@ -672,17 +671,17 @@ export class packageInventory {
                 count = this._mdInv[element.metadataType]['count'];
                 extras.push({
                   metadataSubType: 'ScreenFlow',
-                  'Metadata Type': '  Screen Flows',
+                  label: '  Screen Flows',
                   count: this._mdInv[element.metadataType]['Flow']
                 });
                 extras.push({
                   metadataSubType: 'AutoLaunchedFlow',
-                  'Metadata Type': '  Autolaunched Flows',
+                  label: '  Autolaunched Flows',
                   count: this._mdInv[element.metadataType]['AutoLaunchedFlow']
                 });
                 extras.push({
                   metadataSubType: 'ProcessBuilder',
-                  'Metadata Type': '  Process Builder',
+                  label: '  Process Builder',
                   count: this._mdInv[element.metadataType]['Workflow']
                 });
 
@@ -691,24 +690,24 @@ export class packageInventory {
                   let objPBTriggerCount = this._mdInv[element.metadataType]['objects'][obj]['count'];
                   extras.push({
                     metadataSubType: `object.${obj}`,
-                    'Metadata Type': `    Process Builders on ${obj}`,
+                    label: `    Process Builders on ${obj}`,
                     'count': objPBTriggerCount
                   });
 
                 }
                 extras.push({
                   metadataSubType: 'FlowTemplate',
-                  'Metadata Type': '  Flow Templates',
+                  label: '  Flow Templates',
                   count: this._mdInv[element.metadataType]['FlowTemplate']
                 });
                 extras.push({
                   metadataSubType: 'FlowTemplate',
-                  'Metadata Type': '    Screen Flow Templates',
+                  label: '    Screen Flow Templates',
                   count: this._mdInv[element.metadataType]['ScreenFlowTemplate']
                 });
                 extras.push({
                   metadataSubType: 'FlowTemplate',
-                  'Metadata Type': '    Autolaunched Flow Templates',
+                  label: '    Autolaunched Flow Templates',
                   count: this._mdInv[element.metadataType]['AutoLaunchedFlowTemplate']
                 });
               }
@@ -718,7 +717,7 @@ export class packageInventory {
                 count = this._mdInv[element.metadataType]['count'];
                 extras.push({
                   metadataSubType: 'CanvasApp',
-                  'Metadata Type': '  Canvas Apps',
+                  label: '  Canvas Apps',
                   count: this._mdInv[element.metadataType]['CanvasApp']
                 });
               }
@@ -728,12 +727,12 @@ export class packageInventory {
                 count = this._mdInv[element.metadataType]['count'];
                 extras.push({
                   metadataSubType: 'BigObject',
-                  'Metadata Type': '  Big Objects',
+                  label: '  Big Objects',
                   count: this._mdInv[element.metadataType]['BigObject']
                 });
                 extras.push({
                   metadataSubType: 'ExternalObject',
-                  'Metadata Type': '  External Objects',
+                  label: '  External Objects',
                   count: this._mdInv[element.metadataType]['ExternalObject']
                 });
 
@@ -745,7 +744,7 @@ export class packageInventory {
                 count = this._mdInv[element.metadataType]['count'];
                 extras.push({
                   metadataSubType: 'AsyncTrigger',
-                  'Metadata Type': '  Async Triggers',
+                  label: '  Async Triggers',
                   count: this._mdInv[element.metadataType]['AsyncTrigger']
                 });
                 const objects = Object.keys(this._mdInv[element.metadataType]['objects']);
@@ -753,7 +752,7 @@ export class packageInventory {
                   let objTriggerCount = this._mdInv[element.metadataType]['objects'][obj]['count'];
                   extras.push({
                     metadataSubType: `object.${obj}`,
-                    'Metadata Type': `  Triggers on ${obj}`,
+                    label: `  Triggers on ${obj}`,
                     'count': objTriggerCount
                   });
 
@@ -765,7 +764,7 @@ export class packageInventory {
                 count = this._mdInv[element.metadataType]['count'];
                 extras.push({
                   metadataSubType: 'ExposedComponents',
-                  'Metadata Type': '  Exposed Components',
+                  label: '  Exposed Components',
                   count: this._mdInv[element.metadataType]['ExposedComponents']
                 });
                 
@@ -773,7 +772,7 @@ export class packageInventory {
                   let friendlyName = target.replace(/lightning(__)?/g,'');
                   extras.push({
                     metadataSubType: target,
-                    'Metadata Type': `  ${friendlyName}`,
+                    label: `  ${friendlyName}`,
                     count: targetCount
                   });
                 }

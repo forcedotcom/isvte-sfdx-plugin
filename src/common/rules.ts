@@ -17,7 +17,44 @@ rule = {
   resultFalse: result
 }
 
-If condition resolves to True, then resultTrue is fired. If Condition resolves to false, then resultFalse is fired.
+
+   
+result = {
+  label: Friendly output to display when rule is triggered 
+  message: Text to display
+  url: link to content
+  showDetails: boolean
+}
+A result must have a message and a label
+if showDetails is true, then the individual components which pass the condition are included in the result 
+e.g the first will output just the message. The second will output the message as well as each individual class with and API version that meets the criteria
+{
+    name: 'Metadata API Version',
+    condition: {
+      metadataType: 'apiVersions.mdapi',
+      operator: 'between',
+      operand: [20,'minAPI'],
+    },
+    resultTrue: {
+      label: 'Using old Metadata API Version',
+      message: `You appear to be using a version of Metadata API less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
+    },
+  },
+  {
+    name: 'Apex API Version',
+    condition: {
+      metadataType: 'apiVersions.ApexClass.*',
+      operator: 'between',
+      operand: [20,'minAPI'],
+    },
+    resultTrue: {
+      label: 'Using old Apex API Version',
+      message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
+      showDetails: true
+    }
+  },
+
+  If condition resolves to True, then resultTrue is fired. If Condition resolves to false, then resultFalse is fired.
 a rule must have a name, a label and a condition. AlertRules, EnablementRules and QualityRules must have  a resultTrue and/or a resultFalse
 
 ruleCondition = {
@@ -70,196 +107,213 @@ If conditionPerItem is true within the conditionAnd, then the ultimate result is
       },
     },
     the condition will resolve to true if any object has both an apex trigger and a process builder trigger.
-   
-result = {
-  label: Friendly output to display when rule is triggered 
-  message: Text to display
-  url: link to content
-  showDetails: boolean
-}
-A result must have a message and a label
-if showDetails is true, then the individual components which pass the condition are included in the result 
-e.g the first will output just the message. The second will output the message as well as each individual class with and API version that meets the criteria
-{
-    name: 'Metadata API Version',
-    condition: {
-      metadataType: 'apiVersions.mdapi',
-      operator: 'between',
-      operand: [20,'minAPI'],
-    },
-    resultTrue: {
-      label: 'Using old Metadata API Version',
-      message: `You appear to be using a version of Metadata API less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
-    },
-  },
-  {
-    name: 'Apex API Version',
-    condition: {
-      metadataType: 'apiVersions.ApexClass.*',
-      operator: 'between',
-      operand: [20,'minAPI'],
-    },
-    resultTrue: {
-      label: 'Using old Apex API Version',
-      message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
-      showDetails: true
-    }
-  },
-*/
+    */
 
+/*Interface Definitions */
+
+/* Monitored Metadata Types are those which are listed and counted in the output */
+
+interface IMetadataType {
+  label: string,
+  metadataType: string;
+}
+
+type operatorTypes = 'always' | 'never' | 'exists' | 'notexists' | 'null' | 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'between';
+
+interface ICondition {
+  metadataType: string, //The Metadata Type to query
+  operator: operatorTypes, // The operator of the condition
+  operand?: number | [number | 'minAPI',number | 'minAPI'], //value that operator works on
+  expiration?: string, //Expiration date of the condition
+  processAlways?: Boolean,  //(only within a conditionOr OR a conditionAnd)
+  conditionPerItem?: Boolean, // (only within a conditionAnd)
+  conditionOr?: ICondition, //Extra condition to be ORed with this condition
+  conditionAnd?: ICondition //Extra condition to be ANDed with this condition
+}
+
+interface IResult {
+  label: string, //Friendly output to display when rule is triggered 
+  message: string, //Text block to display
+  url?: string, //link to content
+  showDetails?: Boolean //Toggle whether individual items that trigger the rule are displayed
+}
+
+interface IRule {
+  name: string, // The Rule Name
+  condition: ICondition, // Logic to determine whether the rule is triggered
+  resultTrue?: IResult, //Output if the condition is met 
+  resultFalse?: IResult //Output if the condition is not met
+}
+
+interface IInstallRule {
+  name: string, //Salesforce Edition
+  blockingItems: {label: String, condition: ICondition}[] //Conditions which, if true, mean the package cannot be installed in this edition
+}
+
+interface ITechAdoptionRule {
+  categoryName: string, // Category for the Tech score rule
+  categoryLabel: string, //Friendly output for the score rule category
+  items: IMetadataType[]
+}
+
+interface IDependecyRule {
+  name: string, //Name for the dependency rule
+  label: string, //Friendly output of the dependency rule
+  condition: ICondition //Condition which fires the dependency rule
+}
 
 const minAPI = 43;
 
-const rulesVersion = '20200317';
+const rulesVersion = '20200427';
 
-const mdTypes = [{
-  name: 'Permission Sets',
+const mdTypes: IMetadataType[] = [{
+  label: 'Permission Sets',
   metadataType: 'PermissionSet'
 },
 {
-  name: 'Custom Profiles',
+  label: 'Custom Profiles',
   metadataType: 'Profile'
 },
 {
-  name: 'Custom Metadata',
+  label: 'Custom Metadata',
   metadataType: 'CustomMetadata'
 },
 {
-  name: 'Feature Parameters (Boolean)',
+  label: 'Feature Parameters (Boolean)',
   metadataType: 'FeatureParameterBoolean'
 },
 {
-  name: 'Feature Parameters (Date)',
+  label: 'Feature Parameters (Date)',
   metadataType: 'FeatureParameterDate'
 },
 {
-  name: 'Feature Parameters (Integer)',
+  label: 'Feature Parameters (Integer)',
   metadataType: 'FeatureParameterInteger'
 },
 {
-  name: 'Custom Settings',
+  label: 'Custom Settings',
   metadataType: 'CustomSetting__c'
 },
 {
-  name: 'Custom Labels',
+  label: 'Custom Labels',
   metadataType: 'CustomLabel'
 },
 {
-  name: 'Tabs',
+  label: 'Tabs',
   metadataType: 'CustomTab'
 },
 {
-  name: 'Flows',
+  label: 'Flows',
   metadataType: 'Flow'
 },
 {
-  name: 'Apex Classes',
+  label: 'Apex Classes',
   metadataType: 'ApexClass'
 },
 {
-  name: 'Apex Triggers',
+  label: 'Apex Triggers',
   metadataType: 'ApexTrigger'
 },
 {
-  name: 'Custom Reports',
+  label: 'Custom Reports',
   metadataType: 'Report'
 },
 {
-  name: 'Custom Report Types',
+  label: 'Custom Report Types',
   metadataType: 'ReportType'
 },
 {
-  name: 'Custom Apps',
+  label: 'Custom Apps',
   metadataType: 'CustomApplication'
 },
 {
-  name: 'Connected Apps',
+  label: 'Connected Apps',
   metadataType: 'ConnectedApp'
 },
 {
-  name: 'In-App Prompts',
+  label: 'In-App Prompts',
   metadataType: 'Prompt'
 },
 {
-  name: 'Static Resources',
+  label: 'Static Resources',
   metadataType: 'StaticResource'
 },
 {
-  name: 'Sharing Rules',
+  label: 'Sharing Rules',
   metadataType: 'SharingRules'
 },
 {
-  name: 'Validation Rules',
+  label: 'Validation Rules',
   metadataType: 'ValidationRule'
 },
 {
-  name: 'Custom Objects',
+  label: 'Custom Objects',
   metadataType: 'CustomObject'
 },
 {
-  name: 'Custom Fields',
+  label: 'Custom Fields',
   metadataType: 'CustomField'
 },
 {
-  name: 'Platform Events',
+  label: 'Platform Events',
   metadataType: 'PlatformEventChannel'
 },
 {
-  name: 'Territory Management',
+  label: 'Territory Management',
   metadataType: 'Territory'
 },
 {
-  name: 'Territory Management 2.0',
+  label: 'Territory Management 2.0',
   metadataType: 'Territory2'
 },
 {
-  name: 'Visualforce Pages',
+  label: 'Visualforce Pages',
   metadataType: 'ApexPage'
 },
 {
-  name: 'Aura Web Components',
+  label: 'Aura Web Components',
   metadataType: 'AuraDefinitionBundle'
 },
 {
-  name: 'Lightning Web Components',
+  label: 'Lightning Web Components',
   metadataType: 'LightningComponentBundle'
 },
 {
-  name: 'Einstein Analytics Applications',
+  label: 'Einstein Analytics Applications',
   metadataType: 'WaveApplication'
 },
 {
-  name: 'Einstein Analytics Dashboards',
+  label: 'Einstein Analytics Dashboards',
   metadataType: 'WaveDashboard'
 },
 {
-  name: 'Einstein Analytics Dataflows',
+  label: 'Einstein Analytics Dataflows',
   metadataType: 'WaveDataflow'
 },
 {
-  name: 'Einstein Analytics Datasets',
+  label: 'Einstein Analytics Datasets',
   metadataType: 'WaveDataset'
 },
 {
-  name: 'Einstein Analytics Lenses',
+  label: 'Einstein Analytics Lenses',
   metadataType: 'WaveLens'
 },
 {
-  name: 'Einstein Analytics Template Bundles',
+  label: 'Einstein Analytics Template Bundles',
   metadataType: 'WaveTemplateBundle'
 },
 {
-  name: 'Einstein Analytics Dashboards',
+  label: 'Einstein Analytics Dashboards',
   metadataType: 'WaveDashboard'
 },
 
 {
-  name: 'Record Types',
+  label: 'Record Types',
   metadataType: 'RecordType'
 }
 ];
 
-const enablementRules = [{
+const enablementRules: IRule[] = [{
     name: 'ISV Technical Success Center',
     condition: {
         metadataType: 'any',
@@ -447,7 +501,7 @@ const enablementRules = [{
 
 ];
 
-const qualityRules = [{
+const qualityRules: IRule[] = [{
     name: 'Metadata API Version',
     condition: {
       metadataType: 'apiVersions.mdapi',
@@ -591,7 +645,7 @@ const qualityRules = [{
   },
 ];
 
-const alertRules = [{
+const alertRules: IRule[] = [{
     name: 'Alerts Signup',
     condition: {
       metadataType: 'any',
@@ -711,7 +765,7 @@ const alertRules = [{
  },
 ];
 
-const editionWarningRules = [{
+const editionWarningRules: IInstallRule[] = [{
   name: 'Essentials',
   blockingItems: [{
       label: 'Record Types',
@@ -837,7 +891,7 @@ const editionWarningRules = [{
 },
 ];
 
-const techAdoptionRules = [
+const techAdoptionRules: ITechAdoptionRule[] = [
   {
     categoryName: 'DataStore',
     categoryLabel: 'Which platform technology does your application use as its primary data store?',
@@ -916,7 +970,7 @@ const techAdoptionRules = [
   }
 ];
 
-const dependencyRules = [{
+const dependencyRules: IDependecyRule[] = [{
   name: 'CommunityCloud',
   label: 'Community Cloud',
   condition: {

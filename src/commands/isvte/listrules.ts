@@ -46,7 +46,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
     this.ux.log(`Rule Definition version: ${rulesVersion}\n\n`);
 
     this.ux.styledHeader('Monitored Metadata Types');
-    this.ux.table(mdTypes, ['name', 'metadataType']);
+    this.ux.table(mdTypes, ['label', 'metadataType']);
     this.ux.log('\n\n');
     this.ux.styledHeader('Best Practices and Feature Recommendations:');
     let i=1;
@@ -98,7 +98,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
   };
 
-  private resultToString = function(result) {
+  private resultToString(result) {
     let retVal = `${result.label}:\n  ${result.message}`;
     if (result.url != undefined) {
       retVal += `\n  ${result.url}`
@@ -106,7 +106,42 @@ For more information, please connect in the ISV Technical Enablement Plugin
     return retVal + '\n';
   }
 
-  private conditionToString = function(cond) {
+  
+  private getAllEditionWarnings() {
+    this.loggit.loggit('Formatting Edition Warnings for export');
+    let retVal = [];
+    for (let edition of editionWarningRules) {
+      retVal.push({
+        Edition: edition['name']
+      });
+      for (let blockingRule of edition['blockingItems']) {
+        const conditionString = this.conditionToString(blockingRule.condition);
+        retVal.push({
+          Item: blockingRule.label,
+          Condition: conditionString
+        });
+      }
+    }
+    return retVal;
+  };
+
+  private getAllAdoptionRules() {
+    this.loggit.loggit('Formatting Tech Adoption Rules for export');
+    let retVal = [];
+    for (let category of techAdoptionRules) {
+      retVal.push({
+        Category: category['categoryName']
+      });
+      for (let rule of category['items']) {
+        retVal.push({
+          MetadataType: rule.label
+        })
+      }
+    }
+    return retVal;
+  }
+
+  private conditionToString(cond) {
     let retVal = '';
     
     switch (cond.operator) {
@@ -152,38 +187,6 @@ For more information, please connect in the ISV Technical Enablement Plugin
       retVal += ' And (' + this.conditionToString(cond.conditionAnd) + ')';
     }
     return retVal;
-  };
-
-  private getAllEditionWarnings = function () {
-    this.loggit.loggit('Formatting Edition Warnings for export');
-    let retVal = [];
-    for (let edition of editionWarningRules) {
-      retVal.push({
-        Edition: edition['name']
-      });
-      for (let blockingRule of edition['blockingItems']) {
-        retVal.push({
-          Item: blockingRule.label,
-          Condition: this.conditionToString(blockingRule.condition)
-        });
-      }
-    }
-    return retVal;
-  };
-
-  private getAllAdoptionRules = function() {
-    this.loggit.loggit('Formatting Tech Adoption Rules for export');
-    let retVal = [];
-    for (let category of techAdoptionRules) {
-      retVal.push({
-        Category: category['categoryName']
-      });
-      for (let rule of category['items']) {
-        retVal.push({
-          MetadataType: rule.label
-        })
-      }
-    }
-    return retVal;
   }
+
 }

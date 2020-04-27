@@ -7,7 +7,8 @@
 
 import {
   flags,
-  SfdxCommand
+  SfdxCommand,
+  TableOptions
 } from '@salesforce/command';
 import {
   SfdxError
@@ -33,6 +34,7 @@ import {
 export default class mdscan extends SfdxCommand {
 
   private showFullInventory = false;
+  private showTechAdoption = false;
   private sourceFolder = '';
   private suppressZeroInv = false;
   private suppressAllInv = false;
@@ -41,7 +43,7 @@ export default class mdscan extends SfdxCommand {
   private suppressWarnings = false;
   private suppressQuality = false;
   private suppressAPI = false;
-  private suppressAdoptionScore = false;
+ // private suppressAdoptionScore = false;
   private loggit;
   private packageInventory;
 
@@ -78,7 +80,11 @@ For more information, please connect in the ISV Technical Enablement Plugin
     }),
     suppress: flags.array({
       char: 's',
-      description: `comma separated list of items to suppress.\n Valid options are: ZeroInventory, Inventory, Enablement, Quality, Alerts, Warnings, API, TechAdoption `
+      description: `comma separated list of items to suppress.\n Valid options are: ZeroInventory, Inventory, Enablement, Quality, Alerts, Warnings, API`
+    }),
+    techadoption: flags.boolean({
+      char: 't',
+      description: `Show Tech Adoption calculation for Trailblazer scoring`
     }),
     minapi: flags.integer({
       description: 'minimum api version to use during quality checks',
@@ -94,6 +100,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
     this.showFullInventory = this.flags.showfullinventory;
     this.sourceFolder = this.flags.sourcefolder;
+    this.showTechAdoption = this.flags.techadoption;
 
     //Check Suppress Flags
     if (this.flags.suppress) {
@@ -105,7 +112,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
         this.suppressWarnings = this.suppressWarnings || element.toLowerCase() == 'warnings';
         this.suppressQuality = this.suppressQuality || element.toLowerCase() == 'quality';
         this.suppressAPI = this.suppressAPI || element.toLowerCase() == 'api';
-        this.suppressAdoptionScore = this.suppressAdoptionScore || element.toLowerCase() == 'techadoption'
+  //      this.suppressAdoptionScore = this.suppressAdoptionScore || element.toLowerCase() == 'techadoption'
       });
     }
 
@@ -144,7 +151,8 @@ For more information, please connect in the ISV Technical Enablement Plugin
         let inventoryArray = this.packageInventory.getMonitoredInvArray().filter(element => {
           return (!this.suppressZeroInv || element.count > 0);
         });
-        this.ux.table(inventoryArray, ['Metadata Type', 'count']);
+        const inventoryTableoptions: TableOptions= { columns: [{key: 'label', label: 'Metadata Type'},{key: 'count', label: 'Count'}]};
+        this.ux.table(inventoryArray, inventoryTableoptions);
         this.ux.log('\n');
       }
 
@@ -227,7 +235,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
         }
       }
 
-      if (!this.suppressAdoptionScore) {
+      if (this.showTechAdoption) {
         this.ux.styledHeader('Technology Adoption:');
         for (var category of this.packageInventory.getTechAdoptionScore()) {
           this.ux.log(`${category.categoryLabel}\n`);
