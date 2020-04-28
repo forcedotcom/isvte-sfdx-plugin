@@ -95,7 +95,7 @@
     "no-undefined": 0,
     "no-underscore-dangle": 0,
     "no-unreachable": 2,
-    "no-unused-expressions": 0,
+    "no-unused-expressions": 1,
     "no-unused-vars": [
       2,
       {
