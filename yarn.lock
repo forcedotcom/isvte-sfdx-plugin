@@ -2746,10 +2746,10 @@ set-blocking@^2.0.0:
   resolved "https://registry.yarnpkg.com/set-blocking/-/set-blocking-2.0.0.tgz#045f9782d011ae9a6803ddd382b24392b3d890f7"
   integrity sha1-BF+XgtARrppoA93TgrJDkrPYkPc=
 
-sfdx-essentials@^2:
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/sfdx-essentials/-/sfdx-essentials-2.0.1.tgz#093ca0108b6ca865d60f68aafaa3468a51a0cc3e"
-  integrity sha512-vilia5iLSqpptedub+mG0tqTRne3Kj50vmByyv6w3kn9GvI5ZHThHRRv1yh4sogy2LfAsnNTgVxOfwQ02pNS7w==
+sfdx-essentials@^2.1.5:
+  version "2.1.5"
+  resolved "https://registry.yarnpkg.com/sfdx-essentials/-/sfdx-essentials-2.1.5.tgz#6dc9d2d9a297aba39edd9204bb41f2294c3d9922"
+  integrity sha512-CLU4pDG3oJXuW8IAbj7a9jVKb/4o6NeAnLI0O0QP/hr3CYV8aWq1J4YW03046VSPPbDVkB/r3hbnP3CLlOd6oQ==
   dependencies:
     "@oclif/command" "^1.5.19"
     "@oclif/config" "^1.13.3"
