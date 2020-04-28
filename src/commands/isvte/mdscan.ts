@@ -27,15 +27,18 @@ import {
 import {
   mdmap
 } from '../../common/mdmap';
-
-
-
+import *
+  as util
+  from 'util'
+import MetadataFilterFromPackageXml
+  from 'sfdx-essentials/lib/commands/essentials/metadata/filter-from-packagexml';
 
 export default class mdscan extends SfdxCommand {
 
   private showFullInventory = false;
   private showTechAdoption = false;
   private sourceFolder = '';
+  private sfdxPackageXml: string;
   private suppressZeroInv = false;
   private suppressAllInv = false;
   private suppressEnablement = false;
@@ -43,15 +46,20 @@ export default class mdscan extends SfdxCommand {
   private suppressWarnings = false;
   private suppressQuality = false;
   private suppressAPI = false;
- // private suppressAdoptionScore = false;
+  // private suppressAdoptionScore = false;
   private loggit;
   private packageInventory;
+  private sfdxConvertFolder = './tmp/mdapi';
+  private sfdxConvertFolderFilter = './tmp/mdapiFiltered';
 
   public static description = 'scan a package and provide recommendations based on package inventory';
 
   public static examples = [
     `Scan a package and provide inventory of monitored metadata items and enablement messages:
 \t$sfdx isvte:mdscan -d ./mdapi
+
+Scan a package using a SFDX project and a package.xml file:
+\t$sfdx isvte:mdscan -d ./force-app/main/default -p ./config/package.xml
 
 Scan a package and provide a complete inventory of package metadata:
 \t$sfdx isvte:mdscan -d ./mdapi -y
@@ -74,6 +82,10 @@ For more information, please connect in the ISV Technical Enablement Plugin
       description: 'directory containing package metadata',
       default: 'mdapiout'
     }),
+    sfdxpackagexml: flags.string({
+      char: 'p',
+      description: 'path to a package.xml file if current folder is a SFDX Project'
+    }),
     showfullinventory: flags.boolean({
       char: 'y',
       description: 'show package inventory only'
@@ -94,13 +106,14 @@ For more information, please connect in the ISV Technical Enablement Plugin
   };
 
 
-  public async run(): Promise < any > { // tslint:disable-line:no-any
+  public async run(): Promise<any> { // tslint:disable-line:no-any
 
     this.loggit = new loggit('isvtePlugin');
 
     this.showFullInventory = this.flags.showfullinventory;
     this.sourceFolder = this.flags.sourcefolder;
     this.showTechAdoption = this.flags.techadoption;
+    this.sfdxPackageXml = this.flags.sfdxpackagexml;
 
     //Check Suppress Flags
     if (this.flags.suppress) {
@@ -112,7 +125,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
         this.suppressWarnings = this.suppressWarnings || element.toLowerCase() == 'warnings';
         this.suppressQuality = this.suppressQuality || element.toLowerCase() == 'quality';
         this.suppressAPI = this.suppressAPI || element.toLowerCase() == 'api';
-  //      this.suppressAdoptionScore = this.suppressAdoptionScore || element.toLowerCase() == 'techadoption'
+        //      this.suppressAdoptionScore = this.suppressAdoptionScore || element.toLowerCase() == 'readoption'
       });
     }
 
@@ -120,6 +133,41 @@ For more information, please connect in the ISV Technical Enablement Plugin
       this.loggit.loggit(`your source folder ${this.sourceFolder} doesn't exist`, 'Error');
       throw new SfdxError(`Source Folder ${this.sourceFolder} does not exist`, 'SourceNotExistError');
     }
+
+    // If argument packageXml is sent, convert SFDX project into metadatas folder then filter it 
+    if (this.sfdxPackageXml) {
+      const exec = util.promisify(require('child_process').exec);
+
+      try {
+        // force:source:convert in a temporary folder
+        const sfdxConvertCommand = `sfdx force:source:convert -d ${this.sfdxConvertFolder} -r ${(this.sourceFolder != mdscan.flagsConfig.sourcefolder.default) ? this.sourceFolder : '.'}`;
+        this.loggit.loggit(`Converting ${this.sourceFolder} into metadata...`);
+        const { stderr } = await exec(sfdxConvertCommand);
+        if (stderr) {
+          throw new SfdxError(`Unable to convert ${this.sourceFolder} to metadatas`, 'ConversionToMetadataError');
+        }
+        else {
+          this.loggit.loggit(`Converted ${this.sourceFolder} into metadata`);
+        }
+
+        // Filter metadatas folder using package.xml
+        await MetadataFilterFromPackageXml.run([
+          '-i', this.sfdxConvertFolder,
+          '-o', this.sfdxConvertFolderFilter,
+          '-p', this.sfdxPackageXml,
+          '-s']);
+        this.sourceFolder = this.sfdxConvertFolderFilter; // Set filtered mdapi folder as sourceFolder 
+      }
+      catch (e) {
+        throw e;
+      }
+      // Remove filtered metadata folder if existing
+      if (fs.existsSync(this.sfdxConvertFolder)) {
+        fs.removeSync(this.sfdxConvertFolder);
+      }
+    }
+
+    // Process MD Scan
 
     const packagexml = `${this.sourceFolder}/package.xml`;
 
@@ -134,7 +182,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
     this.loggit.loggit('Parsing Package');
     this.packageInventory = new packageInventory();
-    
+
     if (this.flags.minapi) {
       this.loggit.loggit(`Setting Minimum API version for quality checks to ${this.flags.minapi}`);
       this.packageInventory.setMinAPI(this.flags.minapi);
@@ -151,7 +199,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
         let inventoryArray = this.packageInventory.getMonitoredInvArray().filter(element => {
           return (!this.suppressZeroInv || element.count > 0);
         });
-        const inventoryTableoptions: TableOptions= { columns: [{key: 'label', label: 'Metadata Type'},{key: 'count', label: 'Count'}]};
+        const inventoryTableoptions: TableOptions = { columns: [{ key: 'label', label: 'Metadata Type' }, { key: 'count', label: 'Count' }] };
         this.ux.table(inventoryArray, inventoryTableoptions);
         this.ux.log('\n');
       }
@@ -166,7 +214,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
             if (recommendation.url != undefined) {
               message += `URL:${recommendation.url}\n`;
             }
-            if (recommendation.exceptions != undefined && recommendation.exceptions.length >0) {
+            if (recommendation.exceptions != undefined && recommendation.exceptions.length > 0) {
               message += `Components: ${recommendation.exceptions.join(', ')}\n`;
             }
             this.ux.log(message);
@@ -176,7 +224,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
       }
 
       if (!this.suppressQuality) {
-//TODO: suppress API is not used
+        //TODO: suppress API is not used
         let recommendations = this.packageInventory.getQualityRecommendations();
         if (recommendations.length > 0) {
           this.ux.styledHeader('Quality Rules:');
@@ -185,7 +233,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
             if (recommendation.url != undefined) {
               message += `URL:${recommendation.url}\n`;
             }
-            if (recommendation.exceptions != undefined && recommendation.exceptions.length >0) {
+            if (recommendation.exceptions != undefined && recommendation.exceptions.length > 0) {
               message += `Components: ${recommendation.exceptions.join(', ')}\n`;
             }
             this.ux.log(message);
@@ -202,13 +250,13 @@ For more information, please connect in the ISV Technical Enablement Plugin
             if (recommendation.url != undefined) {
               message += `URL:${recommendation.url}\n`;
             }
-            if (recommendation.exceptions != undefined && recommendation.exceptions.length >0) {
+            if (recommendation.exceptions != undefined && recommendation.exceptions.length > 0) {
               message += `Components: ${recommendation.exceptions.join(', ')}\n`;
             }
             this.ux.log(message);
           }
         }
-     
+
       }
       if (!this.suppressWarnings) {
         this.ux.styledHeader('Installation Warnings');
@@ -248,10 +296,18 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
     }
 
-    return this.packageInventory.getJSONOutput();
+    // Get MdScan JSON Output
+    const outputRes = this.packageInventory.getJSONOutput();
+
+    // Remove filtered metadata folder if existing
+    if (fs.existsSync(this.sfdxConvertFolderFilter)) {
+      fs.removeSync(this.sfdxConvertFolderFilter);
+    }
+
+    return outputRes;
 
   }
-  
+
   private inventoryPackage(p) {
     let types = p.types;
     let inventory = {};
@@ -266,14 +322,14 @@ For more information, please connect in the ISV Technical Enablement Plugin
       let typeInv = {};
 
       typeInv['index'] = typeIdx;
-      
+
       this.loggit.loggit('Checking MetadataType: ' + metadataType);
 
       //Check for wildcard members
       if (types[typeIdx]['members'].includes('*')) {
         this.loggit.loggit('Found Wildcard Members');
         types[typeIdx]['members'] = this.getMembers(types[typeIdx]);
-//        this.loggit.loggit('Members: ' + JSON.stringify(types[typeIdx]['members']));
+        //        this.loggit.loggit('Members: ' + JSON.stringify(types[typeIdx]['members']));
       }
       typeInv['count'] = types[typeIdx]['members'].length;
 
@@ -308,7 +364,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
             }
 
             //Check field descriptions
-             //Only check custom fields or standard fields on custom objects, not standard
+            //Only check custom fields or standard fields on custom objects, not standard
             if (objectType == 'Custom' || objectType == 'External' || fieldName.slice(-3) == '__c') {
               const objectPath = `${this.flags.sourcefolder}/objects`;
               let objectXml = `${objectPath}/${objectName}.object`;
@@ -362,17 +418,17 @@ For more information, please connect in the ISV Technical Enablement Plugin
             //Check Big Objects
             if (objectName.slice(-3) == '__b') {
               //  boType['count']++;
-              boCount +=1;
+              boCount += 1;
             }
 
             //Check Platform Events
             if (objectName.slice(-3) == '__e') {
-              peType['count'] +=1;
+              peType['count'] += 1;
             }
 
             //Check Feature Management Parameters
             if (String(objectName).includes('FeatureParameter')) {
-              fmType['count'] +=1;
+              fmType['count'] += 1;
             }
 
             let objectXml = `${objectPath}/${objectName}.object`;
@@ -380,7 +436,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
             //Check Custom Settings
             if (objectJSON['CustomObject'] && objectJSON['CustomObject']['customSettingsType']) {
-              csType['count'] +1;
+              csType['count'] + 1;
             }
             //Check for Descriptions
             if (objectName.slice(-3) == '__c') {
@@ -431,18 +487,18 @@ For more information, please connect in the ISV Technical Enablement Plugin
             let flowJSON = this.parseXML(flowXml);
             this.loggit.loggit('Checking file:' + flowXml);
             if (flowJSON['Flow'] && flowJSON['Flow']['isTemplate'] && flowJSON['Flow']['isTemplate'][0] === 'true') {
-              templateCount +=1;
+              templateCount += 1;
               if (flowJSON['Flow']['processType'] && flowJSON['Flow']['processType'] == 'Flow') {
-                screenTemplateCount +=1;
+                screenTemplateCount += 1;
               }
               if (flowJSON['Flow']['processType'] && flowJSON['Flow']['processType'] == 'AutoLaunchedFlow') {
-                autolaunchedTemplateCount +=1;
+                autolaunchedTemplateCount += 1;
               }
             }
             if (flowJSON['Flow'] && flowJSON['Flow']['processType']) {
               this.loggit.loggit('Flow Type:' + flowJSON['Flow']['processType']);
               if (typeInv[flowJSON['Flow']['processType']]) {
-                typeInv[flowJSON['Flow']['processType']] +=1;
+                typeInv[flowJSON['Flow']['processType']] += 1;
 
               } else {
                 typeInv[flowJSON['Flow']['processType']] = 1;
@@ -459,7 +515,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
                     let objectName = processMetadataValue['value'][0]['stringValue'][0];
                     this.loggit.loggit('Extracted Object Name:' + objectName);
                     if (objects[objectName]) {
-                      objects[objectName]['count'] +=1;
+                      objects[objectName]['count'] += 1;
                     } else {
                       objects[objectName] = {
                         count: 1
@@ -499,14 +555,14 @@ For more information, please connect in the ISV Technical Enablement Plugin
                 navType = appJSON['CustomApplication']['navType'][0];
               }
               if (uiType === 'Lightning') {
-                lightningCount +=1;
+                lightningCount += 1;
                 if (navType === 'Console') {
-                  lightingConsoleCount +=1;
+                  lightingConsoleCount += 1;
                 }
               } else if (uiType === 'Aloha') {
-                classicCount +=1;
+                classicCount += 1;
                 if (navType === 'Console') {
-                  classicConsoleCount +=1;
+                  classicConsoleCount += 1;
                 }
               }
             }
@@ -527,7 +583,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
             let caXml = `${caPath}/${caName}.connectedApp`;
             let caJSON = this.parseXML(caXml);
             if (caJSON['ConnectedApp'] && caJSON['ConnectedApp']['canvasConfig']) {
-              canvasCount +=1;
+              canvasCount += 1;
             }
           }
           typeInv['CanvasApp'] = canvasCount;
@@ -566,25 +622,25 @@ For more information, please connect in the ISV Technical Enablement Plugin
               //    testCount++;
               //  }
               if (futureReg.test(classBody)) {
-                futureCount +=1;
+                futureCount += 1;
               }
               if (auraEnabledReg.test(classBody)) {
-                auraEnabledCount +=1;
+                auraEnabledCount += 1;
               }
               if (invocableReg.test(classBody)) {
-                invocableCount +=1;
+                invocableCount += 1;
               }
               if (restReg.test(classBody)) {
-                apexRestCount +=1;
+                apexRestCount += 1;
               }
               if (soapReg.test(classBody)) {
-                apexSoapCount +=1;
+                apexSoapCount += 1;
               }
               if (scheduleReg.test(classBody)) {
-                schedulableCount +=1;
+                schedulableCount += 1;
               }
               if (batchReg.test(classBody)) {
-                batchCount +=1;
+                batchCount += 1;
               }
 
             }
@@ -634,7 +690,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
               this.loggit.loggit('Trigger Type: ' + triggerType);
               if (triggerObj.slice(-11).toLowerCase() === 'changeevent') {
                 //  asyncTrigger['count']++;
-                asyncCount +=1;
+                asyncCount += 1;
               }
               if (triggerInv[triggerObj]) {
                 triggerInv[triggerObj]['count'] += 1;
@@ -644,7 +700,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
                 };
               }
             }
-            
+
             let triggerMetaFile = `${triggerPath}/${triggerName}.trigger-meta.xml`;
             if (fs.existsSync(triggerMetaFile)) {
               let triggerMetaJSON = this.parseXML(triggerMetaFile);
@@ -683,14 +739,14 @@ For more information, please connect in the ISV Technical Enablement Plugin
                 apiVersions['LightningComponentBundle'][lwcName] = parseFloat(lwcJSON['apiVersion'][0]);
               }
               if (lwcJSON['isExposed'] && lwcJSON['isExposed'][0] === 'true') {
-                exposedCount +=1;
+                exposedCount += 1;
               }
               if (lwcJSON['targets'] && lwcJSON['targets'][0]['target']) {
                 this.loggit.loggit('Checking Targets');
                 this.loggit.loggit(lwcJSON['targets'][0]);
                 for (let target of lwcJSON['targets'][0]['target']) {
                   if (targets[target] != undefined) {
-                    targets[target] +=1;
+                    targets[target] += 1;
                   }
                   else {
                     targets[target] = 1;
@@ -728,7 +784,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
               this.loggit.loggit('Performing Regex search against component for namespaces');
               const componentsReg = /<(\w+:\w+)/ig;
-              let referencedComponents = this.getMatches(auraBody,componentsReg);
+              let referencedComponents = this.getMatches(auraBody, componentsReg);
               if (referencedComponents.length > 0) {
                 this.loggit.loggit(`Found the following Components: ${JSON.stringify(referencedComponents)}`);
                 if (componentProperties['AuraDefinitionBundle'] == undefined) {
@@ -741,7 +797,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
                   componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'] = {};
                 }
                 referencedComponents.forEach(element => {
-                  let ns = element.split(":",2)[0];
+                  let ns = element.split(":", 2)[0];
                   if (componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] == undefined) {
                     componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] = 1;
                   }
@@ -752,7 +808,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
               }
               this.loggit.loggit('Extracting implemented and extended interfaces');
               const interfaceReg = /(?:implements|extends)\s*=\s*"([\w ,:]+)"/igm;
-              let interfaceMatches=this.getMatches(auraBody,interfaceReg);
+              let interfaceMatches = this.getMatches(auraBody, interfaceReg);
               if (interfaceMatches.length > 0) {
                 this.loggit.loggit(`Found the following Interfaces: ${JSON.stringify(interfaceMatches)}`);
                 if (componentProperties['AuraDefinitionBundle'] == undefined) {
@@ -799,15 +855,15 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
 
   private getMembers(mdTypeDef) {
-    this.loggit.loggit('Getting wildcard members for ' + mdTypeDef.name) ;
+    this.loggit.loggit('Getting wildcard members for ' + mdTypeDef.name);
     let retVal = mdTypeDef['members'];
     if (mdmap[mdTypeDef.name] != undefined) {
       if (mdmap[mdTypeDef.name]['folder'] != 'null' && mdmap[mdTypeDef.name]['extension'] != 'null') {
         retVal = this.getMembersFromFiles(mdmap[mdTypeDef.name]['folder'], mdmap[mdTypeDef.name]['extension']);
-//        this.loggit.loggit("Added Members from files.:" + JSON.stringify(retVal));
+        //        this.loggit.loggit("Added Members from files.:" + JSON.stringify(retVal));
       }
     }
-   return retVal;
+    return retVal;
   }
 
   private getMembersFromFiles(folder, extension) {
@@ -831,7 +887,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
     this.loggit.loggit('Found Members: ' + JSON.stringify(members));
     return members;
   }
-  
+
   private getMatches(searchString, regex) {
     let matches = [];
     let match;
