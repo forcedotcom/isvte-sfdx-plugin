@@ -280,7 +280,7 @@ export class packageInventory {
         result['label'] = rule.resultFalse.label;
         result['message'] = rule.resultFalse.message;
         if (rule.resultFalse.url != undefined) {
-          result['url'] = rule.resultTrue.url;
+          result['url'] = rule.resultFalse.url;
         }
         if (rule.resultFalse.showDetails) {
           result['exceptions'] = conditionResult.failItems;

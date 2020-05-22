@@ -598,6 +598,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
           let invocableCount = 0;
           let apexRestCount = 0;
           let apexSoapCount = 0;
+  
 
           const apexPath = `${this.flags.sourcefolder}/classes`;
           for (var apxIdx in types[typeIdx]['members']) {
@@ -616,7 +617,11 @@ For more information, please connect in the ISV Technical Enablement Plugin
               const scheduleReg = /implements\s+Schedulable/ig;
               const restReg = /@RestResource/ig;
               const soapReg = /webservice\s+static/ig;
-
+              const advFLSSOQLReg = /SECURITY_ENFORCED/ig;
+              const advFLSStripInaccessible = /Security\.stripInaccessible/ig;
+            //  const refersGuestSimpleReg = /UserType(?:\(\))?\s*=\s*(['"])Guest\1/ig;
+            //  const refersGuestComplexReg = /(\w+)\s*=.*getUserType\(\)(?:.*)\1\s*=\s*(["'])Guest\2/is;
+              const refersGuestTrivialReg = /(["'])Guest\1/ig;
 
               //  if (testReg.test(classBody)) {
               //    testCount++;
@@ -641,6 +646,35 @@ For more information, please connect in the ISV Technical Enablement Plugin
               }
               if (batchReg.test(classBody)) {
                 batchCount += 1;
+              }
+              if (advFLSSOQLReg.test(classBody)) {
+                if (componentProperties['ApexClass'] == undefined) {
+                  componentProperties['ApexClass'] = {};
+                }
+                if (componentProperties['ApexClass'][className] == undefined) {
+                  componentProperties['ApexClass'][className] = {};
+                }
+                componentProperties['ApexClass'][className]['SECURITY_ENFORCED'] = 1;
+              }
+              if (advFLSStripInaccessible.test(classBody)) {
+                if (componentProperties['ApexClass'] == undefined) {
+                  componentProperties['ApexClass'] = {};
+                }
+                if (componentProperties['ApexClass'][className] == undefined) {
+                  componentProperties['ApexClass'][className] = {};
+                }
+                componentProperties['ApexClass'][className]['StripInaccessible'] = 1;
+              }
+
+          //    if (refersGuestComplexReg.test(classBody) || refersGuestSimpleReg.test(classBody)) {
+              if (refersGuestTrivialReg.test(classBody)) {
+                if (componentProperties['ApexClass'] == undefined) {
+                  componentProperties['ApexClass'] = {};
+                }
+                if (componentProperties['ApexClass'][className] == undefined) {
+                  componentProperties['ApexClass'][className] = {};
+                }
+                componentProperties['ApexClass'][className]['RefersToGuest'] = 1;
               }
 
             }
@@ -678,6 +712,9 @@ For more information, please connect in the ISV Technical Enablement Plugin
             let triggerFile = `${triggerPath}/${triggerName}.trigger`;
             let triggerBody = fs.readFileSync(triggerFile, 'utf8');
             const triggerDetailReg = /trigger\s+(\w+)\s+on\s+(\w+)\s*\((.+)\)/im;
+            const refersGuestTrivialReg = /(["'])Guest\1/ig;
+
+
             let triggerDetail = triggerDetailReg.exec(triggerBody);
             if (triggerDetail == null) {
               this.loggit.loggit('Could not parse Trigger File: ' + triggerFile);
@@ -699,6 +736,16 @@ For more information, please connect in the ISV Technical Enablement Plugin
                   count: 1
                 };
               }
+              if (refersGuestTrivialReg.test(triggerBody)) {
+                if (componentProperties['ApexTrigger'] == undefined) {
+                  componentProperties['ApexTrigger'] = {};
+                }
+                if (componentProperties['ApexTrigger'][triggerName] == undefined) {
+                  componentProperties['ApexTrigger'][triggerName] = {};
+                }
+                componentProperties['ApexTrigger'][triggerName]['RefersToGuest'] = 1;
+              }
+
             }
 
             let triggerMetaFile = `${triggerPath}/${triggerName}.trigger-meta.xml`;
@@ -758,7 +805,40 @@ For more information, please connect in the ISV Technical Enablement Plugin
           typeInv['ExposedComponents'] = exposedCount;
           typeInv['targets'] = targets;
 
+          break;
+        case 'ApexPage':
+          this.loggit.loggit('Interrogating Visualforce');
+          const vfPath = `${this.flags.sourcefolder}/pages`;
+          for (var vfIdx in types[typeIdx]['members']) {
+            const vfName =  types[typeIdx]['members'][vfIdx];
+            const vfFile = `${vfPath}/${vfName}.page`;
+            const vfXML = `${vfPath}/${vfName}.page-meta.xml`;
+            if (fs.existsSync(vfXML)) {
+              let vfMetaJSON = this.parseXML(vfXML);
+              if (vfMetaJSON['ApexPage'] && vfMetaJSON['ApexPage']['apiVersion']) {
 
+                if (apiVersions['ApexPage'] == undefined) {
+                  apiVersions['ApexPage'] = {};
+                }
+                apiVersions['ApexPage'][vfName] = parseFloat(vfMetaJSON['ApexPage']['apiVersion'][0]);
+              }
+            }
+            if (fs.existsSync(vfFile)) {
+              const vfBody = fs.readFileSync(vfFile, 'utf8');
+              const referSiteReg = /{!.*(\$Site|\$Network).*}/ig;
+
+              if (referSiteReg.test(vfBody)) {
+                if (componentProperties['ApexPage'] == undefined) {
+                  componentProperties['ApexPage'] = {};
+                }
+                if (componentProperties['ApexPage'][vfName] == undefined) {
+                  componentProperties['ApexPage'][vfName] = {};
+                }
+                componentProperties['ApexPage'][vfName]['RefersToSite'] = 1;
+              }
+
+            }
+          }
           break;
         case 'AuraDefinitionBundle':
           this.loggit.loggit('Interrogating Aura Components');

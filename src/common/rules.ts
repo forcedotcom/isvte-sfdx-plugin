@@ -566,6 +566,19 @@ const qualityRules: IRule[] = [{
     }
   },
   {
+    name: 'Visualforce API Version',
+    condition: {
+      metadataType: 'apiVersions.ApexPage.*',
+      operator: 'between',
+      operand: [20,'minAPI'],
+    },
+    resultTrue: {
+      label: 'Using old Visualforce API Version',
+      message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
+      showDetails: true
+    }
+  },
+  {
     name: 'Custom Object Description',
     condition: {
       metadataType: 'componentProperties.CustomObject',
@@ -643,6 +656,50 @@ const qualityRules: IRule[] = [{
       showDetails: true
     }
   },
+  {
+    name: 'Apex Version Check',
+    condition: {
+      metadataType: 'apiVersions.ApexClass.*',
+      operator: 'gte',
+      operand: 48
+    },
+    resultFalse: {
+      label: 'New security features in Apex using API version 48 or higher',
+      message: 'There are new security features added to Apex which greatly simplify FLS checks for Security Review. Update your Apex to API version 48 or higher and review these release notes.',
+      url:'https://releasenotes.docs.salesforce.com/en-us/spring20/release-notes/rn_apex_Security_stripInaccessible_GA.htm\n\thttps://releasenotes.docs.salesforce.com/en-us/spring20/release-notes/rn_apex_WithSecurityEnforced_GA.htm'
+    }
+  },
+  {
+    name: 'Apex FLS Checks',
+    condition: {
+      metadataType: 'apiVersions.ApexClass.*',
+      operator: 'notexists',
+      conditionOr: {
+        metadataType: 'componentProperties.ApexClass.*.StripInaccessible',
+        operator: 'eq',
+        operand: 1,
+        conditionOr: {
+          metadataType: 'componentProperties.ApexClass.*.SECURITY_ENFORCED',
+          operator: 'eq',
+          operand: 1,
+          conditionAnd: {
+            metadataType: 'apiVersions.ApexClass.*',
+            operator: 'gte',
+            operand: 48,
+            conditionPerItem: true
+          }
+        }
+  
+      }
+    },
+
+    resultFalse: {
+      label: 'New Apex Security Features',
+      message: 'Starting with API version 48, you can use SOQL queries with the WITH SECURITY_ENFORCED modifier as well as the Apex method Security.stripInaccessible to provide FLS and CRUD checks eliminating the need to perform individual field accessibility checks to pass Security Review. Please review the attached release docs for more information',
+      url: 'https://releasenotes.docs.salesforce.com/en-us/spring20/release-notes/rn_apex_Security_stripInaccessible_GA.htm \n https://releasenotes.docs.salesforce.com/en-us/spring20/release-notes/rn_apex_WithSecurityEnforced_GA.htm'
+    }
+    
+  }
 ];
 
 const alertRules: IRule[] = [{
@@ -763,6 +820,46 @@ const alertRules: IRule[] = [{
       url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GNnm3QAD'
     }
  },
+ {
+   name: 'Enhancement to Guest User Sharing Policy',
+   condition: {
+    metadataType: 'LightningComponentBundle.targets.lightningCommunity__Page',
+    operator: 'exists',
+    conditionOr: {
+      metadataType: 'LightningComponentBundle.targets.lightningCommunity__Default',
+      operator: 'exists',
+      conditionOr: {
+        metadataType: 'ExperienceBundle',
+        operator: 'exists',
+        conditionOr: {
+          metadataType: 'CommunityTemplateDefinition',
+          operator: 'exists',
+          conditionOr: {
+            metadataType: 'componentProperties.AuraDefinitionBundle.*.interfaces.forceCommunity:availableForAllPageTypes',
+            operator: 'exists',
+            conditionOr: {
+              metadataType: 'componentProperties.ApexPage.*.RefersToSite',
+              operator: 'exists',
+              conditionOr: {
+                metadataType: 'componentProperties.ApexTrigger.*.RefersToGuest',
+                operator: 'exists',
+                conditionOr: {
+                  metadataType:  'componentProperties.ApexClass.*.RefersToGuest',
+                  operator: 'exists'
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  resultTrue: {
+    label: 'Enhancement to Guest User Sharing Policy',
+    message: 'The secure guest user record access and assign new records created by guest users to the default owner will be auto-enabled in Summer ‘20 with opt-out & disable options available. The settings will be enforced in Winter ‘21 without opt-out & disable options. If your application uses or can use Guest Users, please refer to this alert link to ensure you will not be impacted.',
+    url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GNp0vQAD'
+  }
+ }
 ];
 
 const editionWarningRules: IInstallRule[] = [{
@@ -1000,6 +1097,26 @@ const dependencyRules: IDependecyRule[] = [{
     condition: {
       metadataType: 'dependencies.features.PersonAccount',
       operator: 'exists'
+    }
+},
+{ 
+    name: 'Work.com',
+    label: 'Work.com',
+    condition: {
+      metadataType: 'CustomField.objects.Employee',
+      operator: 'exists',
+      conditionOr: {
+        metadataType: 'CustomField.objects.EmployeeCrisisAssessment',
+        operator: 'exists',
+        conditionOr: {
+          metadataType: 'CustomField.objects.InternalOrganizationUnit',
+          operator: 'exists',
+          conditionOr: {
+            metadataType: 'CustomField.objects.Crisis',
+            operator: 'exists'
+          }
+        }
+      }
     }
 },
 {
