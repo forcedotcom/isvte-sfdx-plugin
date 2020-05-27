@@ -669,7 +669,30 @@ export class packageInventory {
             case 'Flow':
               if (this._mdInv[element.metadataType]) {
                 count = this._mdInv[element.metadataType]['count'];
-                extras.push({
+                const flowTypes = Object.keys(this._mdInv[element.metadataType]['FlowTypes']);
+                for (const flowType of flowTypes) {
+                  let ftLabel;
+                  const ftCount =  this._mdInv[element.metadataType]['FlowTypes'][flowType]['count'];
+                  switch (flowType) {
+                    case 'Flow':
+                      ftLabel = '  Screen Flows';
+                      break;
+                    case 'AutoLaunchedFlow':
+                      ftLabel = '  Autolaunched Flows';
+                      break;
+                    case 'Workflow':
+                      ftLabel = '  Process Builder';
+                      break;
+                    default:
+                      ftLabel = `  ${flowType}`;
+                  }
+                  extras.push({
+                    metadataSubType: flowType,
+                    label: ftLabel,
+                    count: ftCount
+                  });
+                }
+               /* extras.push({
                   metadataSubType: 'ScreenFlow',
                   label: '  Screen Flows',
                   count: this._mdInv[element.metadataType]['Flow']
@@ -684,7 +707,7 @@ export class packageInventory {
                   label: '  Process Builder',
                   count: this._mdInv[element.metadataType]['Workflow']
                 });
-
+*/
                 const objects = Object.keys(this._mdInv[element.metadataType]['objects']);
                 for (const obj of objects) {
                   let objPBTriggerCount = this._mdInv[element.metadataType]['objects'][obj]['count'];
@@ -700,6 +723,32 @@ export class packageInventory {
                   label: '  Flow Templates',
                   count: this._mdInv[element.metadataType]['FlowTemplate']
                 });
+                const flowTemplateTypes = Object.keys(this._mdInv[element.metadataType]['FlowTemplates']);
+                for (const flowTemplateType of flowTemplateTypes) {
+                  let ftLabel;
+                  const ftCount =  this._mdInv[element.metadataType]['FlowTemplates'][flowTemplateType]['count'];
+                  switch (flowTemplateType) {
+                    case 'Flow':
+                      ftLabel = '    Screen Flow Templates';
+                      break;
+                    case 'AutoLaunchedFlow':
+                      ftLabel = '    Autolaunched Flow Templates';
+                      break;
+                    default:
+                      ftLabel = `    ${flowTemplateType}`;
+                  }
+                  extras.push({
+                    metadataSubType: `${flowTemplateType}Template`,
+                    label: ftLabel,
+                    count: ftCount
+                  });
+                }
+                /*
+                extras.push({
+                  metadataSubType: 'FlowTemplate',
+                  label: '  Flow Templates',
+                  count: this._mdInv[element.metadataType]['FlowTemplate']
+                });
                 extras.push({
                   metadataSubType: 'FlowTemplate',
                   label: '    Screen Flow Templates',
@@ -710,6 +759,7 @@ export class packageInventory {
                   label: '    Autolaunched Flow Templates',
                   count: this._mdInv[element.metadataType]['AutoLaunchedFlowTemplate']
                 });
+                */
               }
               break;
             case 'ConnectedApp':

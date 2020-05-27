@@ -479,14 +479,58 @@ For more information, please connect in the ISV Technical Enablement Plugin
           let screenTemplateCount = 0;
           let autolaunchedTemplateCount = 0;
           let objects = {};
-
-          const flowPath = `${this.flags.sourcefolder}/flows`;
+          let flowTypes = {};
+          let flowTemplates = {};
+               const flowPath = `${this.flags.sourcefolder}/flows`;
           for (var flowIdx in types[typeIdx]['members']) {
             let flowName = types[typeIdx]['members'][flowIdx];
             let flowXml = `${flowPath}/${flowName}.flow`;
             let flowJSON = this.parseXML(flowXml);
             this.loggit.loggit('Checking file:' + flowXml);
+            let processType = flowJSON['Flow'] && flowJSON['Flow']['processType'] ? flowJSON['Flow']['processType'] : 'UnknownType';
+           
+            if (flowTypes[processType]) {
+              flowTypes[processType]['count']+=1;
+            }
+            else {
+              flowTypes[processType] = {
+                count: 1
+              };
+            }
+            
             if (flowJSON['Flow'] && flowJSON['Flow']['isTemplate'] && flowJSON['Flow']['isTemplate'][0] === 'true') {
+              templateCount += 1;
+              if (flowTemplates[processType]) {
+                flowTemplates[processType]['count']+=1;
+              }
+              else {
+                flowTemplates[processType] = {
+                  count:1
+                };
+              }
+            }
+
+            //Do per object Inventory
+              this.loggit.loggit('Inventorying PB and Flow Triggers Per Object');
+              this.loggit.loggit('Flow Details: ' + JSON.stringify(flowJSON['Flow']['processMetadataValues']));
+              for (var processMetadataValue of flowJSON['Flow']['processMetadataValues']) {
+                this.loggit.loggit('Metadata Value Name: ' + processMetadataValue['name']);
+                if (processMetadataValue['name'] == 'ObjectType') {
+                  this.loggit.loggit('ObjectName:' + JSON.stringify(processMetadataValue['value'][0]));
+                  let objectName = processMetadataValue['value'][0]['stringValue'][0];
+                  this.loggit.loggit('Extracted Object Name:' + objectName);
+                  if (objects[objectName]) {
+                    objects[objectName]['count'] += 1;
+                  } else {
+                    objects[objectName] = {
+                      count: 1
+                    };
+                  }
+                }
+              }
+            
+
+           /* if (flowJSON['Flow'] && flowJSON['Flow']['isTemplate'] && flowJSON['Flow']['isTemplate'][0] === 'true') {
               templateCount += 1;
               if (flowJSON['Flow']['processType'] && flowJSON['Flow']['processType'] == 'Flow') {
                 screenTemplateCount += 1;
@@ -524,14 +568,16 @@ For more information, please connect in the ISV Technical Enablement Plugin
                   }
                 }
               }
-            }
+            }*/
           }
-          typeInv['Flow'] = typeInv['Flow'] ? typeInv['Flow'] : 0;
-          typeInv['AutoLaunchedFlow'] = typeInv['AutoLaunchedFlow'] ? typeInv['AutoLaunchedFlow'] : 0;
-          typeInv['Workflow'] = typeInv['Workflow'] ? typeInv['Workflow'] : 0;
+          typeInv['FlowTypes'] = flowTypes;
+          typeInv['FlowTemplates'] = flowTemplates;
+       //   typeInv['Flow'] = typeInv['Flow'] ? typeInv['Flow'] : 0;
+       //   typeInv['AutoLaunchedFlow'] = typeInv['AutoLaunchedFlow'] ? typeInv['AutoLaunchedFlow'] : 0;
+       //   typeInv['Workflow'] = typeInv['Workflow'] ? typeInv['Workflow'] : 0;
           typeInv['FlowTemplate'] = templateCount;
-          typeInv['ScreenFlowTemplate'] = screenTemplateCount;
-          typeInv['AutoLaunchedFlowTemplate'] = autolaunchedTemplateCount;
+       //   typeInv['ScreenFlowTemplate'] = screenTemplateCount;
+       //   typeInv['AutoLaunchedFlowTemplate'] = autolaunchedTemplateCount;
           typeInv['objects'] = objects;
           break;
         case 'CustomApplication':

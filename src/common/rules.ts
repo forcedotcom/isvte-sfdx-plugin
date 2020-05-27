@@ -906,6 +906,14 @@ const editionWarningRules: IInstallRule[] = [{
         operator: 'exists'  
       }
     },
+    {
+      label: 'Flows per Type',
+      condition: {
+        metadataType: 'Flow.FlowTypes.*',
+        operator: 'gt',
+        operand: 5
+      }
+    }
 
   ]
 },
@@ -953,6 +961,14 @@ const editionWarningRules: IInstallRule[] = [{
         operator: 'exists'  
       }
     },
+    {
+      label: 'Flows per Type',
+      condition: {
+        metadataType: 'Flow.FlowTypes.*',
+        operator: 'gt',
+        operand: 5
+      }
+    }
   ]
 },
 {
@@ -972,6 +988,14 @@ const editionWarningRules: IInstallRule[] = [{
         operand: 50 
       }
     },
+    {
+      label: 'Flows per Type',
+      condition: {
+        metadataType: 'Flow.FlowTypes.*',
+        operator: 'gt',
+        operand: 5
+      }
+    }
   ]
 },
 {
@@ -1044,15 +1068,15 @@ const techAdoptionRules: ITechAdoptionRule[] = [
     categoryLabel: 'Which technologies does your app use for application processing and security?',
     items: [
       {
-        metadataType: 'Flow.Workflow',
+        metadataType: 'Flow.FlowTypes.Workflow',
         label: 'Process Builder',
       },
       {
-        metadataType: 'Flow.Flow',
+        metadataType: 'Flow.FlowTypes.Flow',
         label: 'Screen Flows',
       },
       {
-        metadataType: 'Flow.AutoLaunchedFlow',
+        metadataType: 'Flow.FlowTypes.AutoLaunchedFlow',
         label: 'Autolaunched Flows',
       },
       {
