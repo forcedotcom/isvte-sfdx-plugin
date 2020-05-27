@@ -278,6 +278,11 @@ For more information, please connect in the ISV Technical Enablement Plugin
           this.ux.log('Feature and License Dependencies:');
           for (var dependency of dependencies) {
             this.ux.log(`  ${dependency.label}`);
+            if (dependency['items']) {
+              for (var depItem of dependency.items) {
+                this.ux.log(`    ${depItem}`);
+              }
+            }
           }
           this.ux.log('\n');
         }

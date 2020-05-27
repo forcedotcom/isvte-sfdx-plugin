@@ -13,6 +13,7 @@ import {
   minAPI,
   techAdoptionRules,
   dependencyRules,
+  dataModels
 
 } from './rules';
 import {
@@ -234,8 +235,52 @@ export class packageInventory {
     this.loggit.loggit('Checking Feature and License Dependencies');
     if (!this._dependencies) {
       this._dependencies = [];
+      //this.loggit.loggit('getting Namespaces referenced');
+     
+      this.loggit.loggit('building dependencyrules from data models');
+      let dependencyRulesConstructed = [...dependencyRules];
+      for (var dataModel of dataModels) {
+        this.loggit.loggit(`Generating dependency rules from ${dataModel.name} data model`)
+        
+        let conditions = [];
+        for (var objName of dataModel.objects) {
+          //create condition for Object references in custom fields
+          conditions.push({
+            metadataType: `CustomField.objects.${objName}`,
+            operator: 'exists'
+          });
+          //create condition of PBs on the object
+          conditions.push({
+            metadataType: `Flow.objects.${objName}`,
+            operator: 'exists'
+          });
+          //create condition of triggers on the object
+          conditions.push({
+            metadataType: `ApexTrigger.objects.${objName}`,
+            operator: 'exists'
+          });
+        }
+        this.loggit.loggit(JSON.stringify(conditions));
+        if (conditions.length > 0) {
+          let conditionConstructed = conditions.pop();
+          let nextCondition;
+          while (nextCondition = conditions.pop()) {
+            let prevCondition = Object.assign({},conditionConstructed);
+            conditionConstructed = Object.assign({},nextCondition);
+            conditionConstructed['conditionOr'] = prevCondition;
+          }
+          let dependencyConstructed = {
+            name: dataModel.name,
+            label: dataModel.label,
+            condition: conditionConstructed
+          };
+          this.loggit.loggit('Generated Dependency Rule:');
+          this.loggit.loggit(JSON.stringify(dependencyConstructed));
+          dependencyRulesConstructed.push(dependencyConstructed) 
+        }
+      }
       this.loggit.loggit('Adding Dependencies from Rules');
-      for (var dependencyRule of dependencyRules) {
+      for (var dependencyRule of dependencyRulesConstructed) {
         if (this.isConditionValid(dependencyRule.condition)) {
           if (this.checkCondition(dependencyRule.condition).conditionPass) {
             this._dependencies.push({
@@ -245,10 +290,33 @@ export class packageInventory {
           };
         }
       }
+
+
     }
+
+    
 
     return this._dependencies;
   }
+
+  private getNamespaceReferences() {
+    let nameSpaces = new Set();
+    //aura namespaces
+    let auraNamespaces = this.checkCondition({metadataType:'componentProperties.AuraDefinitionBundle.*.namespaceReferences.*',operator:'gt',operand: 0});
+    for (var ns of auraNamespaces.passItems) {
+      nameSpaces.add(ns);
+    }
+
+    //TODO: Apex, Objects, Fields, Triggers, LWC, Lightning Pages
+
+    //removed standard namespaces
+  //  nameSpaces.delete('c');
+  //  nameSpaces.delete('aura');
+  //  nameSpaces.delete('lightning');
+  //  nameSpaces.delete('ui');
+    return nameSpaces;
+  }
+
 
   public processRules(ruleSet) {
     //Replaces   public checkRules(ruleSet) 

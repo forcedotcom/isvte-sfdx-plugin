@@ -162,9 +162,18 @@ interface IDependecyRule {
   condition: ICondition //Condition which fires the dependency rule
 }
 
-const minAPI = 43;
+interface IDataModel {
+  name: string, //Name of the cloud or feature this data model describes
+  label: string,  //Friendly output of the cloud or feature name
+  fields?: string[], //Array of fields (in Object.Field format) included in this datamodel
+  objects?: string[], //Array of objects included in this data model
+  namespaces?: string[], //Array of namespaces included in this data model
+  parentModels?: string[], //Array of other data models that this model depends on (using the name property of the parent)
+}
 
-const rulesVersion = '20200427';
+const minAPI = 45;
+
+const rulesVersion = '20200527';
 
 const mdTypes: IMetadataType[] = [{
   label: 'Permission Sets',
@@ -1123,26 +1132,6 @@ const dependencyRules: IDependecyRule[] = [{
       operator: 'exists'
     }
 },
-{ 
-    name: 'Work.com',
-    label: 'Work.com',
-    condition: {
-      metadataType: 'CustomField.objects.Employee',
-      operator: 'exists',
-      conditionOr: {
-        metadataType: 'CustomField.objects.EmployeeCrisisAssessment',
-        operator: 'exists',
-        conditionOr: {
-          metadataType: 'CustomField.objects.InternalOrganizationUnit',
-          operator: 'exists',
-          conditionOr: {
-            metadataType: 'CustomField.objects.Crisis',
-            operator: 'exists'
-          }
-        }
-      }
-    }
-},
 {
   name: 'EinsteinAnalytics',
   label: 'Einstein Analytics',
@@ -1181,6 +1170,13 @@ const dependencyRules: IDependecyRule[] = [{
 }
 ]
 
+const dataModels: IDataModel[] = [{
+  name: 'work.com',
+  label: 'Work.com',
+  objects: ['Employee','EmployeeCrisisAssessment','InternalOrganizationUnit','Crisis'],
+  fields: ['Location.Status__c']
+}]
+
 export {
   mdTypes,
   enablementRules,
@@ -1190,7 +1186,8 @@ export {
   minAPI,
   techAdoptionRules,
   rulesVersion,
-  dependencyRules
+  dependencyRules,
+  dataModels
 };
 
 
