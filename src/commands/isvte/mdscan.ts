@@ -348,35 +348,72 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
           for (var fieldIdx in types[typeIdx]['members']) {
             let fieldFullName = types[typeIdx]['members'][fieldIdx];
-            let objectName = fieldFullName.split(".")[0];
-            let fieldName = fieldFullName.split(".")[1];
-            let objectType = 'Standard';
+            let object = this.getNameSpaceAndType(fieldFullName.split(".")[0]);
+            let field = this.getNameSpaceAndType(fieldFullName.split(".")[1]);
+            
 
+            //Add Namespace Dependencies 
+            if (object.namespace !== null) {
+              if (dependencies['namespaces'] == undefined) {
+                dependencies['namespaces'] = {};
+              }
+              dependencies['namespaces'][object.namespace] = 1;
+            }
+            if (field.namespace !== null) {
+              if (dependencies['namespaces'] == undefined) {
+                dependencies['namespaces'] = {};
+              }
+              dependencies['namespaces'][field.namespace] = 1;
+            }
+            /*
             this.loggit.loggit('Checking field: ' + fieldName + ' on Object: ' + objectName + ' --- ' + fieldFullName);
+            let objectbreak = objectName.split("__");
+            if (objectbreak[objectbreak.length -1] == 'c' || objectbreak[objectbreak.length -1] == 'b') {
+              objectType = 'Custom';
+            }
+            else if (objectbreak[objectbreak.length -1] == 'x') {
+              objectType = 'External';
+            }
+            else if (objectbreak[objectbreak.length -1] == 'mdt') {
+              objectType = 'Custom Metadata';
+            }
+
+            if (objectbreak.length == 3 || (objectbreak.length == 2 && objectType != 'Standard')) {
+              //this is a managed object
+              if (dependencies['namespaces'] == undefined) {
+                dependencies['namespaces'] = {};
+              }
+              dependencies['namespaces'][objectbreak[0]] = 1;
+            }*/
+/*
             if (objectName.slice(-3) == '__c' || objectName.slice(-3) == '__b') {
               objectType = 'Custom';
             }
             if (objectName.slice(-3) == '__x') {
               objectType = 'External';
             }
-            if (objectFields[objectName]) {
-              objectFields[objectName]['count'] += 1;
+            if (objectName.slice(-5) == '__mdt') {
+              objectType = 'Custom Metadata';
+            }
+   */         
+            if (objectFields[object.fullName]) {
+              objectFields[object.fullName]['count'] += 1;
             } else {
-              objectFields[objectName] = {
+              objectFields[object.fullName] = {
                 'count': 1,
-                'objectType': objectType
+                'objectType': object.type
               };
             }
 
             //Check field descriptions
             //Only check custom fields or standard fields on custom objects, not standard
-            if (objectType == 'Custom' || objectType == 'External' || fieldName.slice(-3) == '__c') {
+            if ((object.type == 'Standard' && field.type !== 'Standard')|| object.type !== 'Standard') {
               const objectPath = `${this.flags.sourcefolder}/objects`;
-              let objectXml = `${objectPath}/${objectName}.object`;
+              let objectXml = `${objectPath}/${object.fullName}.object`;
               let objectJSON = this.parseXML(objectXml);
               if (objectJSON['CustomObject'] && objectJSON['CustomObject']['fields']) {
                 for (var fieldDef of objectJSON['CustomObject']['fields']) {
-                  if (fieldDef['fullName'] == fieldName) {
+                  if (fieldDef['fullName'] == field.fullName) {
                     this.loggit.loggit('Checking Properties of Field: ' + fieldFullName);
 
                     if (componentProperties['CustomField'] == undefined) {
@@ -413,30 +450,36 @@ For more information, please connect in the ISV Technical Enablement Plugin
             count: 0
           };
           for (var objIdx in types[typeIdx]['members']) {
-            let objectName = types[typeIdx]['members'][objIdx];
-            this.loggit.loggit('Checking Object: ' + objectName);
+            let object = this.getNameSpaceAndType(types[typeIdx]['members'][objIdx]);
+            this.loggit.loggit('Checking Object: ' + object.fullName);
+            //Add Namespace Dependencies 
+            if (object.namespace !== null) {
+              if (dependencies['namespaces'] == undefined) {
+                dependencies['namespaces'] = {};
+              }
+              dependencies['namespaces'][object.namespace] = 1;
+            }
+
             //Check external Objects
-            if (objectName.slice(-3) == '__x') {
-              //xoType['count']++;
+            if (object.extension == 'e') {
               xoCount += 1;
             }
             //Check Big Objects
-            if (objectName.slice(-3) == '__b') {
-              //  boType['count']++;
+            if (object.extension == 'Big Object') {
               boCount += 1;
             }
 
             //Check Platform Events
-            if (objectName.slice(-3) == '__e') {
+            if (object.extension == 'e') {
               peType['count'] += 1;
             }
 
             //Check Feature Management Parameters
-            if (String(objectName).includes('FeatureParameter')) {
+            if (String(object.fullName).includes('FeatureParameter')) {
               fmType['count'] += 1;
             }
 
-            let objectXml = `${objectPath}/${objectName}.object`;
+            let objectXml = `${objectPath}/${object.fullName}.object`;
             let objectJSON = this.parseXML(objectXml);
 
             //Check Custom Settings
@@ -444,21 +487,18 @@ For more information, please connect in the ISV Technical Enablement Plugin
               csType['count'] + 1;
             }
             //Check for Descriptions
-            if (objectName.slice(-3) == '__c') {
-              this.loggit.loggit('Checking properties of object ' + objectName);
+            if (object.type == 'Custom') {
+              this.loggit.loggit('Checking properties of object ' + object.fullName);
 
               if (componentProperties['CustomObject'] == undefined) {
                 componentProperties['CustomObject'] = {};
               }
-              if (componentProperties['CustomObject'][objectName] == undefined) {
-                componentProperties['CustomObject'][objectName] = {};
+              if (componentProperties['CustomObject'][object.fullName] == undefined) {
+                componentProperties['CustomObject'][object.fullName] = {};
               }
-              componentProperties['CustomObject'][objectName]['descriptionExists'] = objectJSON['CustomObject'] && objectJSON['CustomObject']['description'] ? 1 : 0;
+              componentProperties['CustomObject'][object.fullName]['descriptionExists'] = objectJSON['CustomObject'] && objectJSON['CustomObject']['description'] ? 1 : 0;
 
             }
-
-
-
 
             //   this.loggit(objectJSON,'JSON');
           }
@@ -481,8 +521,8 @@ For more information, please connect in the ISV Technical Enablement Plugin
           this.loggit.loggit('Checking flows');
 
           let templateCount = 0;
-          let screenTemplateCount = 0;
-          let autolaunchedTemplateCount = 0;
+       //   let screenTemplateCount = 0;
+       //   let autolaunchedTemplateCount = 0;
           let objects = {};
           let flowTypes = {};
           let flowTemplates = {};
@@ -523,6 +563,14 @@ For more information, please connect in the ISV Technical Enablement Plugin
                 if (processMetadataValue['name'] == 'ObjectType') {
                   this.loggit.loggit('ObjectName:' + JSON.stringify(processMetadataValue['value'][0]));
                   let objectName = processMetadataValue['value'][0]['stringValue'][0];
+                  let object = this.getNameSpaceAndType(objectName);
+                  //Add Namespace Dependencies 
+                  if (object.namespace !== null) {
+                    if (dependencies['namespaces'] == undefined) {
+                      dependencies['namespaces'] = {};
+                    }
+                    dependencies['namespaces'][object.namespace] = 1;
+                  }
                   this.loggit.loggit('Extracted Object Name:' + objectName);
                   if (objects[objectName]) {
                     objects[objectName]['count'] += 1;
@@ -673,6 +721,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
             //  const refersGuestSimpleReg = /UserType(?:\(\))?\s*=\s*(['"])Guest\1/ig;
             //  const refersGuestComplexReg = /(\w+)\s*=.*getUserType\(\)(?:.*)\1\s*=\s*(["'])Guest\2/is;
               const refersGuestTrivialReg = /(["'])Guest\1/ig;
+              //TODO: Parse for Object references
 
               //  if (testReg.test(classBody)) {
               //    testCount++;
@@ -764,6 +813,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
             let triggerBody = fs.readFileSync(triggerFile, 'utf8');
             const triggerDetailReg = /trigger\s+(\w+)\s+on\s+(\w+)\s*\((.+)\)/im;
             const refersGuestTrivialReg = /(["'])Guest\1/ig;
+            //TODO: Parse for Object references
 
 
             let triggerDetail = triggerDetailReg.exec(triggerBody);
@@ -771,19 +821,26 @@ For more information, please connect in the ISV Technical Enablement Plugin
               this.loggit.loggit('Could not parse Trigger File: ' + triggerFile);
             }
             else {
-              let triggerObj = triggerDetail[2];
+              let triggerObject = this.getNameSpaceAndType(triggerDetail[2]);
               let triggerType = triggerDetail[3];
               this.loggit.loggit('Trigger Name:' + triggerName);
-              this.loggit.loggit('Trigger Object:' + triggerObj);
+              this.loggit.loggit('Trigger Object:' + triggerObject.fullName);
               this.loggit.loggit('Trigger Type: ' + triggerType);
-              if (triggerObj.slice(-11).toLowerCase() === 'changeevent') {
+              //Add Namespace Dependencies 
+              if (triggerObject.namespace !== null) {
+                if (dependencies['namespaces'] == undefined) {
+                dependencies['namespaces'] = {};
+                }
+                dependencies['namespaces'][triggerObject.namespace] = 1;
+              }
+              if (triggerObject.type == 'Change Data Capture') {
                 //  asyncTrigger['count']++;
                 asyncCount += 1;
               }
-              if (triggerInv[triggerObj]) {
-                triggerInv[triggerObj]['count'] += 1;
+              if (triggerInv[triggerObject.fullName]) {
+                triggerInv[triggerObject.fullName]['count'] += 1;
               } else {
-                triggerInv[triggerObj] = {
+                triggerInv[triggerObject.fullName] = {
                   count: 1
                 };
               }
@@ -824,6 +881,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
           for (var lwcIdx in types[typeIdx]['members']) {
             const lwcName = types[typeIdx]['members'][lwcIdx];
             const lwcXml = `${lwcPath}/${lwcName}/${lwcName}.js-meta.xml`;
+            //TODO: Parse for object and namespace references
             let lwcJSON = this.parseXML(lwcXml);
             if (lwcJSON['LightningComponentBundle']) {
               lwcJSON = lwcJSON['LightningComponentBundle'];
@@ -877,6 +935,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
             if (fs.existsSync(vfFile)) {
               const vfBody = fs.readFileSync(vfFile, 'utf8');
               const referSiteReg = /{!.*(\$Site|\$Network).*}/ig;
+              //TODO:Parse for object and namespace references
 
               if (referSiteReg.test(vfBody)) {
                 if (componentProperties['ApexPage'] == undefined) {
@@ -908,6 +967,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
             //Count Used Components by Namespace
             let auraCmpFile = `${auraPath}/${auraName}/${auraName}.cmp`;
             this.loggit.loggit(`Extracting info from ${auraCmpFile}`);
+            //TODO: Parse for object references
 
             if (fs.existsSync(auraCmpFile)) {
 
@@ -935,6 +995,11 @@ For more information, please connect in the ISV Technical Enablement Plugin
                   else {
                     componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] += 1
                   }
+                  //Also add it to the Namespaces dependencies
+                  if (dependencies['namespaces'] == undefined) {
+                    dependencies['namespaces'] = {};
+                  }
+                  dependencies['namespaces'][ns] = 1;
                 });
               }
               this.loggit.loggit('Extracting implemented and extended interfaces');
@@ -994,6 +1059,137 @@ For more information, please connect in the ISV Technical Enablement Plugin
         //        this.loggit.loggit("Added Members from files.:" + JSON.stringify(retVal));
       }
     }
+    return retVal;
+  }
+
+  private getNameSpaceAndType(fullComponentName) {
+    /*
+    Parse object or field names
+    Cases Covered:
+    StandardThing
+    StandardThing__ext
+    CustomThing__ext
+    Namespace_CustomThing__ext
+    CustomField__location__s
+    Namespace__CustomField__location__s
+    */
+    this.loggit.loggit('Breaking down component name:' + fullComponentName);
+    
+    const retVal = {
+      type:null,
+      name:null,
+      extension:null,
+      namespace:null,
+      fullName: fullComponentName
+    };
+
+    let breakdown = fullComponentName.split("__");
+   
+    if (breakdown.length == 1) {
+        //Standard Object
+        retVal.type = 'Standard';
+        retVal.name = breakdown[0];
+    }
+    else {
+      //we have an extension and possibly a namespace
+      retVal.extension = breakdown[breakdown.length -1];
+
+      //Check for and fixup locations
+      if (retVal.extension.toLowerCase == 's' && (breakdown[breakdown.length-2].toLowerCase == 'latitude' || breakdown[breakdown.length-2].toLowerCase == 'longitude' )) {
+        this.loggit.loggit('This appears to be a location field with an extra __ in the suffix. Adjusting expectations'); 
+        if (breakdown.length > 2) {
+          //This should always be the case
+          breakdown.pop();
+          breakdown[breakdown.length -1] = breakdown[breakdown.length -1] + '__s';
+          retVal.extension = breakdown[breakdown.length -1];
+        }
+      }
+      if (breakdown.length == 2) {
+        //non namespaced custom object
+        retVal.name = breakdown[0];
+      }
+      else if (breakdown.length == 3) {
+        retVal.name = breakdown[1];
+        retVal.namespace = breakdown[0];
+      }
+      else {
+        //WE probably shouldn't end up here.
+        this.loggit.loggit('Unsure how to parse ' + fullComponentName);
+        retVal.name = fullComponentName;
+      }
+      switch (retVal.extension.toLowerCase()) {
+        case 'c':
+          retVal.type = 'Custom';
+          break;
+        case 'r':
+          retVal.type = 'Relationship';
+          break;
+        case 'ka':
+          retVal.type = 'Knowledge Article';
+          break;
+        case 'kav':
+          retVal.type = 'Knowledge Article Version';
+          break;
+        case 'feed':
+          retVal.type = 'Object Feed';
+          break;
+        case 'viewstat':
+          retVal.type = 'Knowledge Article View Stat';
+          break;
+        case 'votestat':
+          retVal.type = 'Knowledge Article Vote Stat';
+          break;
+        case 'datacategoryselection':
+          retVal.type = 'Knowledge Article Data Category';
+          break;
+        case 'x':
+          retVal.type = 'External Object';
+          break;
+        case 'xo':
+          retVal.type = 'S2S Proxy Object';
+          break;
+        case 'mdt':
+          retVal.type = 'Custom Metadata Type';
+          break;
+        case 'share':
+          retVal.type = 'Custom Object Sharing';
+          break;
+        case 'tag':
+          retVal.type = 'Tag';
+          break;
+        case 'history':
+          retVal.type = 'Field History Tracking';
+          break;
+        case 'pc':
+          retVal.type = 'Person Account';
+          break;
+        case 'pr':
+          retVal.type = 'Person Account Relationship';
+          break;
+        case 'b':
+          retVal.type = 'Big Object';
+          break;
+        case 'latitude__s':
+          retVal.type = 'Geolocation Latitude Coordinate';
+          break;
+        case 'longitude__s':
+          retVal.type = 'Geolocation Longitude Coordinate';
+          break;
+        case 'e':
+          retVal.type = 'Platform Event';
+          break;
+        case 'p':
+          retVal.type = 'Custom Person Object';
+          break;
+        case 'changeevent':
+          retVal.type = 'Change Data Capture';
+          break;
+        default:
+          retVal.type = 'Unknown';
+      }
+
+    }
+    this.loggit.loggit('Parsed component: ' + JSON.stringify(retVal));
     return retVal;
   }
 

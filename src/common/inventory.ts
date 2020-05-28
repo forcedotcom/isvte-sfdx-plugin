@@ -235,7 +235,6 @@ export class packageInventory {
     this.loggit.loggit('Checking Feature and License Dependencies');
     if (!this._dependencies) {
       this._dependencies = [];
-      //this.loggit.loggit('getting Namespaces referenced');
      
       this.loggit.loggit('building dependencyrules from data models');
       let dependencyRulesConstructed = [...dependencyRules];
@@ -243,6 +242,14 @@ export class packageInventory {
         this.loggit.loggit(`Generating dependency rules from ${dataModel.name} data model`)
         
         let conditions = [];
+        //Check Namespaces
+        for (var ns of dataModel.namespaces) {
+          conditions.push({
+            metadataType: `dependencies.namespaces.${ns}`,
+            operator: 'exists'
+          });
+        }
+        //Check Objects
         for (var objName of dataModel.objects) {
           //create condition for Object references in custom fields
           conditions.push({
@@ -291,6 +298,16 @@ export class packageInventory {
         }
       }
 
+     this.loggit.loggit('Adding Namespace Dependencies');
+     let nameSpaces = this.getNamespaceReferences();
+     if (nameSpaces.size > 0) {
+       this._dependencies.push({
+         name: 'namespaces',
+         label: 'Namespace Dependencies',
+         items: Array.from(nameSpaces)
+       });
+     }
+
 
     }
 
@@ -301,19 +318,15 @@ export class packageInventory {
 
   private getNamespaceReferences() {
     let nameSpaces = new Set();
-    //aura namespaces
-    let auraNamespaces = this.checkCondition({metadataType:'componentProperties.AuraDefinitionBundle.*.namespaceReferences.*',operator:'gt',operand: 0});
-    for (var ns of auraNamespaces.passItems) {
+    let nameSpaceResults = this.checkCondition({metadataType:'dependencies.namespaces.*',operator:'exists'});
+    for (var ns of nameSpaceResults.passItems) {
       nameSpaces.add(ns);
     }
-
-    //TODO: Apex, Objects, Fields, Triggers, LWC, Lightning Pages
-
-    //removed standard namespaces
-  //  nameSpaces.delete('c');
-  //  nameSpaces.delete('aura');
-  //  nameSpaces.delete('lightning');
-  //  nameSpaces.delete('ui');
+    //remove standard namespaces
+    nameSpaces.delete('c');
+    nameSpaces.delete('aura');
+    nameSpaces.delete('lightning');
+    nameSpaces.delete('ui');
     return nameSpaces;
   }
 

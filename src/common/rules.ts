@@ -1173,6 +1173,7 @@ const dependencyRules: IDependecyRule[] = [{
 const dataModels: IDataModel[] = [{
   name: 'work.com',
   label: 'Work.com',
+  namespaces: ['wkcc'],
   objects: ['Employee','EmployeeCrisisAssessment','InternalOrganizationUnit','Crisis'],
   fields: ['Location.Status__c']
 }]
