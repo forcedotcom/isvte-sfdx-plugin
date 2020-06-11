@@ -18,7 +18,7 @@ import {
   techAdoptionRules
 } from '../../common/rules';
 import {
-  loggit
+  Loggit
 } from '../../common/logger';
 
 export default class listrules extends SfdxCommand {
@@ -39,9 +39,9 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
   public async run(): Promise < any > { // tslint:disable-line:no-any
 
-    this.loggit = new loggit('isvtePluginListRules');
+    this.loggit = new Loggit('isvtePluginListRules');
 
-    this.loggit.loggit('Exporting all isvte Rules');
+    this.loggit.logLine('Exporting all isvte Rules');
 
     this.ux.log(`Rule Definition version: ${rulesVersion}\n\n`);
 
@@ -108,7 +108,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
   
   private getAllEditionWarnings() {
-    this.loggit.loggit('Formatting Edition Warnings for export');
+    this.loggit.logLine('Formatting Edition Warnings for export');
     let retVal = [];
     for (let edition of editionWarningRules) {
       retVal.push({
@@ -126,7 +126,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
   };
 
   private getAllAdoptionRules() {
-    this.loggit.loggit('Formatting Tech Adoption Rules for export');
+    this.loggit.logLine('Formatting Tech Adoption Rules for export');
     let retVal = [];
     for (let category of techAdoptionRules) {
       retVal.push({

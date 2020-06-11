@@ -129,6 +129,8 @@ interface ICondition {
   conditionPerItem?: Boolean, // (only within a conditionAnd)
   conditionOr?: ICondition, //Extra condition to be ORed with this condition
   conditionAnd?: ICondition //Extra condition to be ANDed with this condition
+  showDetails?: Boolean //Toggle whether individual items that meet the condition are displayed
+
 }
 
 interface IResult {
@@ -174,6 +176,15 @@ interface IDataModel {
 const minAPI = 45;
 
 const rulesVersion = '20200527';
+
+const standardNamespaces = [
+  'c',
+  'aura',
+  'lightning',
+  'ui',
+  'apex',
+  'ltng'
+]
 
 const mdTypes: IMetadataType[] = [{
   label: 'Permission Sets',
@@ -528,6 +539,7 @@ const qualityRules: IRule[] = [{
       metadataType: 'apiVersions.ApexClass.*',
       operator: 'between',
       operand: [20,'minAPI'],
+      showDetails: true
     },
     resultTrue: {
       label: 'Using old Apex API Version',
@@ -541,6 +553,7 @@ const qualityRules: IRule[] = [{
       metadataType: 'apiVersions.ApexTrigger.*',
       operator: 'between',
       operand: [20,'minAPI'],
+      showDetails: true
     },
     resultTrue: {
       label: 'Using old Trigger API Version',
@@ -554,6 +567,7 @@ const qualityRules: IRule[] = [{
       metadataType: 'apiVersions.AuraDefinitionBundle.*',
       operator: 'between',
       operand: [20,'minAPI'],
+      showDetails: true
     },
     resultTrue: {
       label: 'Using old Aura Component API Version',
@@ -567,6 +581,7 @@ const qualityRules: IRule[] = [{
       metadataType: 'apiVersions.LightningComponentBundle.*',
       operator: 'between',
       operand: [20,'minAPI'],
+      showDetails: true
     },
     resultTrue: {
       label: 'Using old Lightning Web Component API Version',
@@ -592,9 +607,11 @@ const qualityRules: IRule[] = [{
     condition: {
       metadataType: 'componentProperties.CustomObject',
       operator: 'exists',
+      showDetails: false,
       conditionAnd: {
         metadataType: 'componentProperties.CustomObject.*.descriptionExists',
-        operator: 'notexists'
+        operator: 'notexists',
+        showDetails: true
       }
     },
     resultTrue: {
@@ -608,9 +625,11 @@ const qualityRules: IRule[] = [{
     condition: {
       metadataType: 'componentProperties.CustomField',
       operator: 'exists',
+      showDetails: false,
       conditionAnd: {
         metadataType: 'componentProperties.CustomField.*.descriptionExists',
-        operator: 'notexists'
+        operator: 'notexists',
+        showDetails: true
       }
     },
     resultTrue: {
@@ -624,7 +643,8 @@ const qualityRules: IRule[] = [{
     condition: {
       metadataType: 'ApexTrigger.objects.*',
       operator: 'gt',
-      operand: 1
+      operand: 1,
+      showDetails: true
     },
     resultTrue: {
       label: 'Multiple Triggers per Object',
@@ -637,7 +657,8 @@ const qualityRules: IRule[] = [{
     condition: {
       metadataType: 'Flow.objects.*',
       operator: 'gt',
-      operand: 1
+      operand: 1, 
+      showDetails: true
     },
     resultTrue: {
       label: 'Multiple Process Builders per Object',
@@ -651,6 +672,7 @@ const qualityRules: IRule[] = [{
       metadataType: 'ApexTrigger.objects.*',
       operator: 'gte',
       operand: 1,
+      showDetails: true,
       conditionAnd: {
         metadataType: 'Flow.objects.*',
         operator: 'gte',
@@ -728,7 +750,8 @@ const alertRules: IRule[] = [{
     condition: {
       metadataType: 'ApexClass.AuraEnabledCalls',
       operator: 'exists',
-      expiration: '2020-10-01T00:00:00.000Z'
+      expiration: '2020-10-01T00:00:00.000Z',
+      showDetails: true
     },
     resultTrue: {
       label: '@AuraEnabled Methods',
@@ -742,7 +765,8 @@ const alertRules: IRule[] = [{
     condition: {
       metadataType: 'componentProperties.AuraDefinitionBundle.*.namespaceReferences.ui',
       operator: 'exists',
-      expiration: '2020-10-01T00:00:00.000Z'
+      expiration: '2020-10-01T00:00:00.000Z',
+      showDetails: true
     },
     resultTrue: {
       label: 'Aura Components in UI Namespace Retiring in Summer \'21',
@@ -1176,7 +1200,14 @@ const dataModels: IDataModel[] = [{
   namespaces: ['wkcc'],
   objects: ['Employee','EmployeeCrisisAssessment','InternalOrganizationUnit','Crisis'],
   fields: ['Location.Status__c']
-}]
+},
+{
+  name: 'healthcloud',
+  label: 'Health Cloud',
+  namespaces: ['HealthCloudGA','HealthCloudWave'],
+  objects: ['Accreditation','BoardCertification','CareBarrier','CareBarrierDeterminant','CareBarrierType','CareDeterminant','CareDeterminantType','CareDiagnosis','CareInterventionType','CarePreauth','CarePreauthItem','CareProgram','CareProgramCampaign','CareProgramEligibilityRule','CareProgramEnrollee','CareProgramEnrolleeProduct','CareProgramEnrollmentCard','CareProgramGoal','CareProgramProduct','CareProgramProvider','CareProgramTeamMember','CareProviderAdverseAction','CareProviderFacilitySpecialty','CareProviderSearchableField','CareRequest','CareRequestDrug','CareRequestExtension','CareRequestItem','CareSpecialty','CareTaxonomy','CoverageBenefit','CoverageBenefitItem','EnrollmentEligibilityCriteria','HealthCareDiagnosis','HealthcareFacilityNetwork','HealthcarePayerNetwork','HealthcarePractitionerFacility','HealthCareProcedure','HealthcareProvider','HealthcareProviderNpi','HealthcareProviderSpecialty','HealthcareProviderTaxonomy','MemberPlan','PlanBenefit','PlanBenefitItem','PurchaserPlan','PurchaserPlanAssn']
+},
+]
 
 export {
   mdTypes,
@@ -1188,7 +1219,8 @@ export {
   techAdoptionRules,
   rulesVersion,
   dependencyRules,
-  dataModels
+  dataModels,
+  standardNamespaces
 };
 
 
