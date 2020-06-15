@@ -497,8 +497,12 @@ export class packageInventory {
 
   public getLanguageWarnings() {
     this.loggit.logLine('Checking Language Exceptions');
+    if (!this._languageWarnings) {
+      this.loggit.logLine('Language Results not Cached.');
+      this._languageWarnings = this._mdInv['language'];
+    }
 
-    return this._mdInv['language'];
+    return this._languageWarnings;
   };
 
   public getCountByMetadataType(metadataType) {
@@ -602,44 +606,6 @@ export class packageInventory {
     }
   };
 
-/*
-  public getInventoryCountByMetadataType(metadataType) {
-    this.loggit.logLine('getInventoryCountByMetadataType - Getting Count of mdType: ' + metadataType);
-    let mdType = this.parseMetadataType(metadataType);
-    let count = 0;
-    if (this._mdInv[mdType.metadataType] != undefined) {
-      if (mdType.key === 'object' && mdType['targetObj'] != undefined) {
-        if (this._mdInv[mdType.metadataType]['objects'] != undefined && this._mdInv[mdType.metadataType]['objects'][mdType['targetObj']] != undefined) {
-          count = this._mdInv[mdType.metadataType]['objects'][mdType['targetObj']]['count'];
-        }
-      } else {
-        if (this._mdInv[mdType.metadataType][mdType.key] != undefined) {
-          count = this._mdInv[mdType.metadataType][mdType.key];
-        }
-      }
-
-    }
-    return count;
-  };
-
-  public parseMetadataType(metadataType) {
-    this.loggit.logLine('Parsing Metadata Type' + metadataType);
-    let mdType = metadataType.split('.'); //To look at subtypes, use Type.Subtype (e.g.: ApexClass.BatchApex)
-    let key = mdType[1] ? mdType[1] : 'count';
-    let parsedType = {
-      'metadataType': mdType[0],
-      'key': key
-    };
-    if (key === 'object' && mdType[2]) {
-      parsedType['targetObj'] = mdType[2];
-    }
-    if (mdType[0] === 'apiVersions' && mdType[2]) {
-      parsedType['targetComponent'] = mdType[2];
-    }
-    this.loggit.logLine('Parsed Result: ' + JSON.stringify(parsedType));
-    return parsedType;
-  };
-*/
   public getJSONOutput() {
     this.loggit.logLine('Getting JSON output');
     let retVal = {};
@@ -651,6 +617,7 @@ export class packageInventory {
     retVal['Alerts'] = this.getAlerts();
     retVal['AdoptionScore'] = this.getTechAdoptionScore();
     retVal['Dependencies'] = this.getDependencies();
+    retVal['LanguageWarnings'] = this.getLanguageWarnings();
     return retVal;
   };
 
@@ -823,22 +790,7 @@ export class packageInventory {
                     count: ftCount
                   });
                 }
-               /* extras.push({
-                  metadataSubType: 'ScreenFlow',
-                  label: '  Screen Flows',
-                  count: this._mdInv[element.metadataType]['Flow']
-                });
-                extras.push({
-                  metadataSubType: 'AutoLaunchedFlow',
-                  label: '  Autolaunched Flows',
-                  count: this._mdInv[element.metadataType]['AutoLaunchedFlow']
-                });
-                extras.push({
-                  metadataSubType: 'ProcessBuilder',
-                  label: '  Process Builder',
-                  count: this._mdInv[element.metadataType]['Workflow']
-                });
-*/
+               
                 const objects = Object.keys(this._mdInv[element.metadataType]['objects']);
                 for (const obj of objects) {
                   let objPBTriggerCount = this._mdInv[element.metadataType]['objects'][obj]['count'];
@@ -874,23 +826,7 @@ export class packageInventory {
                     count: ftCount
                   });
                 }
-                /*
-                extras.push({
-                  metadataSubType: 'FlowTemplate',
-                  label: '  Flow Templates',
-                  count: this._mdInv[element.metadataType]['FlowTemplate']
-                });
-                extras.push({
-                  metadataSubType: 'FlowTemplate',
-                  label: '    Screen Flow Templates',
-                  count: this._mdInv[element.metadataType]['ScreenFlowTemplate']
-                });
-                extras.push({
-                  metadataSubType: 'FlowTemplate',
-                  label: '    Autolaunched Flow Templates',
-                  count: this._mdInv[element.metadataType]['AutoLaunchedFlowTemplate']
-                });
-                */
+                
               }
               break;
             case 'ConnectedApp':
@@ -957,27 +893,7 @@ export class packageInventory {
                     count: targetCount
                   });
                 }
-              /*  extras.push({
-                  metadataSubType: 'RecordPageComponents',
-                  'Metadata Type': '  Record Page Components',
-                  count: this._mdInv[element.metadataType]['RecordPageComponents']
-                });
-                extras.push({
-                  metadataSubType: 'AppPageComponents',
-                  'Metadata Type': '  App Page Components',
-                  count: this._mdInv[element.metadataType]['AppPageComponents']
-                });
-                extras.push({
-                  metadataSubType: 'HomePageComponents',
-                  'Metadata Type': '  Home Page Components',
-                  count: this._mdInv[element.metadataType]['HomePageComponents']
-                });
-                extras.push({
-                  metadataSubType: 'FlowScreenComponents',
-                  'Metadata Type': '  Flow Screen Components',
-                  count: this._mdInv[element.metadataType]['FlowScreenComponents']
-                });
-*/
+             
               }
               break;
             default:

@@ -67,31 +67,6 @@ export function inventoryPackage(sourceDir, p) {
           let object = getNameSpaceAndType(fieldFullName.split(".")[0]);
           let field = getNameSpaceAndType(fieldFullName.split(".")[1]);
           addObjectDependencies(dependencies,[object,field]);
-/*
-          //Add Namespace Dependencies 
-          if (object.namespace !== null) {
-            if (dependencies['namespaces'] == undefined) {
-              dependencies['namespaces'] = {};
-            }
-            dependencies['namespaces'][object.namespace] = 1;
-          }
-          if (field.namespace !== null) {
-            if (dependencies['namespaces'] == undefined) {
-              dependencies['namespaces'] = {};
-            }
-            dependencies['namespaces'][field.namespace] = 1;
-          }
-
-          if (dependencies['components'] == undefined) {
-            dependencies['components'] = {};
-          }
-          dependencies['components'][object.fullName] = object;
-
-          if (dependencies['components'] == undefined) {
-            dependencies['components'] = {};
-          }
-          dependencies['components'][field.fullName] = field;
-         */
           if (objectFields[object.fullName]) {
             objectFields[object.fullName]['count'] += 1;
           } else {
@@ -113,23 +88,9 @@ export function inventoryPackage(sourceDir, p) {
               for (var fieldDef of objectJSON['CustomObject']['fields']) {
                 if (fieldDef['fullName'] == field.fullName) {
                   loggit.logLine('Checking Properties of Field: ' + fieldFullName);
-/*
-                  if (componentProperties['CustomField'] == undefined) {
-                    componentProperties['CustomField'] = {};
-                  }
-                  if (componentProperties['CustomField'][fieldFullName] == undefined) {
-                    componentProperties['CustomField'][fieldFullName] = {};
-                  }
-                  componentProperties['CustomField'][fieldFullName]['descriptionExists'] = fieldDef['description'] ? 1 : 0;*/
                   let descExists = fieldDef['description'] ? 1 : 0;
                   setValue(componentProperties,`CustomField.${fieldFullName.replace(/\./g,"->")}.descriptionExists`,descExists);
-                  
-                 //   console.log(JSON.stringify(fieldDef));
-                 /* languageScan(JSON.stringify(fieldDef['description']));
-                  languageScan(JSON.stringify(fieldDef['inlineHelpText']));
-                  languageScan(JSON.stringify(fieldDef['label']));
-                  languageScan(JSON.stringify(fieldDef['relationshipLabel']));
-                  languageScan(JSON.stringify(fieldDef['valueSet']));*/
+            
                   if (tmp = languageScanMetadataObject(fieldDef)) {
                     setValue(language,`CustomField.${fieldFullName.replace(/\./g,"->")}`,tmp);
                   }
@@ -163,19 +124,6 @@ export function inventoryPackage(sourceDir, p) {
           let object = getNameSpaceAndType(types[typeIdx]['members'][objIdx]);
           loggit.logLine('Checking Object: ' + object.fullName);
           addObjectDependencies(dependencies,[object]);
-/*          //Add Namespace Dependencies 
-          if (object.namespace !== null) {
-            if (dependencies['namespaces'] == undefined) {
-              dependencies['namespaces'] = {};
-            }
-            dependencies['namespaces'][object.namespace] = 1;
-          }
-
-          if (dependencies['components'] == undefined) {
-            dependencies['components'] = {};
-          }
-          dependencies['components'][object.fullName] = object;
-*/
           //Check external Objects
           if (object.extension == 'e') {
             xoCount += 1;
@@ -198,9 +146,7 @@ export function inventoryPackage(sourceDir, p) {
           let objectXml = `${objectPath}/${object.fullName}.object`;
           let objectJSON = parseXML(objectXml);
           //Dive Deeper
-          console.log(objectJSON);
           if (objectJSON['CustomObject']) {
-            console.log('!!!!!!!!!');
             //Check Custom Settings
             if (objectJSON['CustomObject']['customSettingsType']) {
               csType['count'] + 1;
@@ -209,14 +155,6 @@ export function inventoryPackage(sourceDir, p) {
             //Check for Descriptions
           if (object.type == 'Custom' && object.namespace == null) {
             loggit.logLine('Checking properties of object ' + object.fullName);
-/*
-            if (componentProperties['CustomObject'] == undefined) {
-              componentProperties['CustomObject'] = {};
-            }
-            if (componentProperties['CustomObject'][object.fullName] == undefined) {
-              componentProperties['CustomObject'][object.fullName] = {};
-            }
-            componentProperties['CustomObject'][object.fullName]['descriptionExists'] = objectJSON['CustomObject'] && objectJSON['CustomObject']['description'] ? 1 : 0;*/
             let descExists = getValue(objectJSON,'CustomObject.description',null) ? 1 : 0;
             setValue(componentProperties,`CustomObject.${object.fullName}.descriptionExists`,descExists);
 
@@ -227,17 +165,12 @@ export function inventoryPackage(sourceDir, p) {
           if (tmp = languageScanMetadataObject(objectJSON)) {
             setValue(language,`CustomObject.${object.fullName}`,tmp);
           }
-         /* languageScan(JSON.stringify(objectJSON['CustomObject']['description']));
-          languageScan(JSON.stringify(objectJSON['CustomObject']['customHelp']));
-          languageScan(JSON.stringify(objectJSON['CustomObject']['label']));*/
+        
           }
           
           
-          //   loggit(objectJSON,'JSON');
+         
         }
-        //inventory['ExternalObject__c'] = xoType;
-        //inventory['BigObject__c'] = boType;
-
         typeInv['BigObject'] = boCount;
         typeInv['ExternalObject'] = xoCount;
         inventory['CustomSetting__c'] = csType;
@@ -275,8 +208,8 @@ export function inventoryPackage(sourceDir, p) {
           if (tmp = languageScanMetadataObject(flowJSON)) {
             setValue(language, `Flow.${flowName}`,tmp);
           }
-//          languageScan(JSON.stringify(getValue(flowJSON,'Flow.interviewLabel')));
-//          languageScan(JSON.stringify(getValue(flowJSON,'Flow.label')));
+
+          addObjectDependencies(dependencies, extractObjectsApex(JSON.stringify(flowJSON)));
 
           //Do per object Inventory
           loggit.logLine('Inventorying PB and Flow Triggers Per Object');
@@ -420,36 +353,14 @@ export function inventoryPackage(sourceDir, p) {
             }
             if (advFLSSOQLReg.test(classBody)) {
               setValue(componentProperties,`ApexClass.${className}.SECURITY_ENFORCED`,1);
-              /* if (componentProperties['ApexClass'] == undefined) {
-                componentProperties['ApexClass'] = {};
-              }
-              if (componentProperties['ApexClass'][className] == undefined) {
-                componentProperties['ApexClass'][className] = {};
-              }
-              componentProperties['ApexClass'][className]['SECURITY_ENFORCED'] = 1;*/
             }
             if (advFLSStripInaccessible.test(classBody)) {
               setValue(componentProperties,`ApexClass.${className}.StripInaccessible`,1);
-/*
-              if (componentProperties['ApexClass'] == undefined) {
-                componentProperties['ApexClass'] = {};
-              }
-              if (componentProperties['ApexClass'][className] == undefined) {
-                componentProperties['ApexClass'][className] = {};
-              }
-              componentProperties['ApexClass'][className]['StripInaccessible'] = 1;*/
             }
 
         //    if (refersGuestComplexReg.test(classBody) || refersGuestSimpleReg.test(classBody)) {
             if (refersGuestTrivialReg.test(classBody)) {
               setValue(componentProperties,`ApexClass.${className}.RefersToGuest`,1);
-/*
-              if (componentProperties['ApexClass'] == undefined) {
-                componentProperties['ApexClass'] = {};
-              }
-              if (componentProperties['ApexClass'][className] == undefined) {
-                componentProperties['ApexClass'][className] = {};
-              }*/
             }
             //Find Object References
             loggit.logLine('Looking for fields and objects referenced within APEX')
@@ -462,13 +373,9 @@ export function inventoryPackage(sourceDir, p) {
           if (fs.existsSync(classMetaFile)) {
             let classMetaJSON = parseXML(classMetaFile);
             if (classMetaJSON['ApexClass'] && classMetaJSON['ApexClass']['apiVersion']) {
-        /*      if (apiVersions['ApexClass'] == undefined) {
-                apiVersions['ApexClass'] = {};
-              }*/
+      
               setValue(apiVersions,`ApexClass.${className}`,parseFloat(classMetaJSON['ApexClass']['apiVersion'][0]));
-         //     addKeyToObject(apiVersions,'ApexClass');
-         //     apiVersions['ApexClass'][className] = parseFloat(classMetaJSON['ApexClass']['apiVersion'][0]);
-            }
+           }
           }
         }
         typeInv['FutureCalls'] = futureCount;
@@ -513,77 +420,28 @@ export function inventoryPackage(sourceDir, p) {
             loggit.logLine('Trigger Object:' + triggerObject.fullName);
             loggit.logLine('Trigger Type: ' + triggerType);
             //Add Namespace Dependencies 
-       /*     if (triggerObject.namespace !== null) {
-              if (dependencies['namespaces'] == undefined) {
-              dependencies['namespaces'] = {};
-              }
-              dependencies['namespaces'][triggerObject.namespace] = 1;
-            }
-            if (dependencies['components'] == undefined) {
-              dependencies['components'] = {};
-            }
-            dependencies['components'][triggerObject.fullName] = triggerObject;
-*/
             addObjectDependencies(dependencies,[triggerObject]);
             if (triggerObject.type == 'Change Data Capture') {
               //  asyncTrigger['count']++;
               asyncCount += 1;
             }
             incrementValue(triggerInv,`${triggerObject.fullName}.count`);
-            /*
-           if (triggerInv[triggerObject.fullName]) {
-              triggerInv[triggerObject.fullName]['count'] += 1;
-            } else {
-              triggerInv[triggerObject.fullName] = {
-                count: 1
-              };
-            }*/
+            
             if (refersGuestTrivialReg.test(triggerBody)) {
               setValue(componentProperties,`ApexTrigger.${triggerName}.refersToGuest`,1);
-         /*     if (componentProperties['ApexTrigger'] == undefined) {
-                componentProperties['ApexTrigger'] = {};
-              }
-              if (componentProperties['ApexTrigger'][triggerName] == undefined) {
-                componentProperties['ApexTrigger'][triggerName] = {};
-              }
-              componentProperties['ApexTrigger'][triggerName]['RefersToGuest'] = 1;*/
             }
 
             //Find Object References
-           // let objectFound;
             loggit.logLine('Looking for fields and objects referenced within APEX')
             
             addObjectDependencies(dependencies, extractObjectsApex(triggerBody));
-/*
-            while (objectFound = findObjectsReg.exec(triggerBody)) {
-              loggit.logLine('Found: ' + objectFound[0]);
-              const object = getNameSpaceAndType(objectFound[0]);
-              //Add Namespace Dependencies 
-              if (object.namespace !== null) {
-                if (dependencies['namespaces'] == undefined) {
-                dependencies['namespaces'] = {};
-                }
-                dependencies['namespaces'][object.namespace] = 1;
-              }
-              if (dependencies['components'] == undefined) {
-                dependencies['components'] = {};
-              }
-              dependencies['components'][object.fullName] = object;
-            }        
-*/
           }
 
           let triggerMetaFile = `${triggerPath}/${triggerName}.trigger-meta.xml`;
           if (fs.existsSync(triggerMetaFile)) {
             let triggerMetaJSON = parseXML(triggerMetaFile);
             if (triggerMetaJSON['ApexTrigger'] && triggerMetaJSON['ApexTrigger']['apiVersion']) {
-/*
-              if (apiVersions['ApexTrigger'] == undefined) {
-                apiVersions['ApexTrigger'] = {};
-              }*/
               setValue(apiVersions,`ApexTrigger.${triggerName}`,parseFloat(triggerMetaJSON['ApexTrigger']['apiVersion'][0]));
-
-        //      apiVersions['ApexTrigger'][triggerName] = parseFloat(triggerMetaJSON['ApexTrigger']['apiVersion'][0]);
             }
           }
         }
@@ -610,12 +468,7 @@ export function inventoryPackage(sourceDir, p) {
             loggit.logLine('Checking LWC ' + lwcName);
             // loggit(lwcJSON,'JSON');
             if (lwcJSON['apiVersion']) {
-       /*       if (apiVersions['LightningComponentBundle'] == undefined) {
-                apiVersions['LightningComponentBundle'] = {};
-              }
-              apiVersions['LightningComponentBundle'][lwcName] = parseFloat(lwcJSON['apiVersion'][0]);*/
               setValue(apiVersions,`LightningComponentBundle.${lwcName}`,parseFloat(lwcJSON['apiVersion'][0]));
-
             }
             if (lwcJSON['isExposed'] && lwcJSON['isExposed'][0] === 'true') {
               exposedCount += 1;
@@ -656,13 +509,7 @@ export function inventoryPackage(sourceDir, p) {
           if (fs.existsSync(vfXML)) {
             let vfMetaJSON = parseXML(vfXML);
             if (vfMetaJSON['ApexPage'] && vfMetaJSON['ApexPage']['apiVersion']) {
-/*
-              if (apiVersions['ApexPage'] == undefined) {
-                apiVersions['ApexPage'] = {};
-              }
-              apiVersions['ApexPage'][vfName] = parseFloat(vfMetaJSON['ApexPage']['apiVersion'][0]);*/
               setValue(apiVersions,`ApexPage.${vfName}`,parseFloat(vfMetaJSON['ApexPage']['apiVersion'][0]));
-
             }
           }
           if (fs.existsSync(vfFile)) {
@@ -679,17 +526,6 @@ export function inventoryPackage(sourceDir, p) {
             if (stdControllerMatch !== null) {
               let controllerObject = getNameSpaceAndType(stdControllerMatch[1]);
               addObjectDependencies(dependencies,[controllerObject]);
-        /*      //Add Namespace Dependencies 
-              if (controllerObject.namespace !== null) {
-                if (dependencies['namespaces'] == undefined) {
-                dependencies['namespaces'] = {};
-                }
-                dependencies['namespaces'][controllerObject.namespace] = 1;
-              }
-              if (dependencies['components'] == undefined) {
-                dependencies['components'] = {};
-              }
-              dependencies['components'][controllerObject.fullName] = controllerObject;*/
             }
 
             //Find namespaces in components used
@@ -698,43 +534,15 @@ export function inventoryPackage(sourceDir, p) {
             let referencedComponents = getMatches(vfBody, componentsReg);
             if (referencedComponents.length > 0) {
               loggit.logLine(`Found the following Components: ${JSON.stringify(referencedComponents)}`);
-           //   addKeyToObject(componentProperties,`ApexPage.${vfName}.namespaceReferences`);
-           /*   if (componentProperties['ApexPage'] == undefined) {
-                componentProperties['ApexPage'] = {};
-              }
-              if (componentProperties['ApexPage'][vfName] == undefined) {
-                componentProperties['ApexPage'][vfName] = {};
-              }
-              if (componentProperties['ApexPage'][vfName]['namespaceReferences'] == undefined) {
-                componentProperties['ApexPage'][vfName]['namespaceReferences'] = {};
-              }*/
               referencedComponents.forEach(element => {
                 let ns = element.split(":", 2)[0];
                 incrementValue(componentProperties,`ApexPage.${vfName}.namespaceReferences.${ns}`);
-              /*  if (componentProperties['ApexPage'][vfName]['namespaceReferences'][ns] == undefined) {
-                  componentProperties['ApexPage'][vfName]['namespaceReferences'][ns] = 1;
-                }
-                else {
-                  componentProperties['ApexPage'][vfName]['namespaceReferences'][ns] += 1
-                }*/
-                //Also add it to the Namespaces dependencies
                 setValue(dependencies,`namespaces.${ns}`,1);
-           /*     if (dependencies['namespaces'] == undefined) {
-                  dependencies['namespaces'] = {};
-                }
-                dependencies['namespaces'][ns] = 1;*/
               });
             }
 
             if (referSiteReg.test(vfBody)) {
               setValue(componentProperties,`ApexPage.${vfName}.RefersToSite`,1);
-          /*    if (componentProperties['ApexPage'] == undefined) {
-                componentProperties['ApexPage'] = {};
-              }
-              if (componentProperties['ApexPage'][vfName] == undefined) {
-                componentProperties['ApexPage'][vfName] = {};
-              }
-              componentProperties['ApexPage'][vfName]['RefersToSite'] = 1;*/
             }
 
           }
@@ -750,10 +558,6 @@ export function inventoryPackage(sourceDir, p) {
           loggit.logLine('Checking Aura Component ' + auraName);
           if (auraJSON['AuraDefinitionBundle'] && auraJSON['AuraDefinitionBundle']['apiVersion']) {
             setValue(apiVersions,`AuraDefinitionBundle.${auraName}`,parseFloat(auraJSON['AuraDefinitionBundle']['apiVersion'][0]));
-           /* if (apiVersions['AuraDefinitionBundle'] == undefined) {
-              apiVersions['AuraDefinitionBundle'] = {};
-            }
-            apiVersions['AuraDefinitionBundle'][auraName] = parseFloat(auraJSON['AuraDefinitionBundle']['apiVersion'][0]);*/
           }
           //Count Used Components by Namespace
           let auraCmpFile = `${auraPath}/${auraName}/${auraName}.cmp`;
@@ -772,31 +576,11 @@ export function inventoryPackage(sourceDir, p) {
             let referencedComponents = getMatches(auraBody, componentsReg);
             if (referencedComponents.length > 0) {
               loggit.logLine(`Found the following Components: ${JSON.stringify(referencedComponents)}`);
-           //   addKeyToObject(componentProperties,`AuraDefinitionBundle.${auraName}.namespaceReferences`);
-          /*    if (componentProperties['AuraDefinitionBundle'] == undefined) {
-                componentProperties['AuraDefinitionBundle'] = {};
-              }
-              if (componentProperties['AuraDefinitionBundle'][auraName] == undefined) {
-                componentProperties['AuraDefinitionBundle'][auraName] = {};
-              }
-              if (componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'] == undefined) {
-                componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'] = {};
-              }*/
               referencedComponents.forEach(element => {
                 let ns = element.split(":", 2)[0];
                 incrementValue(componentProperties,`AuraDefinitionBundle.${auraName}.namespaceReferences.${ns}`);
-              /*  if (componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] == undefined) {
-                  componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] = 1;
-                }
-                else {
-                  componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] += 1
-                }*/
                 //Also add it to the Namespaces dependencies
                 setValue(dependencies,`namespaces.${ns}`,1);
-             /*   if (dependencies['namespaces'] == undefined) {
-                  dependencies['namespaces'] = {};
-                }
-                dependencies['namespaces'][ns] = 1;*/
               });
             }
             loggit.logLine('Extracting implemented and extended interfaces');
@@ -804,44 +588,15 @@ export function inventoryPackage(sourceDir, p) {
             let interfaceMatches = getMatches(auraBody, interfaceReg);
             if (interfaceMatches.length > 0) {
               loggit.logLine(`Found the following Interfaces: ${JSON.stringify(interfaceMatches)}`);
-          /*    if (componentProperties['AuraDefinitionBundle'] == undefined) {
-                componentProperties['AuraDefinitionBundle'] = {};
-              }
-              if (componentProperties['AuraDefinitionBundle'][auraName] == undefined) {
-                componentProperties['AuraDefinitionBundle'][auraName] = {};
-              }
-              if (componentProperties['AuraDefinitionBundle'][auraName]['interfaces'] == undefined) {
-                componentProperties['AuraDefinitionBundle'][auraName]['interfaces'] = {};
-              }*/
               interfaceMatches.forEach(element => {
                 let interfaces = element.split(/ *, */);
                 interfaces.forEach(element => {
-             //     componentProperties['AuraDefinitionBundle'][auraName]['interfaces'][element] = 1;
                   setValue(componentProperties,`AuraDefinitionBundle.${auraName}.interfaces.${element}`,1);
                 });
               })
             }
             //Find Object References
             addObjectDependencies(dependencies,extractObjectsApex(auraBody));
-        /*    const findObjectsReg = /(?:(?<namespace>[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_)){0,14})__)?(?<component>(?<!___)[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_))+)(?:__(?<suffix>c|mdt|e|x|b|pc|pr|r|xo|latitude__s|longitude__s|history|ka|kav|feed|share))/g;
-            let objectFound;
-            loggit.logLine('Looking for fields and objects referenced within Aura Components')
-            while (objectFound = findObjectsReg.exec(auraBody)) {
-              loggit.logLine('Found: ' + objectFound[0]);
-              const object = getNameSpaceAndType(objectFound[0]);
-              //Add Namespace Dependencies 
-              if (object.namespace !== null) {
-                if (dependencies['namespaces'] == undefined) {
-                dependencies['namespaces'] = {};
-                }
-                dependencies['namespaces'][object.namespace] = 1;
-              }
-              if (dependencies['components'] == undefined) {
-                dependencies['components'] = {};
-              }
-              dependencies['components'][object.fullName] = object;
-            } */  
-
           }
           else {
             loggit.logLine('File not found');
@@ -865,10 +620,6 @@ export function inventoryPackage(sourceDir, p) {
   let pafile = `${sourceDir}/objects/PersonAccount.object`;
   if (fs.existsSync(pafile)) {
     setValue(dependencies,'features.PersonAccount',1);
-   /* if (dependencies['features'] == undefined) {
-      dependencies['features'] = {};
-    }
-    dependencies['features']['PersonAccount'] = 1;*/
   }
 
   inventory['apiVersions'] = apiVersions;
@@ -912,6 +663,7 @@ function getMembersFromFiles(folder, extension) {
 //  this.loggit.logLine('Found Members: ' + JSON.stringify(members));
   return members;
 }
+
 
 function extractObjectsApex(apexBody: string)  {
   const findObjectsReg = /(?:(?<namespace>[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_)){0,14})__)?(?<component>(?<!___)[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_))+)(?:__(?<suffix>c|mdt|e|x|b|pc|pr|r|xo|latitude__s|longitude__s|history|ka|kav|feed|share))/g;
@@ -1118,26 +870,22 @@ function isObject(o: any): boolean {
   return (o !== null && typeof o === 'object' && !Array.isArray(o));
 }
 
+
+
 function languageScanMetadataObject(mdObject: any, ignoreProperties: string[] = []): any {
   let result = [];
   let tmpResult;
   const textyKeysreg = /[d|D]escription|[l|L]abel|[h|H]elp|[t|T]ext|[n|N]ame|[v|V]alue/;
-  //console.log(mdObject);
   if (isObject(mdObject)) {
     for (let [key, value] of Object.entries(mdObject)) {
-  //    console.log('Checking Key ' + key);
       const isTexty = textyKeysreg.test(key);
-  //    console.log('Should I recurse?');
       if (isObject(value)) {
-  //      console.log('yes');
         if (tmpResult = languageScanMetadataObject(value)) {
           result.push(...tmpResult);
         }
       }
       else if (Array.isArray(value)) {
-  //      console.log('Propery is an array. Looping through');
         for (const k of value) {
-  //        console.log('Looking at:' + k);
           if (isObject(k)) {
             if (tmpResult = languageScanMetadataObject(k)) {
               result.push(...tmpResult);
@@ -1145,9 +893,7 @@ function languageScanMetadataObject(mdObject: any, ignoreProperties: string[] = 
           }
           else {
             if (isTexty) {
-   //           console.log(key +  ' looks like something I should test');
               if (tmpResult = languageScan(k)) {
-   //             console.log('Found one in an array!!!!');
                 for (let r of tmpResult) {
                   r.context = `Property: ${key} = ${r.context}`;
                 }
@@ -1158,9 +904,7 @@ function languageScanMetadataObject(mdObject: any, ignoreProperties: string[] = 
         }
       }
       else if (isTexty) {
-     //   console.log(key +  ' looks like something I should test');
         if (tmpResult = languageScan(mdObject[key])) {
-    //      console.log('Found one not in an Array!!!!');
           for (let r of tmpResult) {
             r.context = `Property: ${key} = ${r.context}`;
           }
@@ -1179,10 +923,8 @@ function languageScanMetadataObject(mdObject: any, ignoreProperties: string[] = 
 }
 
 function languageScan(text: string, type : string = 'text') : any {
-//  console.log('Checking:' + text);
   //return immediately if text is empty
   if (!text) {
-//    console.log('Bailing');
     return false;
   }
   let scanResult = {};
@@ -1204,7 +946,6 @@ function languageScan(text: string, type : string = 'text') : any {
     break;
   }
   if (scanResult['messages'].length > 0) {
-//    console.log('!!!!!!!!!!!!!!');
     let retVal = [];
     let lines = text.split(/\r?\n/);
     for (const result of scanResult.messages) {
@@ -1217,8 +958,6 @@ function languageScan(text: string, type : string = 'text') : any {
       })
       
     }
-//    console.log(scanResult.messages);
-  //  console.log(scanResult.messages);
     return retVal;
   }
   else {
