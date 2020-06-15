@@ -36,6 +36,7 @@ export class packageInventory {
   private loggit;
   private _minAPI = minAPI;
   private _enablementMessages;
+  private _languageWarnings;
   private _alerts;
   private _installationWarnings;
   private _qualityRules;
@@ -339,7 +340,7 @@ export class packageInventory {
      if (nameSpaces.size > 0) {
        this._dependencies.push({
          name: 'namespaces',
-         label: 'Namespace Dependencies',
+         label: 'Namespaces:',
          items: Array.from(nameSpaces)
        });
      }
@@ -492,6 +493,12 @@ export class packageInventory {
       this._enablementMessages = this.processRules(enablementRules);
     }
     return this._enablementMessages;
+  };
+
+  public getLanguageWarnings() {
+    this.loggit.logLine('Checking Language Exceptions');
+
+    return this._mdInv['language'];
   };
 
   public getCountByMetadataType(metadataType) {

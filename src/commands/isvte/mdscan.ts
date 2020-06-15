@@ -40,6 +40,7 @@ import *
 export default class mdscan extends SfdxCommand {
 
   private showFullInventory = false;
+  private languageScan = false;
   private showTechAdoption = false;
   private sourceFolder = '';
   private sfdxPackageXml: string;
@@ -105,6 +106,10 @@ For more information, please connect in the ISV Technical Enablement Plugin
     minapi: flags.integer({
       description: 'minimum api version to use during quality checks',
       default: minAPI
+    }),
+    languagescan: flags.boolean({
+      char: 'l',
+      description: 'perform a scan for potentially exclusive or offensive language'
     })
 
   };
@@ -118,6 +123,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
     this.sourceFolder = this.flags.sourcefolder;
     this.showTechAdoption = this.flags.techadoption;
     this.sfdxPackageXml = this.flags.sfdxpackagexml;
+    this.languageScan = this.flags.languagescan;
 
     //Check Suppress Flags
     if (this.flags.suppress) {
@@ -283,12 +289,13 @@ For more information, please connect in the ISV Technical Enablement Plugin
         if (dependencies.length > 0) {
           this.ux.styledHeader('Dependencies:');
           for (var dependency of dependencies) {
-            this.ux.log(`  ${dependency.label}`);
+            this.ux.log(`${dependency.label}`);
             if (dependency['items']) {
               for (var depItem of dependency.items) {
-                this.ux.log(`    ${depItem}`);
+                this.ux.log(`\t${depItem}`);
               }
             }
+          
           }
           this.ux.log('\n');
         }
@@ -305,7 +312,32 @@ For more information, please connect in the ISV Technical Enablement Plugin
         }
       }
 
+      if (this.languageScan) {
+        this.ux.styledHeader('Language Warnings');
+        this.ux.log('Language scan is provided by https://github.com/get-alex/');
+        if (Object.entries(this.packageInventory.getLanguageWarnings()).length == 0) {
+          this.ux.log('No issues found');
+        }
+        for (let [mdTypeKey, mdTypeValue] of Object.entries(this.packageInventory.getLanguageWarnings())) {
+          this.ux.log(`Metadata Type: ${mdTypeKey}`);
+          for (let [mdItemKey, mdItemValue] of Object.entries(mdTypeValue)) {
+            this.ux.log(`\t${mdItemKey}`);
+            for (let result of mdItemValue) {
+              this.ux.log(`\t\tSource: ${result.context}`);
+              this.ux.log(`\t\tException: ${result.message}`);
+              this.ux.log(`\t\tLine: ${result.line}`);
+              if(result.details) {
+                this.ux.log(`\t\tDetails: ${result.details}`);
+              }
+              this.ux.log('\n');
+            }
+          }
+        }
+      }
+
     }
+
+   
 
     // Get MdScan JSON Output
     const outputRes = this.packageInventory.getJSONOutput();

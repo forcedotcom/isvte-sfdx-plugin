@@ -3,6 +3,8 @@ import {
   SfdxError
 } from '@salesforce/core';
 
+import alex = require('alex');
+
 import {
   setValue,
   incrementValue,
@@ -28,6 +30,8 @@ export function inventoryPackage(sourceDir, p) {
   let apiVersions = {};
   let componentProperties = {};
   let dependencies = {};
+  let language = {};
+  let tmp; //just a temp variable for some ugly if magic
   let loggit = new Loggit('isvtePlugin:metadataScan');
 
   if (p.version) {
@@ -103,6 +107,7 @@ export function inventoryPackage(sourceDir, p) {
           if (field.namespace == null && ((object.type == 'Standard' && field.type !== 'Standard')|| object.type !== 'Standard')) {
             const objectPath = `${sourceDir}/objects`;
             let objectXml = `${objectPath}/${object.fullName}.object`;
+            
             let objectJSON = parseXML(objectXml);
             if (objectJSON['CustomObject'] && objectJSON['CustomObject']['fields']) {
               for (var fieldDef of objectJSON['CustomObject']['fields']) {
@@ -117,7 +122,17 @@ export function inventoryPackage(sourceDir, p) {
                   }
                   componentProperties['CustomField'][fieldFullName]['descriptionExists'] = fieldDef['description'] ? 1 : 0;*/
                   let descExists = fieldDef['description'] ? 1 : 0;
-                  setValue(componentProperties,`CustomField.${fieldFullName.replace('.','->')}.descriptionExists`,descExists);
+                  setValue(componentProperties,`CustomField.${fieldFullName.replace(/\./g,"->")}.descriptionExists`,descExists);
+                  
+                 //   console.log(JSON.stringify(fieldDef));
+                 /* languageScan(JSON.stringify(fieldDef['description']));
+                  languageScan(JSON.stringify(fieldDef['inlineHelpText']));
+                  languageScan(JSON.stringify(fieldDef['label']));
+                  languageScan(JSON.stringify(fieldDef['relationshipLabel']));
+                  languageScan(JSON.stringify(fieldDef['valueSet']));*/
+                  if (tmp = languageScanMetadataObject(fieldDef)) {
+                    setValue(language,`CustomField.${fieldFullName.replace(/\./g,"->")}`,tmp);
+                  }
                 }
 
               }
@@ -182,12 +197,16 @@ export function inventoryPackage(sourceDir, p) {
 
           let objectXml = `${objectPath}/${object.fullName}.object`;
           let objectJSON = parseXML(objectXml);
+          //Dive Deeper
+          console.log(objectJSON);
+          if (objectJSON['CustomObject']) {
+            console.log('!!!!!!!!!');
+            //Check Custom Settings
+            if (objectJSON['CustomObject']['customSettingsType']) {
+              csType['count'] + 1;
+            }
 
-          //Check Custom Settings
-          if (objectJSON['CustomObject'] && objectJSON['CustomObject']['customSettingsType']) {
-            csType['count'] + 1;
-          }
-          //Check for Descriptions
+            //Check for Descriptions
           if (object.type == 'Custom' && object.namespace == null) {
             loggit.logLine('Checking properties of object ' + object.fullName);
 /*
@@ -203,6 +222,17 @@ export function inventoryPackage(sourceDir, p) {
 
           }
 
+          //LanguageScan
+          
+          if (tmp = languageScanMetadataObject(objectJSON)) {
+            setValue(language,`CustomObject.${object.fullName}`,tmp);
+          }
+         /* languageScan(JSON.stringify(objectJSON['CustomObject']['description']));
+          languageScan(JSON.stringify(objectJSON['CustomObject']['customHelp']));
+          languageScan(JSON.stringify(objectJSON['CustomObject']['label']));*/
+          }
+          
+          
           //   loggit(objectJSON,'JSON');
         }
         //inventory['ExternalObject__c'] = xoType;
@@ -229,62 +259,40 @@ export function inventoryPackage(sourceDir, p) {
         let objects = {};
         let flowTypes = {};
         let flowTemplates = {};
-             const flowPath = `${sourceDir}/flows`;
+        const flowPath = `${sourceDir}/flows`;
         for (var flowIdx in types[typeIdx]['members']) {
           let flowName = types[typeIdx]['members'][flowIdx];
           let flowXml = `${flowPath}/${flowName}.flow`;
           let flowJSON = parseXML(flowXml);
           loggit.logLine('Checking file:' + flowXml);
-       //   let processType = flowJSON['Flow'] && flowJSON['Flow']['processType'] ? flowJSON['Flow']['processType'] : 'UnknownType';
           let processType = getValue(flowJSON,'Flow.processType','UnknownType');
           incrementValue(flowTypes,`${processType}.count`);
-       
-          
-          if (flowJSON['Flow'] && flowJSON['Flow']['isTemplate'] && flowJSON['Flow']['isTemplate'][0] === 'true') {
+          if (getValue(flowJSON,'Flow.isTemplate.0',false)) {
             templateCount += 1;
             incrementValue(flowTemplates,`${processType}.count`);
-           /* if (flowTemplates[processType]) {
-              flowTemplates[processType]['count']+=1;
-            }
-            else {
-              flowTemplates[processType] = {
-                count:1
-              };
-            }*/
           }
+          //Language Scan
+          if (tmp = languageScanMetadataObject(flowJSON)) {
+            setValue(language, `Flow.${flowName}`,tmp);
+          }
+//          languageScan(JSON.stringify(getValue(flowJSON,'Flow.interviewLabel')));
+//          languageScan(JSON.stringify(getValue(flowJSON,'Flow.label')));
 
           //Do per object Inventory
           loggit.logLine('Inventorying PB and Flow Triggers Per Object');
-          loggit.logLine('Flow Details: ' + JSON.stringify(flowJSON['Flow']['processMetadataValues']));
-            if (flowJSON['Flow']['processMetadataValues']) {
-              for (var processMetadataValue of flowJSON['Flow']['processMetadataValues']) {
+          let processMetadataValues;
+          if (processMetadataValues = getValue(flowJSON,'Flow.processMetadataValues',null)) {
+            loggit.logLine('Flow Details: ' + JSON.stringify(flowJSON['Flow']['processMetadataValues']));
+           
+              for (var processMetadataValue of processMetadataValues) {
                 loggit.logLine('Metadata Value Name: ' + processMetadataValue['name']);
                 if (processMetadataValue['name'] == 'ObjectType') {
                   loggit.logLine('ObjectName:' + JSON.stringify(processMetadataValue['value'][0]));
                   let objectName = processMetadataValue['value'][0]['stringValue'][0];
                   let object = getNameSpaceAndType(objectName);
                   addObjectDependencies(dependencies,[object]);
-                  //Add Namespace Dependencies 
-               /*   if (object.namespace !== null) {
-                    if (dependencies['namespaces'] == undefined) {
-                      dependencies['namespaces'] = {};
-                    }
-                    dependencies['namespaces'][object.namespace] = 1;
-                  }
-                  if (dependencies['components'] == undefined) {
-                    dependencies['components'] = {};
-                  }
-                  dependencies['components'][object.fullName] = object;
-*/
                   loggit.logLine('Extracted Object Name:' + objectName);
                   incrementValue(objects,`${objectName}.count`);
-               /*   if (objects[objectName]) {
-                    objects[objectName]['count'] += 1;
-                  } else {
-                    objects[objectName] = {
-                      count: 1
-                    };
-                  }*/
                 }
               }
             }
@@ -368,7 +376,11 @@ export function inventoryPackage(sourceDir, p) {
           let classFile = `${apexPath}/${className}.cls`;
           if (fs.existsSync(classFile)) {
 
-            let classBody = stripApexComments(fs.readFileSync(classFile, 'utf8'));
+            let classBody = fs.readFileSync(classFile, 'utf8');
+            if (tmp = languageScan(classBody)) {
+              setValue(language,`ApexClass.${className}`,tmp);
+            }
+            classBody = stripApexComments(classBody);
             // loggit(classBody);
             //const testReg = /@istest/ig;
             const futureReg = /@future/ig;
@@ -479,7 +491,12 @@ export function inventoryPackage(sourceDir, p) {
         for (var triggerIdx in types[typeIdx]['members']) {
           let triggerName = types[typeIdx]['members'][triggerIdx];
           let triggerFile = `${triggerPath}/${triggerName}.trigger`;
-          let triggerBody = stripApexComments(fs.readFileSync(triggerFile, 'utf8'));
+          let triggerBody = fs.readFileSync(triggerFile, 'utf8');
+          if (tmp = languageScan(triggerBody)) {
+            setValue(language,`ApexTrigger.${triggerName}`,tmp);
+          }
+          
+          triggerBody = stripApexComments(triggerBody);
           const triggerDetailReg = /trigger\s+(\w+)\s+on\s+(\w+)\s*\((.+)\)/im;
           const refersGuestTrivialReg = /(["'])Guest\1/ig;
           const findObjectsReg = /(?:(?<namespace>[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_)){0,14})__)?(?<component>(?<!___)[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_))+)(?:__(?<suffix>c|mdt|e|x|b|pc|pr|r|xo|latitude__s|longitude__s|history|ka|kav|feed|share))/g;
@@ -583,6 +600,8 @@ export function inventoryPackage(sourceDir, p) {
         for (var lwcIdx in types[typeIdx]['members']) {
           const lwcName = types[typeIdx]['members'][lwcIdx];
           const lwcXml = `${lwcPath}/${lwcName}/${lwcName}.js-meta.xml`;
+          const lwcHtmlFile = `${lwcPath}/${lwcName}/${lwcName}.html`;
+          const lwcJsFile = `${lwcPath}/${lwcName}/${lwcName}.js`;
           //TODO: Parse for object and namespace references
           let lwcJSON = parseXML(lwcXml);
           if (lwcJSON['LightningComponentBundle']) {
@@ -614,6 +633,14 @@ export function inventoryPackage(sourceDir, p) {
               }
             }
           }
+          if (fs.existsSync(lwcHtmlFile)) {
+            const lwcHTML = fs.readFileSync(lwcHtmlFile, 'utf8');
+
+            languageScan(lwcHTML,'html');
+          }
+          if (fs.existsSync(lwcJsFile)) {
+            languageScan(fs.readFileSync(lwcJsFile, 'utf8'));
+          }
         }
         typeInv['ExposedComponents'] = exposedCount;
         typeInv['targets'] = targets;
@@ -642,13 +669,15 @@ export function inventoryPackage(sourceDir, p) {
             const vfBody = fs.readFileSync(vfFile, 'utf8');
             const referSiteReg = /{!.*(\$Site|\$Network).*}/ig;
             const stdControllerReg = /standardController="([a-zA-Z0-9_]+)"/i;
+            if (tmp = languageScan(vfBody,'html')) {
+              setValue(language,`ApexPage.${vfName}`,tmp);
+            }
             
             //Find Standard Controllers
             let stdControllerMatch = stdControllerReg.exec(vfBody);
 
             if (stdControllerMatch !== null) {
               let controllerObject = getNameSpaceAndType(stdControllerMatch[1]);
-              console.log('Found a standard Controller!!:' + JSON.stringify(stdControllerMatch));
               addObjectDependencies(dependencies,[controllerObject]);
         /*      //Add Namespace Dependencies 
               if (controllerObject.namespace !== null) {
@@ -734,7 +763,10 @@ export function inventoryPackage(sourceDir, p) {
           if (fs.existsSync(auraCmpFile)) {
 
             let auraBody = fs.readFileSync(auraCmpFile, 'utf8');
-
+            if (tmp = languageScan(auraBody,'html')) {
+              setValue(language,`AuraDefinitionBundle.${auraName}`,tmp);
+            }
+            
             loggit.logLine('Performing Regex search against component for namespaces');
             const componentsReg = /<(\w+:\w+)/ig;
             let referencedComponents = getMatches(auraBody, componentsReg);
@@ -816,6 +848,13 @@ export function inventoryPackage(sourceDir, p) {
           }
         }
         break;
+      case 'CustomLabels' :
+         const lblJSON = parseXML(`${sourceDir}/labels/CustomLabels.labels`);
+        if (tmp = languageScanMetadataObject(lblJSON)) {
+          setValue(language, `CustomLabels.labels`,tmp);
+        }
+        
+        break;
     }
 
     inventory[metadataType] = typeInv;
@@ -835,6 +874,7 @@ export function inventoryPackage(sourceDir, p) {
   inventory['apiVersions'] = apiVersions;
   inventory['componentProperties'] = componentProperties;
   inventory['dependencies'] = dependencies;
+  inventory['language'] = language;
   return inventory;
 }
 
@@ -898,7 +938,7 @@ function extractObjectsApex(apexBody: string)  {
 
 function stripApexComments(apexBody : string) {
   const commentReg = /\/\*[\s\S]*?\*\/|((?<!:)|^)\/\/.*$/gm;
-  return apexBody.replace(commentReg,'');
+   return apexBody.replace(commentReg,'');
 }
 
 
@@ -1074,6 +1114,117 @@ export function parseXML(xmlfile, dieOnError = false) {
   return json;
 }
 
+function isObject(o: any): boolean {
+  return (o !== null && typeof o === 'object' && !Array.isArray(o));
+}
+
+function languageScanMetadataObject(mdObject: any, ignoreProperties: string[] = []): any {
+  let result = [];
+  let tmpResult;
+  const textyKeysreg = /[d|D]escription|[l|L]abel|[h|H]elp|[t|T]ext|[n|N]ame|[v|V]alue/;
+  //console.log(mdObject);
+  if (isObject(mdObject)) {
+    for (let [key, value] of Object.entries(mdObject)) {
+  //    console.log('Checking Key ' + key);
+      const isTexty = textyKeysreg.test(key);
+  //    console.log('Should I recurse?');
+      if (isObject(value)) {
+  //      console.log('yes');
+        if (tmpResult = languageScanMetadataObject(value)) {
+          result.push(...tmpResult);
+        }
+      }
+      else if (Array.isArray(value)) {
+  //      console.log('Propery is an array. Looping through');
+        for (const k of value) {
+  //        console.log('Looking at:' + k);
+          if (isObject(k)) {
+            if (tmpResult = languageScanMetadataObject(k)) {
+              result.push(...tmpResult);
+            }
+          }
+          else {
+            if (isTexty) {
+   //           console.log(key +  ' looks like something I should test');
+              if (tmpResult = languageScan(k)) {
+   //             console.log('Found one in an array!!!!');
+                for (let r of tmpResult) {
+                  r.context = `Property: ${key} = ${r.context}`;
+                }
+                result.push(...tmpResult);
+              }
+            }
+          }
+        }
+      }
+      else if (isTexty) {
+     //   console.log(key +  ' looks like something I should test');
+        if (tmpResult = languageScan(mdObject[key])) {
+    //      console.log('Found one not in an Array!!!!');
+          for (let r of tmpResult) {
+            r.context = `Property: ${key} = ${r.context}`;
+          }
+          result.push(...tmpResult);
+        }
+      }
+
+    }
+  }
+  if (result.length > 0) {
+    return result;
+  }
+  else {
+    return false;
+  }
+}
+
+function languageScan(text: string, type : string = 'text') : any {
+//  console.log('Checking:' + text);
+  //return immediately if text is empty
+  if (!text) {
+//    console.log('Bailing');
+    return false;
+  }
+  let scanResult = {};
+  let config= {
+    "noBinary": true,
+    "profanitySureness": 1,
+    "allow": ["simple","invalid","special","just","fires","host-hostess","gross","period","executes","execution"]
+  };
+
+  switch (type) {
+    case 'text':
+      scanResult = alex.text(text,config);
+    break;
+    case 'html':
+      scanResult = alex.html(text),config;
+    break;
+    case 'markdown':
+      scanResult = alex(text,config)
+    break;
+  }
+  if (scanResult['messages'].length > 0) {
+//    console.log('!!!!!!!!!!!!!!');
+    let retVal = [];
+    let lines = text.split(/\r?\n/);
+    for (const result of scanResult.messages) {
+      retVal.push({
+        message: result.message,
+        details: result.note,
+        context: lines[result.line -1],
+        ruleName: result.ruleId,
+        line: result.line
+      })
+      
+    }
+//    console.log(scanResult.messages);
+  //  console.log(scanResult.messages);
+    return retVal;
+  }
+  else {
+    return false;
+  }
+} 
 
 
 
