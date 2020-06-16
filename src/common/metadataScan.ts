@@ -406,9 +406,7 @@ export function inventoryPackage(sourceDir, p) {
           triggerBody = stripApexComments(triggerBody);
           const triggerDetailReg = /trigger\s+(\w+)\s+on\s+(\w+)\s*\((.+)\)/im;
           const refersGuestTrivialReg = /(["'])Guest\1/ig;
-          const findObjectsReg = /(?:(?<namespace>[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_)){0,14})__)?(?<component>(?<!___)[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_))+)(?:__(?<suffix>c|mdt|e|x|b|pc|pr|r|xo|latitude__s|longitude__s|history|ka|kav|feed|share))/g;
-
-
+         
           let triggerDetail = triggerDetailReg.exec(triggerBody);
           if (triggerDetail == null) {
             loggit.logLine('Could not parse Trigger File: ' + triggerFile);
@@ -948,7 +946,7 @@ function languageScan(text: string, type : string = 'text') : any {
   if (scanResult['messages'].length > 0) {
     let retVal = [];
     let lines = text.split(/\r?\n/);
-    for (const result of scanResult.messages) {
+    for (const result of scanResult['messages']) {
       retVal.push({
         message: result.message,
         details: result.note,

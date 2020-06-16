@@ -337,12 +337,8 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
     }
 
-<<<<<<< HEAD
     //Feedback
     this.ux.log('Please provide feedback on this tool: https://bit.ly/TEPluginFeedback');
-=======
-   
->>>>>>> LangFilter
 
     // Get MdScan JSON Output
     const outputRes = this.packageInventory.getJSONOutput();

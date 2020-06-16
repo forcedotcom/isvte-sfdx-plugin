@@ -728,7 +728,6 @@ const qualityRules: IRule[] = [{
       message: 'Starting with API version 48, you can use SOQL queries with the WITH SECURITY_ENFORCED modifier as well as the Apex method Security.stripInaccessible to provide FLS and CRUD checks eliminating the need to perform individual field accessibility checks to pass Security Review. Please review the attached release docs for more information',
       url: 'https://releasenotes.docs.salesforce.com/en-us/spring20/release-notes/rn_apex_Security_stripInaccessible_GA.htm \n https://releasenotes.docs.salesforce.com/en-us/spring20/release-notes/rn_apex_WithSecurityEnforced_GA.htm'
     }
-    
   },
   {
     name: 'Translations',
@@ -853,7 +852,7 @@ const alertRules: IRule[] = [{
  {
     name: 'External Sharing Model set to Private for all entities',
     condition: {
-      expiration: '2020-10-9T00:00:00.000Z',
+      expiration: '2020-07-1T00:00:00.000Z',
       metadataType: 'any',
       operator: 'always'
     },

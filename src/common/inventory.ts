@@ -16,17 +16,10 @@ import {
   dataModels,
   standardNamespaces
 } from './rules';
-import {
-  addKeyToObject,
-  getValue,
-  setValue,
-  incrementValue
-}
-from './JSONUtilities'
+
 import {
   Loggit
 } from './logger';
-import { PRIORITY_BELOW_NORMAL } from 'constants';
 
 
 export class packageInventory {
