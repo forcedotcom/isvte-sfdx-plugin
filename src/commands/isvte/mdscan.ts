@@ -307,6 +307,9 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
     }
 
+    //Feedback
+    this.ux.log('Please provide feedback on this tool: https://bit.ly/TEPluginFeedback');
+
     // Get MdScan JSON Output
     const outputRes = this.packageInventory.getJSONOutput();
 

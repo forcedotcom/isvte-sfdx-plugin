@@ -170,7 +170,6 @@ interface IDataModel {
   fields?: string[], //Array of fields (in Object.Field format) included in this datamodel
   objects?: string[], //Array of objects included in this data model
   namespaces?: string[], //Array of namespaces included in this data model
-  parentModels?: string[], //Array of other data models that this model depends on (using the name property of the parent)
 }
 
 const minAPI = 45;
