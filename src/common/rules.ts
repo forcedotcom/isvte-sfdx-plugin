@@ -729,6 +729,17 @@ const qualityRules: IRule[] = [{
       url: 'https://releasenotes.docs.salesforce.com/en-us/spring20/release-notes/rn_apex_Security_stripInaccessible_GA.htm \n https://releasenotes.docs.salesforce.com/en-us/spring20/release-notes/rn_apex_WithSecurityEnforced_GA.htm'
     }
     
+  },
+  {
+    name: 'Translations',
+    condition: {
+      metadataType: 'Translations',
+      operator: 'notexists'
+    },
+    resultTrue: {
+      label: 'Use Translations to appeal to a broader audience',
+      message: 'Users prefer to work in their native language. Consider including translations to make your app multilingual'
+    }
   }
 ];
 

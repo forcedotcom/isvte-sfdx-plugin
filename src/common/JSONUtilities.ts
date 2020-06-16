@@ -18,12 +18,7 @@ function _addKeyToObject(destObject: Object, pathComponents: string[]) : any {
 
 export function setValue(destObject: Object, path: string, value: any) : any {
   return _setValue(destObject,path.split('.'),value);
-/*  console.log('Setting Value in path ' + path);
-  let newObj =  addKeyToObject(destObject,path);
-  console.log('Previous Value: ' + JSON.stringify(newObj));
-  newObj = value;
-  console.log('New Value: ' + JSON.stringify(newObj));
-  return newObj;*/
+
 }
 
 function _setValue(destObject: Object, pathComponents: string[], value: any) : any {

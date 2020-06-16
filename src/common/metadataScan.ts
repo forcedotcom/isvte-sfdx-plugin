@@ -3,6 +3,8 @@ import {
   SfdxError
 } from '@salesforce/core';
 
+import alex = require('alex');
+
 import {
   setValue,
   incrementValue,
@@ -28,6 +30,8 @@ export function inventoryPackage(sourceDir, p) {
   let apiVersions = {};
   let componentProperties = {};
   let dependencies = {};
+  let language = {};
+  let tmp; //just a temp variable for some ugly if magic
   let loggit = new Loggit('isvtePlugin:metadataScan');
 
   if (p.version) {
@@ -63,31 +67,6 @@ export function inventoryPackage(sourceDir, p) {
           let object = getNameSpaceAndType(fieldFullName.split(".")[0]);
           let field = getNameSpaceAndType(fieldFullName.split(".")[1]);
           addObjectDependencies(dependencies,[object,field]);
-/*
-          //Add Namespace Dependencies 
-          if (object.namespace !== null) {
-            if (dependencies['namespaces'] == undefined) {
-              dependencies['namespaces'] = {};
-            }
-            dependencies['namespaces'][object.namespace] = 1;
-          }
-          if (field.namespace !== null) {
-            if (dependencies['namespaces'] == undefined) {
-              dependencies['namespaces'] = {};
-            }
-            dependencies['namespaces'][field.namespace] = 1;
-          }
-
-          if (dependencies['components'] == undefined) {
-            dependencies['components'] = {};
-          }
-          dependencies['components'][object.fullName] = object;
-
-          if (dependencies['components'] == undefined) {
-            dependencies['components'] = {};
-          }
-          dependencies['components'][field.fullName] = field;
-         */
           if (objectFields[object.fullName]) {
             objectFields[object.fullName]['count'] += 1;
           } else {
@@ -103,21 +82,18 @@ export function inventoryPackage(sourceDir, p) {
           if (field.namespace == null && ((object.type == 'Standard' && field.type !== 'Standard')|| object.type !== 'Standard')) {
             const objectPath = `${sourceDir}/objects`;
             let objectXml = `${objectPath}/${object.fullName}.object`;
+            
             let objectJSON = parseXML(objectXml);
             if (objectJSON['CustomObject'] && objectJSON['CustomObject']['fields']) {
               for (var fieldDef of objectJSON['CustomObject']['fields']) {
                 if (fieldDef['fullName'] == field.fullName) {
                   loggit.logLine('Checking Properties of Field: ' + fieldFullName);
-/*
-                  if (componentProperties['CustomField'] == undefined) {
-                    componentProperties['CustomField'] = {};
-                  }
-                  if (componentProperties['CustomField'][fieldFullName] == undefined) {
-                    componentProperties['CustomField'][fieldFullName] = {};
-                  }
-                  componentProperties['CustomField'][fieldFullName]['descriptionExists'] = fieldDef['description'] ? 1 : 0;*/
                   let descExists = fieldDef['description'] ? 1 : 0;
-                  setValue(componentProperties,`CustomField.${fieldFullName.replace('.','->')}.descriptionExists`,descExists);
+                  setValue(componentProperties,`CustomField.${fieldFullName.replace(/\./g,"->")}.descriptionExists`,descExists);
+            
+                  if (tmp = languageScanMetadataObject(fieldDef)) {
+                    setValue(language,`CustomField.${fieldFullName.replace(/\./g,"->")}`,tmp);
+                  }
                 }
 
               }
@@ -148,19 +124,6 @@ export function inventoryPackage(sourceDir, p) {
           let object = getNameSpaceAndType(types[typeIdx]['members'][objIdx]);
           loggit.logLine('Checking Object: ' + object.fullName);
           addObjectDependencies(dependencies,[object]);
-/*          //Add Namespace Dependencies 
-          if (object.namespace !== null) {
-            if (dependencies['namespaces'] == undefined) {
-              dependencies['namespaces'] = {};
-            }
-            dependencies['namespaces'][object.namespace] = 1;
-          }
-
-          if (dependencies['components'] == undefined) {
-            dependencies['components'] = {};
-          }
-          dependencies['components'][object.fullName] = object;
-*/
           //Check external Objects
           if (object.extension == 'e') {
             xoCount += 1;
@@ -182,32 +145,32 @@ export function inventoryPackage(sourceDir, p) {
 
           let objectXml = `${objectPath}/${object.fullName}.object`;
           let objectJSON = parseXML(objectXml);
+          //Dive Deeper
+          if (objectJSON['CustomObject']) {
+            //Check Custom Settings
+            if (objectJSON['CustomObject']['customSettingsType']) {
+              csType['count'] + 1;
+            }
 
-          //Check Custom Settings
-          if (objectJSON['CustomObject'] && objectJSON['CustomObject']['customSettingsType']) {
-            csType['count'] + 1;
-          }
-          //Check for Descriptions
+            //Check for Descriptions
           if (object.type == 'Custom' && object.namespace == null) {
             loggit.logLine('Checking properties of object ' + object.fullName);
-/*
-            if (componentProperties['CustomObject'] == undefined) {
-              componentProperties['CustomObject'] = {};
-            }
-            if (componentProperties['CustomObject'][object.fullName] == undefined) {
-              componentProperties['CustomObject'][object.fullName] = {};
-            }
-            componentProperties['CustomObject'][object.fullName]['descriptionExists'] = objectJSON['CustomObject'] && objectJSON['CustomObject']['description'] ? 1 : 0;*/
             let descExists = getValue(objectJSON,'CustomObject.description',null) ? 1 : 0;
             setValue(componentProperties,`CustomObject.${object.fullName}.descriptionExists`,descExists);
 
           }
 
-          //   loggit(objectJSON,'JSON');
+          //LanguageScan
+          
+          if (tmp = languageScanMetadataObject(objectJSON)) {
+            setValue(language,`CustomObject.${object.fullName}`,tmp);
+          }
+        
+          }
+          
+          
+         
         }
-        //inventory['ExternalObject__c'] = xoType;
-        //inventory['BigObject__c'] = boType;
-
         typeInv['BigObject'] = boCount;
         typeInv['ExternalObject'] = xoCount;
         inventory['CustomSetting__c'] = csType;
@@ -229,62 +192,40 @@ export function inventoryPackage(sourceDir, p) {
         let objects = {};
         let flowTypes = {};
         let flowTemplates = {};
-             const flowPath = `${sourceDir}/flows`;
+        const flowPath = `${sourceDir}/flows`;
         for (var flowIdx in types[typeIdx]['members']) {
           let flowName = types[typeIdx]['members'][flowIdx];
           let flowXml = `${flowPath}/${flowName}.flow`;
           let flowJSON = parseXML(flowXml);
           loggit.logLine('Checking file:' + flowXml);
-       //   let processType = flowJSON['Flow'] && flowJSON['Flow']['processType'] ? flowJSON['Flow']['processType'] : 'UnknownType';
           let processType = getValue(flowJSON,'Flow.processType','UnknownType');
           incrementValue(flowTypes,`${processType}.count`);
-       
-          
-          if (flowJSON['Flow'] && flowJSON['Flow']['isTemplate'] && flowJSON['Flow']['isTemplate'][0] === 'true') {
+          if (getValue(flowJSON,'Flow.isTemplate.0',false)) {
             templateCount += 1;
             incrementValue(flowTemplates,`${processType}.count`);
-           /* if (flowTemplates[processType]) {
-              flowTemplates[processType]['count']+=1;
-            }
-            else {
-              flowTemplates[processType] = {
-                count:1
-              };
-            }*/
           }
+          //Language Scan
+          if (tmp = languageScanMetadataObject(flowJSON)) {
+            setValue(language, `Flow.${flowName}`,tmp);
+          }
+
+          addObjectDependencies(dependencies, extractObjectsApex(JSON.stringify(flowJSON)));
 
           //Do per object Inventory
           loggit.logLine('Inventorying PB and Flow Triggers Per Object');
-          loggit.logLine('Flow Details: ' + JSON.stringify(flowJSON['Flow']['processMetadataValues']));
-            if (flowJSON['Flow']['processMetadataValues']) {
-              for (var processMetadataValue of flowJSON['Flow']['processMetadataValues']) {
+          let processMetadataValues;
+          if (processMetadataValues = getValue(flowJSON,'Flow.processMetadataValues',null)) {
+            loggit.logLine('Flow Details: ' + JSON.stringify(flowJSON['Flow']['processMetadataValues']));
+           
+              for (var processMetadataValue of processMetadataValues) {
                 loggit.logLine('Metadata Value Name: ' + processMetadataValue['name']);
                 if (processMetadataValue['name'] == 'ObjectType') {
                   loggit.logLine('ObjectName:' + JSON.stringify(processMetadataValue['value'][0]));
                   let objectName = processMetadataValue['value'][0]['stringValue'][0];
                   let object = getNameSpaceAndType(objectName);
                   addObjectDependencies(dependencies,[object]);
-                  //Add Namespace Dependencies 
-               /*   if (object.namespace !== null) {
-                    if (dependencies['namespaces'] == undefined) {
-                      dependencies['namespaces'] = {};
-                    }
-                    dependencies['namespaces'][object.namespace] = 1;
-                  }
-                  if (dependencies['components'] == undefined) {
-                    dependencies['components'] = {};
-                  }
-                  dependencies['components'][object.fullName] = object;
-*/
                   loggit.logLine('Extracted Object Name:' + objectName);
                   incrementValue(objects,`${objectName}.count`);
-               /*   if (objects[objectName]) {
-                    objects[objectName]['count'] += 1;
-                  } else {
-                    objects[objectName] = {
-                      count: 1
-                    };
-                  }*/
                 }
               }
             }
@@ -368,7 +309,11 @@ export function inventoryPackage(sourceDir, p) {
           let classFile = `${apexPath}/${className}.cls`;
           if (fs.existsSync(classFile)) {
 
-            let classBody = stripApexComments(fs.readFileSync(classFile, 'utf8'));
+            let classBody = fs.readFileSync(classFile, 'utf8');
+            if (tmp = languageScan(classBody)) {
+              setValue(language,`ApexClass.${className}`,tmp);
+            }
+            classBody = stripApexComments(classBody);
             // loggit(classBody);
             //const testReg = /@istest/ig;
             const futureReg = /@future/ig;
@@ -408,36 +353,14 @@ export function inventoryPackage(sourceDir, p) {
             }
             if (advFLSSOQLReg.test(classBody)) {
               setValue(componentProperties,`ApexClass.${className}.SECURITY_ENFORCED`,1);
-              /* if (componentProperties['ApexClass'] == undefined) {
-                componentProperties['ApexClass'] = {};
-              }
-              if (componentProperties['ApexClass'][className] == undefined) {
-                componentProperties['ApexClass'][className] = {};
-              }
-              componentProperties['ApexClass'][className]['SECURITY_ENFORCED'] = 1;*/
             }
             if (advFLSStripInaccessible.test(classBody)) {
               setValue(componentProperties,`ApexClass.${className}.StripInaccessible`,1);
-/*
-              if (componentProperties['ApexClass'] == undefined) {
-                componentProperties['ApexClass'] = {};
-              }
-              if (componentProperties['ApexClass'][className] == undefined) {
-                componentProperties['ApexClass'][className] = {};
-              }
-              componentProperties['ApexClass'][className]['StripInaccessible'] = 1;*/
             }
 
         //    if (refersGuestComplexReg.test(classBody) || refersGuestSimpleReg.test(classBody)) {
             if (refersGuestTrivialReg.test(classBody)) {
               setValue(componentProperties,`ApexClass.${className}.RefersToGuest`,1);
-/*
-              if (componentProperties['ApexClass'] == undefined) {
-                componentProperties['ApexClass'] = {};
-              }
-              if (componentProperties['ApexClass'][className] == undefined) {
-                componentProperties['ApexClass'][className] = {};
-              }*/
             }
             //Find Object References
             loggit.logLine('Looking for fields and objects referenced within APEX')
@@ -450,13 +373,9 @@ export function inventoryPackage(sourceDir, p) {
           if (fs.existsSync(classMetaFile)) {
             let classMetaJSON = parseXML(classMetaFile);
             if (classMetaJSON['ApexClass'] && classMetaJSON['ApexClass']['apiVersion']) {
-        /*      if (apiVersions['ApexClass'] == undefined) {
-                apiVersions['ApexClass'] = {};
-              }*/
+      
               setValue(apiVersions,`ApexClass.${className}`,parseFloat(classMetaJSON['ApexClass']['apiVersion'][0]));
-         //     addKeyToObject(apiVersions,'ApexClass');
-         //     apiVersions['ApexClass'][className] = parseFloat(classMetaJSON['ApexClass']['apiVersion'][0]);
-            }
+           }
           }
         }
         typeInv['FutureCalls'] = futureCount;
@@ -479,7 +398,12 @@ export function inventoryPackage(sourceDir, p) {
         for (var triggerIdx in types[typeIdx]['members']) {
           let triggerName = types[typeIdx]['members'][triggerIdx];
           let triggerFile = `${triggerPath}/${triggerName}.trigger`;
-          let triggerBody = stripApexComments(fs.readFileSync(triggerFile, 'utf8'));
+          let triggerBody = fs.readFileSync(triggerFile, 'utf8');
+          if (tmp = languageScan(triggerBody)) {
+            setValue(language,`ApexTrigger.${triggerName}`,tmp);
+          }
+          
+          triggerBody = stripApexComments(triggerBody);
           const triggerDetailReg = /trigger\s+(\w+)\s+on\s+(\w+)\s*\((.+)\)/im;
           const refersGuestTrivialReg = /(["'])Guest\1/ig;
           const findObjectsReg = /(?:(?<namespace>[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_)){0,14})__)?(?<component>(?<!___)[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_))+)(?:__(?<suffix>c|mdt|e|x|b|pc|pr|r|xo|latitude__s|longitude__s|history|ka|kav|feed|share))/g;
@@ -496,77 +420,28 @@ export function inventoryPackage(sourceDir, p) {
             loggit.logLine('Trigger Object:' + triggerObject.fullName);
             loggit.logLine('Trigger Type: ' + triggerType);
             //Add Namespace Dependencies 
-       /*     if (triggerObject.namespace !== null) {
-              if (dependencies['namespaces'] == undefined) {
-              dependencies['namespaces'] = {};
-              }
-              dependencies['namespaces'][triggerObject.namespace] = 1;
-            }
-            if (dependencies['components'] == undefined) {
-              dependencies['components'] = {};
-            }
-            dependencies['components'][triggerObject.fullName] = triggerObject;
-*/
             addObjectDependencies(dependencies,[triggerObject]);
             if (triggerObject.type == 'Change Data Capture') {
               //  asyncTrigger['count']++;
               asyncCount += 1;
             }
             incrementValue(triggerInv,`${triggerObject.fullName}.count`);
-            /*
-           if (triggerInv[triggerObject.fullName]) {
-              triggerInv[triggerObject.fullName]['count'] += 1;
-            } else {
-              triggerInv[triggerObject.fullName] = {
-                count: 1
-              };
-            }*/
+            
             if (refersGuestTrivialReg.test(triggerBody)) {
               setValue(componentProperties,`ApexTrigger.${triggerName}.refersToGuest`,1);
-         /*     if (componentProperties['ApexTrigger'] == undefined) {
-                componentProperties['ApexTrigger'] = {};
-              }
-              if (componentProperties['ApexTrigger'][triggerName] == undefined) {
-                componentProperties['ApexTrigger'][triggerName] = {};
-              }
-              componentProperties['ApexTrigger'][triggerName]['RefersToGuest'] = 1;*/
             }
 
             //Find Object References
-           // let objectFound;
             loggit.logLine('Looking for fields and objects referenced within APEX')
             
             addObjectDependencies(dependencies, extractObjectsApex(triggerBody));
-/*
-            while (objectFound = findObjectsReg.exec(triggerBody)) {
-              loggit.logLine('Found: ' + objectFound[0]);
-              const object = getNameSpaceAndType(objectFound[0]);
-              //Add Namespace Dependencies 
-              if (object.namespace !== null) {
-                if (dependencies['namespaces'] == undefined) {
-                dependencies['namespaces'] = {};
-                }
-                dependencies['namespaces'][object.namespace] = 1;
-              }
-              if (dependencies['components'] == undefined) {
-                dependencies['components'] = {};
-              }
-              dependencies['components'][object.fullName] = object;
-            }        
-*/
           }
 
           let triggerMetaFile = `${triggerPath}/${triggerName}.trigger-meta.xml`;
           if (fs.existsSync(triggerMetaFile)) {
             let triggerMetaJSON = parseXML(triggerMetaFile);
             if (triggerMetaJSON['ApexTrigger'] && triggerMetaJSON['ApexTrigger']['apiVersion']) {
-/*
-              if (apiVersions['ApexTrigger'] == undefined) {
-                apiVersions['ApexTrigger'] = {};
-              }*/
               setValue(apiVersions,`ApexTrigger.${triggerName}`,parseFloat(triggerMetaJSON['ApexTrigger']['apiVersion'][0]));
-
-        //      apiVersions['ApexTrigger'][triggerName] = parseFloat(triggerMetaJSON['ApexTrigger']['apiVersion'][0]);
             }
           }
         }
@@ -583,6 +458,8 @@ export function inventoryPackage(sourceDir, p) {
         for (var lwcIdx in types[typeIdx]['members']) {
           const lwcName = types[typeIdx]['members'][lwcIdx];
           const lwcXml = `${lwcPath}/${lwcName}/${lwcName}.js-meta.xml`;
+          const lwcHtmlFile = `${lwcPath}/${lwcName}/${lwcName}.html`;
+          const lwcJsFile = `${lwcPath}/${lwcName}/${lwcName}.js`;
           //TODO: Parse for object and namespace references
           let lwcJSON = parseXML(lwcXml);
           if (lwcJSON['LightningComponentBundle']) {
@@ -591,12 +468,7 @@ export function inventoryPackage(sourceDir, p) {
             loggit.logLine('Checking LWC ' + lwcName);
             // loggit(lwcJSON,'JSON');
             if (lwcJSON['apiVersion']) {
-       /*       if (apiVersions['LightningComponentBundle'] == undefined) {
-                apiVersions['LightningComponentBundle'] = {};
-              }
-              apiVersions['LightningComponentBundle'][lwcName] = parseFloat(lwcJSON['apiVersion'][0]);*/
               setValue(apiVersions,`LightningComponentBundle.${lwcName}`,parseFloat(lwcJSON['apiVersion'][0]));
-
             }
             if (lwcJSON['isExposed'] && lwcJSON['isExposed'][0] === 'true') {
               exposedCount += 1;
@@ -614,6 +486,14 @@ export function inventoryPackage(sourceDir, p) {
               }
             }
           }
+          if (fs.existsSync(lwcHtmlFile)) {
+            const lwcHTML = fs.readFileSync(lwcHtmlFile, 'utf8');
+
+            languageScan(lwcHTML,'html');
+          }
+          if (fs.existsSync(lwcJsFile)) {
+            languageScan(fs.readFileSync(lwcJsFile, 'utf8'));
+          }
         }
         typeInv['ExposedComponents'] = exposedCount;
         typeInv['targets'] = targets;
@@ -629,38 +509,23 @@ export function inventoryPackage(sourceDir, p) {
           if (fs.existsSync(vfXML)) {
             let vfMetaJSON = parseXML(vfXML);
             if (vfMetaJSON['ApexPage'] && vfMetaJSON['ApexPage']['apiVersion']) {
-/*
-              if (apiVersions['ApexPage'] == undefined) {
-                apiVersions['ApexPage'] = {};
-              }
-              apiVersions['ApexPage'][vfName] = parseFloat(vfMetaJSON['ApexPage']['apiVersion'][0]);*/
               setValue(apiVersions,`ApexPage.${vfName}`,parseFloat(vfMetaJSON['ApexPage']['apiVersion'][0]));
-
             }
           }
           if (fs.existsSync(vfFile)) {
             const vfBody = fs.readFileSync(vfFile, 'utf8');
             const referSiteReg = /{!.*(\$Site|\$Network).*}/ig;
             const stdControllerReg = /standardController="([a-zA-Z0-9_]+)"/i;
+            if (tmp = languageScan(vfBody,'html')) {
+              setValue(language,`ApexPage.${vfName}`,tmp);
+            }
             
             //Find Standard Controllers
             let stdControllerMatch = stdControllerReg.exec(vfBody);
 
             if (stdControllerMatch !== null) {
               let controllerObject = getNameSpaceAndType(stdControllerMatch[1]);
-              console.log('Found a standard Controller!!:' + JSON.stringify(stdControllerMatch));
               addObjectDependencies(dependencies,[controllerObject]);
-        /*      //Add Namespace Dependencies 
-              if (controllerObject.namespace !== null) {
-                if (dependencies['namespaces'] == undefined) {
-                dependencies['namespaces'] = {};
-                }
-                dependencies['namespaces'][controllerObject.namespace] = 1;
-              }
-              if (dependencies['components'] == undefined) {
-                dependencies['components'] = {};
-              }
-              dependencies['components'][controllerObject.fullName] = controllerObject;*/
             }
 
             //Find namespaces in components used
@@ -669,43 +534,15 @@ export function inventoryPackage(sourceDir, p) {
             let referencedComponents = getMatches(vfBody, componentsReg);
             if (referencedComponents.length > 0) {
               loggit.logLine(`Found the following Components: ${JSON.stringify(referencedComponents)}`);
-           //   addKeyToObject(componentProperties,`ApexPage.${vfName}.namespaceReferences`);
-           /*   if (componentProperties['ApexPage'] == undefined) {
-                componentProperties['ApexPage'] = {};
-              }
-              if (componentProperties['ApexPage'][vfName] == undefined) {
-                componentProperties['ApexPage'][vfName] = {};
-              }
-              if (componentProperties['ApexPage'][vfName]['namespaceReferences'] == undefined) {
-                componentProperties['ApexPage'][vfName]['namespaceReferences'] = {};
-              }*/
               referencedComponents.forEach(element => {
                 let ns = element.split(":", 2)[0];
                 incrementValue(componentProperties,`ApexPage.${vfName}.namespaceReferences.${ns}`);
-              /*  if (componentProperties['ApexPage'][vfName]['namespaceReferences'][ns] == undefined) {
-                  componentProperties['ApexPage'][vfName]['namespaceReferences'][ns] = 1;
-                }
-                else {
-                  componentProperties['ApexPage'][vfName]['namespaceReferences'][ns] += 1
-                }*/
-                //Also add it to the Namespaces dependencies
                 setValue(dependencies,`namespaces.${ns}`,1);
-           /*     if (dependencies['namespaces'] == undefined) {
-                  dependencies['namespaces'] = {};
-                }
-                dependencies['namespaces'][ns] = 1;*/
               });
             }
 
             if (referSiteReg.test(vfBody)) {
               setValue(componentProperties,`ApexPage.${vfName}.RefersToSite`,1);
-          /*    if (componentProperties['ApexPage'] == undefined) {
-                componentProperties['ApexPage'] = {};
-              }
-              if (componentProperties['ApexPage'][vfName] == undefined) {
-                componentProperties['ApexPage'][vfName] = {};
-              }
-              componentProperties['ApexPage'][vfName]['RefersToSite'] = 1;*/
             }
 
           }
@@ -721,10 +558,6 @@ export function inventoryPackage(sourceDir, p) {
           loggit.logLine('Checking Aura Component ' + auraName);
           if (auraJSON['AuraDefinitionBundle'] && auraJSON['AuraDefinitionBundle']['apiVersion']) {
             setValue(apiVersions,`AuraDefinitionBundle.${auraName}`,parseFloat(auraJSON['AuraDefinitionBundle']['apiVersion'][0]));
-           /* if (apiVersions['AuraDefinitionBundle'] == undefined) {
-              apiVersions['AuraDefinitionBundle'] = {};
-            }
-            apiVersions['AuraDefinitionBundle'][auraName] = parseFloat(auraJSON['AuraDefinitionBundle']['apiVersion'][0]);*/
           }
           //Count Used Components by Namespace
           let auraCmpFile = `${auraPath}/${auraName}/${auraName}.cmp`;
@@ -734,37 +567,20 @@ export function inventoryPackage(sourceDir, p) {
           if (fs.existsSync(auraCmpFile)) {
 
             let auraBody = fs.readFileSync(auraCmpFile, 'utf8');
-
+            if (tmp = languageScan(auraBody,'html')) {
+              setValue(language,`AuraDefinitionBundle.${auraName}`,tmp);
+            }
+            
             loggit.logLine('Performing Regex search against component for namespaces');
             const componentsReg = /<(\w+:\w+)/ig;
             let referencedComponents = getMatches(auraBody, componentsReg);
             if (referencedComponents.length > 0) {
               loggit.logLine(`Found the following Components: ${JSON.stringify(referencedComponents)}`);
-           //   addKeyToObject(componentProperties,`AuraDefinitionBundle.${auraName}.namespaceReferences`);
-          /*    if (componentProperties['AuraDefinitionBundle'] == undefined) {
-                componentProperties['AuraDefinitionBundle'] = {};
-              }
-              if (componentProperties['AuraDefinitionBundle'][auraName] == undefined) {
-                componentProperties['AuraDefinitionBundle'][auraName] = {};
-              }
-              if (componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'] == undefined) {
-                componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'] = {};
-              }*/
               referencedComponents.forEach(element => {
                 let ns = element.split(":", 2)[0];
                 incrementValue(componentProperties,`AuraDefinitionBundle.${auraName}.namespaceReferences.${ns}`);
-              /*  if (componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] == undefined) {
-                  componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] = 1;
-                }
-                else {
-                  componentProperties['AuraDefinitionBundle'][auraName]['namespaceReferences'][ns] += 1
-                }*/
                 //Also add it to the Namespaces dependencies
                 setValue(dependencies,`namespaces.${ns}`,1);
-             /*   if (dependencies['namespaces'] == undefined) {
-                  dependencies['namespaces'] = {};
-                }
-                dependencies['namespaces'][ns] = 1;*/
               });
             }
             loggit.logLine('Extracting implemented and extended interfaces');
@@ -772,49 +588,27 @@ export function inventoryPackage(sourceDir, p) {
             let interfaceMatches = getMatches(auraBody, interfaceReg);
             if (interfaceMatches.length > 0) {
               loggit.logLine(`Found the following Interfaces: ${JSON.stringify(interfaceMatches)}`);
-          /*    if (componentProperties['AuraDefinitionBundle'] == undefined) {
-                componentProperties['AuraDefinitionBundle'] = {};
-              }
-              if (componentProperties['AuraDefinitionBundle'][auraName] == undefined) {
-                componentProperties['AuraDefinitionBundle'][auraName] = {};
-              }
-              if (componentProperties['AuraDefinitionBundle'][auraName]['interfaces'] == undefined) {
-                componentProperties['AuraDefinitionBundle'][auraName]['interfaces'] = {};
-              }*/
               interfaceMatches.forEach(element => {
                 let interfaces = element.split(/ *, */);
                 interfaces.forEach(element => {
-             //     componentProperties['AuraDefinitionBundle'][auraName]['interfaces'][element] = 1;
                   setValue(componentProperties,`AuraDefinitionBundle.${auraName}.interfaces.${element}`,1);
                 });
               })
             }
             //Find Object References
             addObjectDependencies(dependencies,extractObjectsApex(auraBody));
-        /*    const findObjectsReg = /(?:(?<namespace>[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_)){0,14})__)?(?<component>(?<!___)[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_))+)(?:__(?<suffix>c|mdt|e|x|b|pc|pr|r|xo|latitude__s|longitude__s|history|ka|kav|feed|share))/g;
-            let objectFound;
-            loggit.logLine('Looking for fields and objects referenced within Aura Components')
-            while (objectFound = findObjectsReg.exec(auraBody)) {
-              loggit.logLine('Found: ' + objectFound[0]);
-              const object = getNameSpaceAndType(objectFound[0]);
-              //Add Namespace Dependencies 
-              if (object.namespace !== null) {
-                if (dependencies['namespaces'] == undefined) {
-                dependencies['namespaces'] = {};
-                }
-                dependencies['namespaces'][object.namespace] = 1;
-              }
-              if (dependencies['components'] == undefined) {
-                dependencies['components'] = {};
-              }
-              dependencies['components'][object.fullName] = object;
-            } */  
-
           }
           else {
             loggit.logLine('File not found');
           }
         }
+        break;
+      case 'CustomLabels' :
+         const lblJSON = parseXML(`${sourceDir}/labels/CustomLabels.labels`);
+        if (tmp = languageScanMetadataObject(lblJSON)) {
+          setValue(language, `CustomLabels.labels`,tmp);
+        }
+        
         break;
     }
 
@@ -826,15 +620,12 @@ export function inventoryPackage(sourceDir, p) {
   let pafile = `${sourceDir}/objects/PersonAccount.object`;
   if (fs.existsSync(pafile)) {
     setValue(dependencies,'features.PersonAccount',1);
-   /* if (dependencies['features'] == undefined) {
-      dependencies['features'] = {};
-    }
-    dependencies['features']['PersonAccount'] = 1;*/
   }
 
   inventory['apiVersions'] = apiVersions;
   inventory['componentProperties'] = componentProperties;
   inventory['dependencies'] = dependencies;
+  inventory['language'] = language;
   return inventory;
 }
 
@@ -873,6 +664,7 @@ function getMembersFromFiles(folder, extension) {
   return members;
 }
 
+
 function extractObjectsApex(apexBody: string)  {
   const findObjectsReg = /(?:(?<namespace>[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_)){0,14})__)?(?<component>(?<!___)[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_))+)(?:__(?<suffix>c|mdt|e|x|b|pc|pr|r|xo|latitude__s|longitude__s|history|ka|kav|feed|share))/g;
    
@@ -898,7 +690,7 @@ function extractObjectsApex(apexBody: string)  {
 
 function stripApexComments(apexBody : string) {
   const commentReg = /\/\*[\s\S]*?\*\/|((?<!:)|^)\/\/.*$/gm;
-  return apexBody.replace(commentReg,'');
+   return apexBody.replace(commentReg,'');
 }
 
 
@@ -1074,6 +866,104 @@ export function parseXML(xmlfile, dieOnError = false) {
   return json;
 }
 
+function isObject(o: any): boolean {
+  return (o !== null && typeof o === 'object' && !Array.isArray(o));
+}
+
+
+
+function languageScanMetadataObject(mdObject: any, ignoreProperties: string[] = []): any {
+  let result = [];
+  let tmpResult;
+  const textyKeysreg = /[d|D]escription|[l|L]abel|[h|H]elp|[t|T]ext|[n|N]ame|[v|V]alue/;
+  if (isObject(mdObject)) {
+    for (let [key, value] of Object.entries(mdObject)) {
+      const isTexty = textyKeysreg.test(key);
+      if (isObject(value)) {
+        if (tmpResult = languageScanMetadataObject(value)) {
+          result.push(...tmpResult);
+        }
+      }
+      else if (Array.isArray(value)) {
+        for (const k of value) {
+          if (isObject(k)) {
+            if (tmpResult = languageScanMetadataObject(k)) {
+              result.push(...tmpResult);
+            }
+          }
+          else {
+            if (isTexty) {
+              if (tmpResult = languageScan(k)) {
+                for (let r of tmpResult) {
+                  r.context = `Property: ${key} = ${r.context}`;
+                }
+                result.push(...tmpResult);
+              }
+            }
+          }
+        }
+      }
+      else if (isTexty) {
+        if (tmpResult = languageScan(mdObject[key])) {
+          for (let r of tmpResult) {
+            r.context = `Property: ${key} = ${r.context}`;
+          }
+          result.push(...tmpResult);
+        }
+      }
+
+    }
+  }
+  if (result.length > 0) {
+    return result;
+  }
+  else {
+    return false;
+  }
+}
+
+function languageScan(text: string, type : string = 'text') : any {
+  //return immediately if text is empty
+  if (!text) {
+    return false;
+  }
+  let scanResult = {};
+  let config= {
+    "noBinary": true,
+    "profanitySureness": 1,
+    "allow": ["simple","invalid","special","just","fires","host-hostess","gross","period","executes","execution"]
+  };
+
+  switch (type) {
+    case 'text':
+      scanResult = alex.text(text,config);
+    break;
+    case 'html':
+      scanResult = alex.html(text),config;
+    break;
+    case 'markdown':
+      scanResult = alex(text,config)
+    break;
+  }
+  if (scanResult['messages'].length > 0) {
+    let retVal = [];
+    let lines = text.split(/\r?\n/);
+    for (const result of scanResult.messages) {
+      retVal.push({
+        message: result.message,
+        details: result.note,
+        context: lines[result.line -1],
+        ruleName: result.ruleId,
+        line: result.line
+      })
+      
+    }
+    return retVal;
+  }
+  else {
+    return false;
+  }
+} 
 
 
 
