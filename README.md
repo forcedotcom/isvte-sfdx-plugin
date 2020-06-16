@@ -8,6 +8,8 @@ More information on the plugin and how to use it is available in this [introduct
 For support with this plugin or to provide feedback, please log an issue here or connect with us in the [ISV Technical Enablement Plugin
  Chatter group](https://partners.salesforce.com/0F93A0000004mWj) (Salesforce Partner Community login required) 
 
+See [this document](EXTENDING.md) for details on how to extend the tool by adding your own rules.
+
 ## Setup
 ### **Install as a SalesforceDX Plugin**
 

@@ -90,8 +90,8 @@ The output will look similar to:
 
 #### Querying The Inventory
 
-Inventory items are queried using the ```metadataType``` propery within rules. This metadataType is almost exactly a metadataType as defined in the [Metadata API Documentation](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_types_list.htm) but also includes other items that come out of the plugin's inventorying of the package.  Use "." notation to traverse objects. 
-To reference Lightning Web Components exposed to App Pages you can do:
+Inventory items are queried using the ```metadataType``` propery within rules. This metadataType is almost exactly a metadataType as defined in the [Metadata API Documentation](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_types_list.htm) but also includes other items that come out of the plugin's inventory of the package. 
+To reference Lightning Web Components exposed to App Pages from the inventory above you can do:
 ```
 metadataType: 'LightningComponentBundle.targets.lightning__AppPage'
 ```
@@ -119,8 +119,10 @@ interface ICondition {
 ```
 
 ```metadataType``` is defined as above.
+
 ```operator``` can be one of: 'always' | 'never' | 'exists' | 'notexists' | 'null' | 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'between'
-```operand``` is the numerical value (or the placeholder minAPI) that the operator works agains.
+
+```operand``` is the numerical value (or the placeholder minAPI) that the operator works against.
 
 So a condition like:
 ```
@@ -132,9 +134,10 @@ So a condition like:
 ```
 would return true in the sample inventory above.
 
-```conditionAnd``` and ```conditionOr``` are extra conditions that can be used to increase the complexity of a query so the condition:
 
+```conditionAnd``` and ```conditionOr``` are extra conditions that can be used to increase the complexity of a query. 
 
+The condition:
 
 ```
 {
@@ -149,7 +152,7 @@ would return true in the sample inventory above.
 ```
 would return true if there are no Flow Templates, but there are Flows.
 
-A condition can have a ```conditionAnd``` or a ```conditionOr``` or neither, but not both. You can however, chain as many ```conditionAnd``` and ```conditionOr``` as needed.
+A condition can have a ```conditionAnd``` or a ```conditionOr``` or neither, but not both. You can however, chain as many conditions as you need using ```conditionAnd``` and ```conditionOr```.
 
 ```
 metadataType: 'apiVersions.ApexClass.*',
@@ -176,7 +179,7 @@ conditionOr: {
 
 #### Rule Results
 
-Several Rule Types have a "Result" component which describes what is presented based on the outcome of the Condition.
+Several Rule Types have a "Result" component which describes what is presented based on the outcome of the condition.
 
 A Result is defined as:
 ```
@@ -190,9 +193,9 @@ interface IResult {
 
 #### Inventory Report Rules
 
-Metadata components listed in the Inventory report are defined in the ```mdTypes``` Array within the rules file. Note that this array defines only what is displayed in the report. It has no impact on what is actually inventoried.
+Metadata components listed in the Inventory report are defined in the ```mdTypes``` list within the rules file. Note that this list defines only what is displayed in the report; it has no impact on what is actually inventoried.
 
-Inventoried items are in the ```mdTypes``` array and conform to the following interface:
+Inventoried items conform to the following interface:
 ```
 interface IMetadataType {
   label: string,
@@ -200,15 +203,16 @@ interface IMetadataType {
 }
 ```
 ```label``` is the text to be displayed.
+
 ```metadataType``` is the item to be counted. 
 
 
 #### Enablement, Quality, and Partner Alert Rules
-Enablement content listed under the **Best Practices and Feature Recommendations** heading us defined in the ```enablementRules``` object.
+Enablement content listed under the **Best Practices and Feature Recommendations** heading is defined in the ```enablementRules``` list.
 
-Code Quality content listed under the **Quality Rules** heading is defined in the ```qualityRules``` object.
+Code Quality content listed under the **Quality Rules** heading is defined in the ```qualityRules``` list.
 
-Partner Alerts listed under the **Partner Alerts** heading are defined in the ```alertRules``` object.
+Partner Alerts listed under the **Partner Alerts** heading are defined in the ```alertRules``` list.
 
 These rules all follow the general structure:
 ```
@@ -221,7 +225,7 @@ interface IRule {
 ```
 
 #### Edition Installation Rules
-The rules which define which instance your package can be installed into are defined in the ```editionWarningRules``` object. They are defined as:
+The rules that define which editions your package can be installed into are defined in the ```editionWarningRules``` list. They are defined as:
 ```
 interface IInstallRule {
   name: string, //Salesforce Edition
@@ -230,7 +234,7 @@ interface IInstallRule {
 ```
 
 #### Dependency Rules
-Dependency Rules identify a dependency on a feature, cloud, or other item. They are defined in the ```dependencyRules``` object and follow the structure:
+Dependency Rules identify a dependency on a feature, cloud, or other item. They are defined in the ```dependencyRules``` list and follow the structure:
 ```
 interface IDependecyRule {
   name: string, //Name for the dependency rule
@@ -240,7 +244,7 @@ interface IDependecyRule {
 ```
 
 #### Data Models
-Data models can be used to automatically create a dependency rule. They are defined in the object ```dataModels``` and follow the structure:
+Data models can be used to dynamically create a dependency rule. They are defined in the object ```dataModels``` and follow the structure:
 ```
 interface IDataModel {
   name: string, //Name of the cloud or feature this data model describes
@@ -253,7 +257,7 @@ interface IDataModel {
 
 This rule type will fire if any references are found to the namespaces within the ```namespaces``` property or if any references are found to objects listed in the ```objects``` property.
 
-For example, work.com uses the wkcc namespace for its managed package and enabling work.com in an org creates the objects "'Employee','EmployeeCrisisAssessment','InternalOrganizationUnit','Crisis'". If a package refers to these items, then there is a dependecy on work.com.
+For example, Work.com uses the wkcc namespace for the Command Center managed package and enabling Work.com in an org creates the objects: Employee,EmployeeCrisisAssessment, InternalOrganizationUnit, and Crisis. If a package refers to these items, then there is a dependecy on Work.com.
 
 ```
 {
