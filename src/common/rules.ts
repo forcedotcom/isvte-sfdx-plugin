@@ -474,6 +474,18 @@ const enablementRules: IRule[] = [{
     }
   },
   {
+    name: 'Lightning Web Components Performance Best Practices',
+    condition: {
+      metadataType: 'LightningComponentBundle',
+      operator: 'exists'
+    },
+    resultTrue: {
+      label: 'Lightning Web Components Performance Best Practices',
+      message: 'Check out this blog for tips, tricks and best practices to get the best performance out of your Lightning Web Components',
+      url: 'https://developer.salesforce.com/blogs/2020/06/lightning-web-components-performance-best-practices.html'
+    }
+  },
+  {
     name: 'Lightning Web Components',
     condition: {
       metadataType: 'LightningComponentBundle',
@@ -1211,7 +1223,22 @@ const dataModels: IDataModel[] = [{
   fields: ['Location.Status__c']
 },
 {
-  name: 'healthcloud',
+  name: 'CGCloud',
+  label: 'Consumer Goods Cloud',
+  objects: ['AssessmentIndicatorDefinition','AssessmentTask','AssessmentTaskContentDocument','AssessmentTaskDefinition','AssessmentTaskIndDefinition','AssessmentTaskOrder','Assortment','AssortmentProduct','InStoreLocation','Promotion','PromotionChannel','PromotionProduct','PromotionProductCategory','RetailLocationGroup','RetailStore','RetailStoreKpi','RetailVisitKpi','StoreActionPlanTemplate','StoreAssortment','StoreProduct','Visit','Visitor','VisitedParty']
+},
+{
+  name: 'ActionPlans',
+  label: 'Action Plans',
+  objects: ['ActionPlan','ActionPlanItem','ActionPlanTemplate','ActionPlanTemplateItem','ActionPlanTemplateItemValue','ActionPlanTemplateVersion']
+},
+{
+  name: 'MFGCloud',
+  label: 'Manufacturing Cloud',
+  objects: ['AccountForecast','AccountForecastAdjustment','AccountForecastPeriodMetric','AccountProductForecast','AccountProductPeriodForecast','AcctMgrPeriodicTargetDstr','AcctMgrTarget','AcctMgrTargetDstr','AcctMgrTargetMeasure','SalesAgreement','SalesAgreementProduct','SalesAgreementProductSchedule']
+},
+{
+  name: 'HealthCloud',
   label: 'Health Cloud',
   namespaces: ['HealthCloudGA','HealthCloudWave'],
   objects: ['Accreditation','BoardCertification','CareBarrier','CareBarrierDeterminant','CareBarrierType','CareDeterminant','CareDeterminantType','CareDiagnosis','CareInterventionType','CarePreauth','CarePreauthItem','CareProgram','CareProgramCampaign','CareProgramEligibilityRule','CareProgramEnrollee','CareProgramEnrolleeProduct','CareProgramEnrollmentCard','CareProgramGoal','CareProgramProduct','CareProgramProvider','CareProgramTeamMember','CareProviderAdverseAction','CareProviderFacilitySpecialty','CareProviderSearchableField','CareRequest','CareRequestDrug','CareRequestExtension','CareRequestItem','CareSpecialty','CareTaxonomy','CoverageBenefit','CoverageBenefitItem','EnrollmentEligibilityCriteria','HealthCareDiagnosis','HealthcareFacilityNetwork','HealthcarePayerNetwork','HealthcarePractitionerFacility','HealthCareProcedure','HealthcareProvider','HealthcareProviderNpi','HealthcareProviderSpecialty','HealthcareProviderTaxonomy','MemberPlan','PlanBenefit','PlanBenefitItem','PurchaserPlan','PurchaserPlanAssn']

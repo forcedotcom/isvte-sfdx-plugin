@@ -273,11 +273,14 @@ export class packageInventory {
         
         let conditions = [];
         //Check Namespaces
-        for (var ns of dataModel.namespaces) {
-          conditions.push({
-            metadataType: `dependencies.namespaces.${ns}`,
-            operator: 'exists'
-          });
+        if (dataModel.namespaces) {
+          for (var ns of dataModel.namespaces) {
+            conditions.push({
+              metadataType: `dependencies.namespaces.${ns}`,
+              operator: 'exists'
+            });
+          }
+  
         }
         //Check Objects
         for (var objName of dataModel.objects) {

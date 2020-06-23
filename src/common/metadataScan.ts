@@ -24,7 +24,7 @@ import fs = require('fs-extra');
 import xml2js = require('xml2js');
 
 
-export function inventoryPackage(sourceDir, p) {
+export function inventoryPackage(sourceDir, p, options = {}) {
   let types = p.types;
   let inventory = {};
   let apiVersions = {};
@@ -33,7 +33,9 @@ export function inventoryPackage(sourceDir, p) {
   let language = {};
   let tmp; //just a temp variable for some ugly if magic
   let loggit = new Loggit('isvtePlugin:metadataScan');
-
+  let scanLanguage = options['scanLanguage'] ?  true: false;
+  
+ // console.log(JSON.stringify(p));
   if (p.version) {
     apiVersions['mdapi'] = parseFloat(p.version[0]);
   }
@@ -91,7 +93,7 @@ export function inventoryPackage(sourceDir, p) {
                   let descExists = fieldDef['description'] ? 1 : 0;
                   setValue(componentProperties,`CustomField.${fieldFullName.replace(/\./g,"->")}.descriptionExists`,descExists);
             
-                  if (tmp = languageScanMetadataObject(fieldDef)) {
+                  if (scanLanguage && (tmp = languageScanMetadataObject(fieldDef))) {
                     setValue(language,`CustomField.${fieldFullName.replace(/\./g,"->")}`,tmp);
                   }
                 }
@@ -162,7 +164,7 @@ export function inventoryPackage(sourceDir, p) {
 
           //LanguageScan
           
-          if (tmp = languageScanMetadataObject(objectJSON)) {
+          if (scanLanguage && (tmp = languageScanMetadataObject(objectJSON))) {
             setValue(language,`CustomObject.${object.fullName}`,tmp);
           }
         
@@ -205,7 +207,7 @@ export function inventoryPackage(sourceDir, p) {
             incrementValue(flowTemplates,`${processType}.count`);
           }
           //Language Scan
-          if (tmp = languageScanMetadataObject(flowJSON)) {
+          if (scanLanguage && (tmp = languageScanMetadataObject(flowJSON))) {
             setValue(language, `Flow.${flowName}`,tmp);
           }
 
@@ -310,7 +312,7 @@ export function inventoryPackage(sourceDir, p) {
           if (fs.existsSync(classFile)) {
 
             let classBody = fs.readFileSync(classFile, 'utf8');
-            if (tmp = languageScan(classBody)) {
+            if (scanLanguage && (tmp = languageScan(classBody))) {
               setValue(language,`ApexClass.${className}`,tmp);
             }
             classBody = stripApexComments(classBody);
@@ -399,7 +401,7 @@ export function inventoryPackage(sourceDir, p) {
           let triggerName = types[typeIdx]['members'][triggerIdx];
           let triggerFile = `${triggerPath}/${triggerName}.trigger`;
           let triggerBody = fs.readFileSync(triggerFile, 'utf8');
-          if (tmp = languageScan(triggerBody)) {
+          if (scanLanguage && (tmp = languageScan(triggerBody))) {
             setValue(language,`ApexTrigger.${triggerName}`,tmp);
           }
           
@@ -484,12 +486,12 @@ export function inventoryPackage(sourceDir, p) {
               }
             }
           }
-          if (fs.existsSync(lwcHtmlFile)) {
+          if (scanLanguage && fs.existsSync(lwcHtmlFile)) {
             const lwcHTML = fs.readFileSync(lwcHtmlFile, 'utf8');
 
             languageScan(lwcHTML,'html');
           }
-          if (fs.existsSync(lwcJsFile)) {
+          if (scanLanguage && fs.existsSync(lwcJsFile)) {
             languageScan(fs.readFileSync(lwcJsFile, 'utf8'));
           }
         }
@@ -514,7 +516,7 @@ export function inventoryPackage(sourceDir, p) {
             const vfBody = fs.readFileSync(vfFile, 'utf8');
             const referSiteReg = /{!.*(\$Site|\$Network).*}/ig;
             const stdControllerReg = /standardController="([a-zA-Z0-9_]+)"/i;
-            if (tmp = languageScan(vfBody,'html')) {
+            if (scanLanguage && (tmp = languageScan(vfBody,'html'))) {
               setValue(language,`ApexPage.${vfName}`,tmp);
             }
             
@@ -565,7 +567,7 @@ export function inventoryPackage(sourceDir, p) {
           if (fs.existsSync(auraCmpFile)) {
 
             let auraBody = fs.readFileSync(auraCmpFile, 'utf8');
-            if (tmp = languageScan(auraBody,'html')) {
+            if (scanLanguage && (tmp = languageScan(auraBody,'html'))) {
               setValue(language,`AuraDefinitionBundle.${auraName}`,tmp);
             }
             
@@ -603,7 +605,7 @@ export function inventoryPackage(sourceDir, p) {
         break;
       case 'CustomLabels' :
          const lblJSON = parseXML(`${sourceDir}/labels/CustomLabels.labels`);
-        if (tmp = languageScanMetadataObject(lblJSON)) {
+        if (scanLanguage && (tmp = languageScanMetadataObject(lblJSON))) {
           setValue(language, `CustomLabels.labels`,tmp);
         }
         
@@ -630,13 +632,42 @@ export function inventoryPackage(sourceDir, p) {
 function getMembers(mdTypeDef, sourceDir) {
 //  this.loggit.logLine('Getting wildcard members for ' + mdTypeDef.name);
   let retVal = mdTypeDef['members'];
-  if (mdmap[mdTypeDef.name] != undefined) {
-    if (mdmap[mdTypeDef.name]['folder'] != 'null' && mdmap[mdTypeDef.name]['extension'] != 'null') {
+  if (mdTypeDef.name == 'CustomField') {
+    retVal = getFieldMembersFromObjects(sourceDir);
+  }
+  else if (mdmap[mdTypeDef.name] != undefined) {
+     if (mdmap[mdTypeDef.name]['folder'] != 'null' && mdmap[mdTypeDef.name]['extension'] != 'null') {
       retVal = getMembersFromFiles(`${sourceDir}/${mdmap[mdTypeDef.name]['folder']}`, mdmap[mdTypeDef.name]['extension']);
       //        this.loggit.loggit("Added Members from files.:" + JSON.stringify(retVal));
     }
   }
   return retVal;
+}
+
+function getFieldMembersFromObjects(sourceDir: String) {
+  const members = [];
+//Get Wildcard Fields from Object Definitions
+const objectPath = `${sourceDir}/objects`;
+if (fs.existsSync(objectPath)) {
+  const objectDefs = fs.readdirSync(objectPath);
+  objectDefs.forEach(element => {
+
+    const [objectName, ext] = [element.substr(0, element.lastIndexOf('.')), element.substr(element.lastIndexOf('.') + 1, element.length)]
+    if (ext === 'object') {
+      const objectXml = `${objectPath}/${objectName}.object`;
+     
+      const objectJSON = parseXML(objectXml);
+      
+      if (objectJSON['CustomObject'] && objectJSON['CustomObject']['fields']) {
+        for (var fieldDef of objectJSON['CustomObject']['fields']) {
+          members.push(objectName + '.' + fieldDef['fullName']);
+        }
+      }
+
+    }
+  });
+}
+  return members;
 }
 
 
@@ -842,7 +873,7 @@ export function parseXML(xmlfile, dieOnError = false) {
 
   if (!fs.existsSync(xmlfile)) {
     let message = `Cannot find XML File: ${xmlfile}`;
-    if (dieOnError) {
+    if (dieOnError == true) {
  //     this.loggit.logLine(message, 'Error');
       throw new SfdxError(message, 'XMLNotFoundError');
     } else {
@@ -850,14 +881,13 @@ export function parseXML(xmlfile, dieOnError = false) {
       return json;
     }
   }
-
   let xmlData = fs.readFileSync(xmlfile, 'utf8');
   parser.parseString(xmlData.substring(0, xmlData.length), function (err, result) {
     error = err;
-    json = result;
+    json = result || json;
   });
 
-  if (error) {
+  if (error && dieOnError) {
  //   this.loggit.logLine(`Error parsing ${xmlfile}: ${error}`, 'Error');
     throw new SfdxError(`Error parsing ${xmlfile}: ${error}`, 'XMLParseError');
   }

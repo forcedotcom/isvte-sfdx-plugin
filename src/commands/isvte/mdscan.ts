@@ -36,6 +36,7 @@ import *
 
   import MetadataFilterFromPackageXml
   from 'sfdx-essentials/lib/commands/essentials/metadata/filter-from-packagexml';
+import { clearScreenDown } from 'readline';
 
 export default class mdscan extends SfdxCommand {
 
@@ -181,7 +182,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
     const packagexml = `${this.sourceFolder}/package.xml`;
 
-    let packageJSON = parseXML(packagexml, true);
+    let packageJSON:object = parseXML(packagexml, true);
     if (packageJSON['Package']) {
       packageJSON = packageJSON['Package'];
     } else {
@@ -190,17 +191,17 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
     }
 
+    this.loggit.logLine('Cleaning inventory');
+    this.cleanInventory(packageJSON);
     this.loggit.logLine('Parsing Package');
     this.packageInventory = new packageInventory();
 
     if (this.flags.minapi) {
       this.loggit.logLine(`Setting Minimum API version for quality checks to ${this.flags.minapi}`);
       this.packageInventory.setMinAPI(this.flags.minapi);
-    
     }
-    this.packageInventory.setMetadata(inventoryPackage(this.flags.sourcefolder, packageJSON));
+    this.packageInventory.setMetadata(inventoryPackage(this.flags.sourcefolder, packageJSON, {scanLanguage: this.languageScan}));
    
-
     if (this.showFullInventory) {
       this.ux.styledHeader('Inventory of Package:');
       this.ux.table(this.packageInventory.getFullInvArray(), ['metadataType', 'count']);
@@ -352,4 +353,23 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
   }
 
+  cleanInventory(packageJSON: object) {
+    //normalize the inventory so that there is only 1 entry for each metadataType
+   
+    if (packageJSON['types'] && Array.isArray(packageJSON['types'])) {
+      packageJSON['types'] = packageJSON['types'].reduce((cleaned, type) => {
+        //Find the index in the "cleaned" array of the current type
+        const foundIndex = cleaned.findIndex(cleanedType => cleanedType['name'][0] === type['name'][0]);
+        //If it exists, then concat the members of cleaned and current
+        if (foundIndex > -1) {
+          cleaned[foundIndex]['members'] = [...cleaned[foundIndex]['members'],...type['members']];
+        }
+        //If not, then add it
+        else {
+          cleaned.push(type);
+        }
+        return cleaned;
+      },[]);
+    }
+  }
 }

@@ -19,27 +19,27 @@ export class Loggit {
   }
 
   public async logLine(logMessage : string, type : string = '') {
-    if (this.isvteLogger == undefined) {
-      this.isvteLogger = await Logger.child(this.loggerName);
-    }
+//    if (this.isvteLogger == undefined) {
+//      this.isvteLogger = await Logger.child(this.loggerName);
+//    }
      switch (type) {
       case 'Error': {
-          this.isvteLogger.error(logMessage + ' -> ' + Loggit.getParent());
+//          this.isvteLogger.error(logMessage + ' -> ' + Loggit.getParent());
           break;
         }
       case 'Warn': {
-          this.isvteLogger.warn(logMessage + ' -> ' + Loggit.getParent());
+//          this.isvteLogger.warn(logMessage + ' -> ' + Loggit.getParent());
           break;
         }
       default: {
-          this.isvteLogger.debug(logMessage + ' -> ' + Loggit.getParent());
+  //        this.isvteLogger.debug(logMessage + ' -> ' + Loggit.getParent());
           break;
         }
       }
     }
 
     public async logJSON(logMessage: any, type: string = '') {
-      this.logLine(JSON.stringify(logMessage),type);
+  //    this.logLine(JSON.stringify(logMessage),type);
     };
 
   /*public async loggit(logMessage:string, type = ''): Promise < any > {
@@ -83,8 +83,8 @@ export class Loggit {
 }
 
 export async function logLine(namespace : string, logMessage : string, type : string = '') {
-const logger = new Loggit(namespace);
-logger.logLine(logMessage,type);
+//const logger = new Loggit(namespace);
+//logger.logLine(logMessage,type);
 }
 
 
