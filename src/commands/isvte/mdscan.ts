@@ -36,7 +36,6 @@ import *
 
   import MetadataFilterFromPackageXml
   from 'sfdx-essentials/lib/commands/essentials/metadata/filter-from-packagexml';
-import { clearScreenDown } from 'readline';
 
 export default class mdscan extends SfdxCommand {
 

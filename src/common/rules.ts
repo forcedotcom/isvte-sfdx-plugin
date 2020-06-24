@@ -174,7 +174,7 @@ interface IDataModel {
 
 const minAPI = 45;
 
-const rulesVersion = '20200527';
+const rulesVersion = '20200620';
 
 const standardNamespaces = [
   'c',

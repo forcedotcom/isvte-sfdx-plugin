@@ -15,7 +15,9 @@ import {
   alertRules,
   qualityRules,
   rulesVersion,
-  techAdoptionRules
+  techAdoptionRules,
+  dependencyRules,
+  dataModels
 } from '../../common/rules';
 import {
   Loggit
@@ -58,7 +60,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
         this.ux.log(`${i++}. ${this.resultToString(enablementRule.resultTrue)}\n`);
       }
     }
-    this.ux.log('\n\n');
+    this.ux.log('\n');
     i=1;
     this.ux.styledHeader('Quality Rules:');
     for (var qualityRule of qualityRules) {
@@ -69,7 +71,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
         this.ux.log(`${i++}. ${this.resultToString(qualityRule.resultTrue)}\n`);
       }
     }
-    this.ux.log('\n\n');
+    this.ux.log('\n');
     i=1;
     this.ux.styledHeader('Partner Alerts:');
     for (var alert of alertRules) {
@@ -80,12 +82,36 @@ For more information, please connect in the ISV Technical Enablement Plugin
         this.ux.log(`${i++}. ${this.resultToString(alert.resultTrue)}\n`);
       }
     }
+    this.ux.log('\n');
     this.ux.styledHeader('Installation Warnings:');
     this.ux.table(this.getAllEditionWarnings(), ['Edition', 'Item', 'Condition']);
-    this.ux.log('\n\n');
+    this.ux.log('\n');
+    i=1;
+    this.ux.styledHeader('Dependency Checks:');
+    for (var dependencyRule of dependencyRules) {
+      this.ux.log(`${i++}. ${dependencyRule.label}`);
+    //  this.ux.log(`\t${this.conditionToString(dependencyRule.condition)}\n`);
+      this.ux.log('\n');
+    }
+    this.ux.log('\n');
+    i=1;
+    this.ux.styledHeader('Data Model Definitions:');
+    for (var dataModel of dataModels) {
+      this.ux.log(`${i++}. ${dataModel.label}:`);
+      if (dataModel.namespaces) {
+        this.ux.log(`\tNamespaces: ${dataModel.namespaces.join(', ')}`);
+      }
+      if (dataModel.fields) {
+        this.ux.log(`\tCustom Fields: ${dataModel.fields.join(', ')}`);
+      }
+      if (dataModel.objects) {
+        this.ux.log(`\tStandard Objects: ${dataModel.objects.join(', ')}`);
+      }
+      this.ux.log('\n');
+    }
+    this.ux.log('\n');
     this.ux.styledHeader('Tech Adoption');
     this.ux.table(this.getAllAdoptionRules(),['Category','MetadataType']);
-    this.ux.log('\n\n');
     return {
       'rulesVersion' : rulesVersion,
       'monitoredTypes': mdTypes,
@@ -93,6 +119,8 @@ For more information, please connect in the ISV Technical Enablement Plugin
       'qualityRules': qualityRules,
       'partnerAlerts': alertRules,
       'editionWarnings': editionWarningRules,
+      'dependencyRules': dependencyRules,
+      'dataModels': dataModels,
       'techAdoptionRules': techAdoptionRules
     };
 

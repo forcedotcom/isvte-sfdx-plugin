@@ -35,7 +35,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
   let loggit = new Loggit('isvtePlugin:metadataScan');
   let scanLanguage = options['scanLanguage'] ?  true: false;
   
- // console.log(JSON.stringify(p));
   if (p.version) {
     apiVersions['mdapi'] = parseFloat(p.version[0]);
   }
@@ -217,7 +216,7 @@ export function inventoryPackage(sourceDir, p, options = {}) {
           loggit.logLine('Inventorying PB and Flow Triggers Per Object');
           let processMetadataValues;
           if (processMetadataValues = getValue(flowJSON,'Flow.processMetadataValues',null)) {
-            loggit.logLine('Flow Details: ' + JSON.stringify(flowJSON['Flow']['processMetadataValues']));
+           loggit.logLine('Flow Details: ' + JSON.stringify(flowJSON['Flow']['processMetadataValues']));
            
               for (var processMetadataValue of processMetadataValues) {
                 loggit.logLine('Metadata Value Name: ' + processMetadataValue['name']);
