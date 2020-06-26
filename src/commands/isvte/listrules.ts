@@ -15,10 +15,12 @@ import {
   alertRules,
   qualityRules,
   rulesVersion,
-  techAdoptionRules
+  techAdoptionRules,
+  dependencyRules,
+  dataModels
 } from '../../common/rules';
 import {
-  loggit
+  Loggit
 } from '../../common/logger';
 
 export default class listrules extends SfdxCommand {
@@ -39,9 +41,9 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
   public async run(): Promise < any > { // tslint:disable-line:no-any
 
-    this.loggit = new loggit('isvtePluginListRules');
+    this.loggit = new Loggit('isvtePluginListRules');
 
-    this.loggit.loggit('Exporting all isvte Rules');
+    this.loggit.logLine('Exporting all isvte Rules');
 
     this.ux.log(`Rule Definition version: ${rulesVersion}\n\n`);
 
@@ -58,7 +60,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
         this.ux.log(`${i++}. ${this.resultToString(enablementRule.resultTrue)}\n`);
       }
     }
-    this.ux.log('\n\n');
+    this.ux.log('\n');
     i=1;
     this.ux.styledHeader('Quality Rules:');
     for (var qualityRule of qualityRules) {
@@ -69,7 +71,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
         this.ux.log(`${i++}. ${this.resultToString(qualityRule.resultTrue)}\n`);
       }
     }
-    this.ux.log('\n\n');
+    this.ux.log('\n');
     i=1;
     this.ux.styledHeader('Partner Alerts:');
     for (var alert of alertRules) {
@@ -80,12 +82,36 @@ For more information, please connect in the ISV Technical Enablement Plugin
         this.ux.log(`${i++}. ${this.resultToString(alert.resultTrue)}\n`);
       }
     }
+    this.ux.log('\n');
     this.ux.styledHeader('Installation Warnings:');
     this.ux.table(this.getAllEditionWarnings(), ['Edition', 'Item', 'Condition']);
-    this.ux.log('\n\n');
+    this.ux.log('\n');
+    i=1;
+    this.ux.styledHeader('Dependency Checks:');
+    for (var dependencyRule of dependencyRules) {
+      this.ux.log(`${i++}. ${dependencyRule.label}`);
+    //  this.ux.log(`\t${this.conditionToString(dependencyRule.condition)}\n`);
+      this.ux.log('\n');
+    }
+    this.ux.log('\n');
+    i=1;
+    this.ux.styledHeader('Data Model Definitions:');
+    for (var dataModel of dataModels) {
+      this.ux.log(`${i++}. ${dataModel.label}:`);
+      if (dataModel.namespaces) {
+        this.ux.log(`\tNamespaces: ${dataModel.namespaces.join(', ')}`);
+      }
+      if (dataModel.fields) {
+        this.ux.log(`\tCustom Fields: ${dataModel.fields.join(', ')}`);
+      }
+      if (dataModel.objects) {
+        this.ux.log(`\tStandard Objects: ${dataModel.objects.join(', ')}`);
+      }
+      this.ux.log('\n');
+    }
+    this.ux.log('\n');
     this.ux.styledHeader('Tech Adoption');
     this.ux.table(this.getAllAdoptionRules(),['Category','MetadataType']);
-    this.ux.log('\n\n');
     return {
       'rulesVersion' : rulesVersion,
       'monitoredTypes': mdTypes,
@@ -93,6 +119,8 @@ For more information, please connect in the ISV Technical Enablement Plugin
       'qualityRules': qualityRules,
       'partnerAlerts': alertRules,
       'editionWarnings': editionWarningRules,
+      'dependencyRules': dependencyRules,
+      'dataModels': dataModels,
       'techAdoptionRules': techAdoptionRules
     };
 
@@ -108,7 +136,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
   
   private getAllEditionWarnings() {
-    this.loggit.loggit('Formatting Edition Warnings for export');
+    this.loggit.logLine('Formatting Edition Warnings for export');
     let retVal = [];
     for (let edition of editionWarningRules) {
       retVal.push({
@@ -126,7 +154,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
   };
 
   private getAllAdoptionRules() {
-    this.loggit.loggit('Formatting Tech Adoption Rules for export');
+    this.loggit.logLine('Formatting Tech Adoption Rules for export');
     let retVal = [];
     for (let category of techAdoptionRules) {
       retVal.push({

@@ -129,6 +129,8 @@ interface ICondition {
   conditionPerItem?: Boolean, // (only within a conditionAnd)
   conditionOr?: ICondition, //Extra condition to be ORed with this condition
   conditionAnd?: ICondition //Extra condition to be ANDed with this condition
+  showDetails?: Boolean //Toggle whether individual items that meet the condition are displayed
+
 }
 
 interface IResult {
@@ -162,9 +164,26 @@ interface IDependecyRule {
   condition: ICondition //Condition which fires the dependency rule
 }
 
-const minAPI = 43;
+interface IDataModel {
+  name: string, //Name of the cloud or feature this data model describes
+  label: string,  //Friendly output of the cloud or feature name
+  fields?: string[], //Array of fields (in Object.Field format) included in this datamodel
+  objects?: string[], //Array of objects included in this data model
+  namespaces?: string[], //Array of namespaces included in this data model
+}
 
-const rulesVersion = '20200427';
+const minAPI = 45;
+
+const rulesVersion = '20200620';
+
+const standardNamespaces = [
+  'c',
+  'aura',
+  'lightning',
+  'ui',
+  'apex',
+  'ltng'
+]
 
 const mdTypes: IMetadataType[] = [{
   label: 'Permission Sets',
@@ -455,6 +474,18 @@ const enablementRules: IRule[] = [{
     }
   },
   {
+    name: 'Lightning Web Components Performance Best Practices',
+    condition: {
+      metadataType: 'LightningComponentBundle',
+      operator: 'exists'
+    },
+    resultTrue: {
+      label: 'Lightning Web Components Performance Best Practices',
+      message: 'Check out this blog for tips, tricks and best practices to get the best performance out of your Lightning Web Components',
+      url: 'https://developer.salesforce.com/blogs/2020/06/lightning-web-components-performance-best-practices.html'
+    }
+  },
+  {
     name: 'Lightning Web Components',
     condition: {
       metadataType: 'LightningComponentBundle',
@@ -519,6 +550,7 @@ const qualityRules: IRule[] = [{
       metadataType: 'apiVersions.ApexClass.*',
       operator: 'between',
       operand: [20,'minAPI'],
+      showDetails: true
     },
     resultTrue: {
       label: 'Using old Apex API Version',
@@ -532,6 +564,7 @@ const qualityRules: IRule[] = [{
       metadataType: 'apiVersions.ApexTrigger.*',
       operator: 'between',
       operand: [20,'minAPI'],
+      showDetails: true
     },
     resultTrue: {
       label: 'Using old Trigger API Version',
@@ -545,6 +578,7 @@ const qualityRules: IRule[] = [{
       metadataType: 'apiVersions.AuraDefinitionBundle.*',
       operator: 'between',
       operand: [20,'minAPI'],
+      showDetails: true
     },
     resultTrue: {
       label: 'Using old Aura Component API Version',
@@ -558,6 +592,7 @@ const qualityRules: IRule[] = [{
       metadataType: 'apiVersions.LightningComponentBundle.*',
       operator: 'between',
       operand: [20,'minAPI'],
+      showDetails: true
     },
     resultTrue: {
       label: 'Using old Lightning Web Component API Version',
@@ -583,9 +618,11 @@ const qualityRules: IRule[] = [{
     condition: {
       metadataType: 'componentProperties.CustomObject',
       operator: 'exists',
+      showDetails: false,
       conditionAnd: {
         metadataType: 'componentProperties.CustomObject.*.descriptionExists',
-        operator: 'notexists'
+        operator: 'notexists',
+        showDetails: true
       }
     },
     resultTrue: {
@@ -599,9 +636,11 @@ const qualityRules: IRule[] = [{
     condition: {
       metadataType: 'componentProperties.CustomField',
       operator: 'exists',
+      showDetails: false,
       conditionAnd: {
         metadataType: 'componentProperties.CustomField.*.descriptionExists',
-        operator: 'notexists'
+        operator: 'notexists',
+        showDetails: true
       }
     },
     resultTrue: {
@@ -615,7 +654,8 @@ const qualityRules: IRule[] = [{
     condition: {
       metadataType: 'ApexTrigger.objects.*',
       operator: 'gt',
-      operand: 1
+      operand: 1,
+      showDetails: true
     },
     resultTrue: {
       label: 'Multiple Triggers per Object',
@@ -628,7 +668,8 @@ const qualityRules: IRule[] = [{
     condition: {
       metadataType: 'Flow.objects.*',
       operator: 'gt',
-      operand: 1
+      operand: 1, 
+      showDetails: true
     },
     resultTrue: {
       label: 'Multiple Process Builders per Object',
@@ -642,6 +683,7 @@ const qualityRules: IRule[] = [{
       metadataType: 'ApexTrigger.objects.*',
       operator: 'gte',
       operand: 1,
+      showDetails: true,
       conditionAnd: {
         metadataType: 'Flow.objects.*',
         operator: 'gte',
@@ -698,7 +740,17 @@ const qualityRules: IRule[] = [{
       message: 'Starting with API version 48, you can use SOQL queries with the WITH SECURITY_ENFORCED modifier as well as the Apex method Security.stripInaccessible to provide FLS and CRUD checks eliminating the need to perform individual field accessibility checks to pass Security Review. Please review the attached release docs for more information',
       url: 'https://releasenotes.docs.salesforce.com/en-us/spring20/release-notes/rn_apex_Security_stripInaccessible_GA.htm \n https://releasenotes.docs.salesforce.com/en-us/spring20/release-notes/rn_apex_WithSecurityEnforced_GA.htm'
     }
-    
+  },
+  {
+    name: 'Translations',
+    condition: {
+      metadataType: 'Translations',
+      operator: 'notexists'
+    },
+    resultTrue: {
+      label: 'Use Translations to appeal to a broader audience',
+      message: 'Users prefer to work in their native language. Consider including translations to make your app multilingual'
+    }
   }
 ];
 
@@ -719,7 +771,8 @@ const alertRules: IRule[] = [{
     condition: {
       metadataType: 'ApexClass.AuraEnabledCalls',
       operator: 'exists',
-      expiration: '2020-10-01T00:00:00.000Z'
+      expiration: '2020-10-01T00:00:00.000Z',
+      showDetails: true
     },
     resultTrue: {
       label: '@AuraEnabled Methods',
@@ -733,7 +786,8 @@ const alertRules: IRule[] = [{
     condition: {
       metadataType: 'componentProperties.AuraDefinitionBundle.*.namespaceReferences.ui',
       operator: 'exists',
-      expiration: '2020-10-01T00:00:00.000Z'
+      expiration: '2020-10-01T00:00:00.000Z',
+      showDetails: true
     },
     resultTrue: {
       label: 'Aura Components in UI Namespace Retiring in Summer \'21',
@@ -810,7 +864,7 @@ const alertRules: IRule[] = [{
  {
     name: 'External Sharing Model set to Private for all entities',
     condition: {
-      expiration: '2020-10-9T00:00:00.000Z',
+      expiration: '2020-07-1T00:00:00.000Z',
       metadataType: 'any',
       operator: 'always'
     },
@@ -906,6 +960,14 @@ const editionWarningRules: IInstallRule[] = [{
         operator: 'exists'  
       }
     },
+    {
+      label: 'Flows per Type',
+      condition: {
+        metadataType: 'Flow.FlowTypes.*',
+        operator: 'gt',
+        operand: 5
+      }
+    }
 
   ]
 },
@@ -953,6 +1015,14 @@ const editionWarningRules: IInstallRule[] = [{
         operator: 'exists'  
       }
     },
+    {
+      label: 'Flows per Type',
+      condition: {
+        metadataType: 'Flow.FlowTypes.*',
+        operator: 'gt',
+        operand: 5
+      }
+    }
   ]
 },
 {
@@ -972,6 +1042,14 @@ const editionWarningRules: IInstallRule[] = [{
         operand: 50 
       }
     },
+    {
+      label: 'Flows per Type',
+      condition: {
+        metadataType: 'Flow.FlowTypes.*',
+        operator: 'gt',
+        operand: 5
+      }
+    }
   ]
 },
 {
@@ -1044,15 +1122,15 @@ const techAdoptionRules: ITechAdoptionRule[] = [
     categoryLabel: 'Which technologies does your app use for application processing and security?',
     items: [
       {
-        metadataType: 'Flow.Workflow',
+        metadataType: 'Flow.FlowTypes.Workflow',
         label: 'Process Builder',
       },
       {
-        metadataType: 'Flow.Flow',
+        metadataType: 'Flow.FlowTypes.Flow',
         label: 'Screen Flows',
       },
       {
-        metadataType: 'Flow.AutoLaunchedFlow',
+        metadataType: 'Flow.FlowTypes.AutoLaunchedFlow',
         label: 'Autolaunched Flows',
       },
       {
@@ -1099,26 +1177,6 @@ const dependencyRules: IDependecyRule[] = [{
       operator: 'exists'
     }
 },
-{ 
-    name: 'Work.com',
-    label: 'Work.com',
-    condition: {
-      metadataType: 'CustomField.objects.Employee',
-      operator: 'exists',
-      conditionOr: {
-        metadataType: 'CustomField.objects.EmployeeCrisisAssessment',
-        operator: 'exists',
-        conditionOr: {
-          metadataType: 'CustomField.objects.InternalOrganizationUnit',
-          operator: 'exists',
-          conditionOr: {
-            metadataType: 'CustomField.objects.Crisis',
-            operator: 'exists'
-          }
-        }
-      }
-    }
-},
 {
   name: 'EinsteinAnalytics',
   label: 'Einstein Analytics',
@@ -1157,6 +1215,36 @@ const dependencyRules: IDependecyRule[] = [{
 }
 ]
 
+const dataModels: IDataModel[] = [{
+  name: 'work.com',
+  label: 'Work.com',
+  namespaces: ['wkcc'],
+  objects: ['Employee','EmployeeCrisisAssessment','InternalOrganizationUnit','Crisis'],
+  fields: ['Location.Status__c']
+},
+{
+  name: 'CGCloud',
+  label: 'Consumer Goods Cloud',
+  objects: ['AssessmentIndicatorDefinition','AssessmentTask','AssessmentTaskContentDocument','AssessmentTaskDefinition','AssessmentTaskIndDefinition','AssessmentTaskOrder','Assortment','AssortmentProduct','InStoreLocation','Promotion','PromotionChannel','PromotionProduct','PromotionProductCategory','RetailLocationGroup','RetailStore','RetailStoreKpi','RetailVisitKpi','StoreActionPlanTemplate','StoreAssortment','StoreProduct','Visit','Visitor','VisitedParty']
+},
+{
+  name: 'ActionPlans',
+  label: 'Action Plans',
+  objects: ['ActionPlan','ActionPlanItem','ActionPlanTemplate','ActionPlanTemplateItem','ActionPlanTemplateItemValue','ActionPlanTemplateVersion']
+},
+{
+  name: 'MFGCloud',
+  label: 'Manufacturing Cloud',
+  objects: ['AccountForecast','AccountForecastAdjustment','AccountForecastPeriodMetric','AccountProductForecast','AccountProductPeriodForecast','AcctMgrPeriodicTargetDstr','AcctMgrTarget','AcctMgrTargetDstr','AcctMgrTargetMeasure','SalesAgreement','SalesAgreementProduct','SalesAgreementProductSchedule']
+},
+{
+  name: 'HealthCloud',
+  label: 'Health Cloud',
+  namespaces: ['HealthCloudGA','HealthCloudWave'],
+  objects: ['Accreditation','BoardCertification','CareBarrier','CareBarrierDeterminant','CareBarrierType','CareDeterminant','CareDeterminantType','CareDiagnosis','CareInterventionType','CarePreauth','CarePreauthItem','CareProgram','CareProgramCampaign','CareProgramEligibilityRule','CareProgramEnrollee','CareProgramEnrolleeProduct','CareProgramEnrollmentCard','CareProgramGoal','CareProgramProduct','CareProgramProvider','CareProgramTeamMember','CareProviderAdverseAction','CareProviderFacilitySpecialty','CareProviderSearchableField','CareRequest','CareRequestDrug','CareRequestExtension','CareRequestItem','CareSpecialty','CareTaxonomy','CoverageBenefit','CoverageBenefitItem','EnrollmentEligibilityCriteria','HealthCareDiagnosis','HealthcareFacilityNetwork','HealthcarePayerNetwork','HealthcarePractitionerFacility','HealthCareProcedure','HealthcareProvider','HealthcareProviderNpi','HealthcareProviderSpecialty','HealthcareProviderTaxonomy','MemberPlan','PlanBenefit','PlanBenefitItem','PurchaserPlan','PurchaserPlanAssn']
+},
+]
+
 export {
   mdTypes,
   enablementRules,
@@ -1166,7 +1254,9 @@ export {
   minAPI,
   techAdoptionRules,
   rulesVersion,
-  dependencyRules
+  dependencyRules,
+  dataModels,
+  standardNamespaces
 };
 
 
