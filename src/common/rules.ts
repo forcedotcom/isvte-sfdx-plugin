@@ -250,10 +250,6 @@ const mdTypes: IMetadataType[] = [{
   metadataType: 'ConnectedApp'
 },
 {
-  label: 'In-App Prompts',
-  metadataType: 'Prompt'
-},
-{
   label: 'Static Resources',
   metadataType: 'StaticResource'
 },
@@ -325,11 +321,15 @@ const mdTypes: IMetadataType[] = [{
   label: 'Einstein Analytics Dashboards',
   metadataType: 'WaveDashboard'
 },
-
 {
   label: 'Record Types',
   metadataType: 'RecordType'
+},
+{
+  label: 'In-App guidance',
+  metadataType: 'Prompt'
 }
+
 ];
 
 const enablementRules: IRule[] = [{
@@ -527,6 +527,18 @@ const enablementRules: IRule[] = [{
       label: 'Learn more about using Feature Management',
       message: 'See this webinar for more information on using Feature Management within your package.',
       url: 'http://salesforce.vidyard.com/watch/pXTQPKtMkF8vmZDJoBidx9'
+    }
+  },
+  {
+    name: 'In-App Walkthrough',
+    condition: {
+      metadataType: 'Prompt',
+      operator: 'notexists'
+    },
+    resultTrue: {
+      label: 'In-App Prompts & Walkthrough',
+      message: 'In-App Prompts & Walkthrough can guide the users with the steps to navigate',
+      url: 'https://help.salesforce.com/articleView?id=customhelp_lexguid.htm&type=5'
     }
   }
 
