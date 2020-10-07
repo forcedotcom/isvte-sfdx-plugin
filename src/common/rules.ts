@@ -174,7 +174,7 @@ interface IDataModel {
 
 const minAPI = 45;
 
-const rulesVersion = '20200620';
+const rulesVersion = '20201007';
 
 const standardNamespaces = [
   'c',
@@ -528,6 +528,19 @@ const enablementRules: IRule[] = [{
       message: 'See this webinar for more information on using Feature Management within your package.',
       url: 'http://salesforce.vidyard.com/watch/pXTQPKtMkF8vmZDJoBidx9'
     }
+  },
+  {
+    name: '@AuraEnabled Critical Update',
+    condition: {
+      metadataType: 'ApexClass.AuraEnabledCalls',
+      operator: 'gt',
+      operand: 0
+    },
+    resultTrue: {
+      label: 'Learn about @AuraEnabled Permissions',
+      message: 'A Winter \'21 Critical update changed the permissions needed for users to access @AuraEnabled methods. See the blog below for more information',
+      url: 'https://developer.salesforce.com/blogs/2020/08/breezing-through-the-upcoming-auraenabled-critical-update.html?utm_campaign=August_2020&utm_source=social&utm_medium=twitter&utm_source=twitter&utm_medium=organic_social&utm_campaign=amer_sfld&utm_content=AMER%2CDevelopers%2CEnglish'
+    }
   }
 
 ];
@@ -750,6 +763,18 @@ const qualityRules: IRule[] = [{
     resultTrue: {
       label: 'Use Translations to appeal to a broader audience',
       message: 'Users prefer to work in their native language. Consider including translations to make your app multilingual'
+    }
+  },
+  {
+    name: 'ApexCode',
+    condition: {
+      metadataType: 'ApexClass.CharacterCount',
+      operator: 'gt',
+      operand: 5000000
+    },
+    resultTrue: {
+      label: 'Large amounts of Apex',
+      message: 'Total Apex Character count not counting tests and comments is close to the 6M character limit'
     }
   }
 ];

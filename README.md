@@ -21,7 +21,7 @@ You will be prompted to confirm that you want to install an unsigned plugin. Cho
 This plugin is not digitally signed and its authenticity cannot be verified. Continue installation y/n?: y
 ```
 
-To whitelist this plugin, [add an entry for it in $HOME/.config/sfdx/unsignedPluginWhiteList.json](https://developer.salesforce.com/blogs/2017/10/salesforce-dx-cli-plugin-update.html).
+To prevent this message from appearing, you can add this to the Allow List by [adding an entry for it in $HOME/.config/sfdx/unsignedPluginAllowList.json](https://developer.salesforce.com/blogs/2017/10/salesforce-dx-cli-plugin-update.html).
 
 CI Users: As the plugin is not signed, to install it from a Dockerfile or a script:
 ```

@@ -8,7 +8,8 @@ import alex = require('alex');
 import {
   setValue,
   incrementValue,
-  getValue
+  getValue,
+  addValue
 } from './JSONUtilities';
 
 import {
@@ -295,13 +296,14 @@ export function inventoryPackage(sourceDir, p, options = {}) {
       case 'ApexClass':
         loggit.logLine('Interrogating Apex');
         let futureCount = 0;
-        // let testCount = 0;
+        let testCount = 0;
         let auraEnabledCount = 0;
         let batchCount = 0;
         let schedulableCount = 0;
         let invocableCount = 0;
         let apexRestCount = 0;
         let apexSoapCount = 0;
+        let characterCount = 0;
 
 
         const apexPath = `${sourceDir}/classes`;
@@ -315,20 +317,21 @@ export function inventoryPackage(sourceDir, p, options = {}) {
               setValue(language,`ApexClass.${className}`,tmp);
             }
             classBody = stripApexComments(classBody);
+            
             // loggit(classBody);
             //const testReg = /@istest/ig;
-            const futureReg = /@future/ig;
-            const auraEnabledReg = /@AuraEnabled/ig;
-            const invocableReg = /@InvocableMethod|InvocableVariable/ig;
-            const batchReg = /implements\s+Database\.Batchable/ig;
-            const scheduleReg = /implements\s+Schedulable/ig;
-            const restReg = /@RestResource/ig;
-            const soapReg = /webservice\s+static/ig;
-            const advFLSSOQLReg = /SECURITY_ENFORCED/ig;
-            const advFLSStripInaccessible = /Security\.stripInaccessible/ig;
+            const futureReg = /@future/i;
+            const auraEnabledReg = /@AuraEnabled/i;
+            const invocableReg = /@InvocableMethod|InvocableVariable/i;
+            const batchReg = /implements\s+Database\.Batchable/i;
+            const scheduleReg = /implements\s+Schedulable/i;
+            const restReg = /@RestResource/i;
+            const soapReg = /webservice\s+static/i;
+            const advFLSSOQLReg = /SECURITY_ENFORCED/i;
+            const advFLSStripInaccessible = /Security\.stripInaccessible/i;
           //  const refersGuestSimpleReg = /UserType(?:\(\))?\s*=\s*(['"])Guest\1/ig;
           //  const refersGuestComplexReg = /(\w+)\s*=.*getUserType\(\)(?:.*)\1\s*=\s*(["'])Guest\2/is;
-            const refersGuestTrivialReg = /(["'])Guest\1/ig;
+            const refersGuestTrivialReg = /(["'])Guest\1/i;
            
             
             if (futureReg.test(classBody)) {
@@ -358,6 +361,15 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             if (advFLSStripInaccessible.test(classBody)) {
               setValue(componentProperties,`ApexClass.${className}.StripInaccessible`,1);
             }
+            if (isTestClass(classBody)) {
+              testCount += 1;
+            }
+            else {
+              //Count Apex Characters
+              let tmpCharCount = countApexCharacters(classBody);
+              characterCount += tmpCharCount;
+              addValue(componentProperties,`ApexClass.${className}.CharacterCount`,tmpCharCount);
+            }
 
         //    if (refersGuestComplexReg.test(classBody) || refersGuestSimpleReg.test(classBody)) {
             if (refersGuestTrivialReg.test(classBody)) {
@@ -382,12 +394,12 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         typeInv['FutureCalls'] = futureCount;
         typeInv['AuraEnabledCalls'] = auraEnabledCount;
         typeInv['InvocableCalls'] = invocableCount;
-        // typeInv['TestMethods'] = testCount;
         typeInv['BatchApex'] = batchCount;
         typeInv['SchedulableApex'] = schedulableCount;
         typeInv['ApexRest'] = apexRestCount;
         typeInv['ApexSoap'] = apexSoapCount;
-
+        typeInv['TestClasses'] = testCount;
+        typeInv['CharacterCount'] = characterCount;
 
         break;
       case 'ApexTrigger':
@@ -395,6 +407,7 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         let triggerInv = {};
         //let asyncTrigger = {'count':0};
         let asyncCount = 0;
+        characterCount = 0;
         const triggerPath = `${sourceDir}/triggers`;
         for (var triggerIdx in types[typeIdx]['members']) {
           let triggerName = types[typeIdx]['members'][triggerIdx];
@@ -430,6 +443,10 @@ export function inventoryPackage(sourceDir, p, options = {}) {
               setValue(componentProperties,`ApexTrigger.${triggerName}.refersToGuest`,1);
             }
 
+            let tmpCharCount = countApexCharacters(triggerBody);
+            characterCount += tmpCharCount;
+            addValue(componentProperties,`ApexTrigger.${triggerName}.CharacterCount`,tmpCharCount);
+
             //Find Object References
             loggit.logLine('Looking for fields and objects referenced within APEX')
             
@@ -446,6 +463,7 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         }
         typeInv['objects'] = triggerInv;
         typeInv['AsyncTrigger'] = asyncCount;
+        typeInv['CharacterCount'] = characterCount;
         break;
       case 'LightningComponentBundle':
         loggit.logLine('Interrogating LWC');
@@ -721,6 +739,20 @@ function stripApexComments(apexBody : string) {
    return apexBody.replace(commentReg,'');
 }
 
+function countApexCharacters(apexBody : string, includeTests : boolean = false) {
+  let charCount = 0;
+   
+  if (includeTests === true || (!isTestClass(apexBody))) {
+    charCount = apexBody.length;
+  }
+  return charCount;
+}
+
+function isTestClass(apexBody : string) {
+  const isTestReg = /@isTest.*\s*.*(private|public|global).*class.*/i;
+  return isTestReg.test(apexBody);
+}
+ 
 
 function getMatches(searchString, regex) {
   let matches = [];
