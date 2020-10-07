@@ -407,7 +407,7 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         let triggerInv = {};
         //let asyncTrigger = {'count':0};
         let asyncCount = 0;
-        characterCount = 0;
+        let triggerCharacterCount = 0;
         const triggerPath = `${sourceDir}/triggers`;
         for (var triggerIdx in types[typeIdx]['members']) {
           let triggerName = types[typeIdx]['members'][triggerIdx];
@@ -444,7 +444,7 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             }
 
             let tmpCharCount = countApexCharacters(triggerBody);
-            characterCount += tmpCharCount;
+            triggerCharacterCount += tmpCharCount;
             addValue(componentProperties,`ApexTrigger.${triggerName}.CharacterCount`,tmpCharCount);
 
             //Find Object References
@@ -463,7 +463,7 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         }
         typeInv['objects'] = triggerInv;
         typeInv['AsyncTrigger'] = asyncCount;
-        typeInv['CharacterCount'] = characterCount;
+        typeInv['CharacterCount'] = triggerCharacterCount;
         break;
       case 'LightningComponentBundle':
         loggit.logLine('Interrogating LWC');
