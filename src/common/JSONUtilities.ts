@@ -39,13 +39,24 @@ function _setValue(destObject: Object, pathComponents: string[], value: any) : a
 
 }
 
-export function incrementValue(destObject: Object, path: string) : number {
+
+export function addValue(destObject: Object, path: string, amountToAdd: number) : number {
   let val = getValue(destObject,path,0);
   if (isNaN(val)) {
     throw `${val} at path ${path} is Not a Number. Cannot Increment`;
   }
-  val += 1;
+  val += amountToAdd;
   return setValue(destObject,path,val);
+}
+
+export function incrementValue(destObject: Object, path: string) : number {
+/*  let val = getValue(destObject,path,0);
+  if (isNaN(val)) {
+    throw `${val} at path ${path} is Not a Number. Cannot Increment`;
+  }
+  val += 1;
+  return setValue(destObject,path,val);*/
+  return addValue(destObject,path,1);
 }
 
 export function getValue(srcObject: Object, path: string, defaultValue: any = null) : any {

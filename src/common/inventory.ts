@@ -757,6 +757,16 @@ export class packageInventory {
                   label: '  Schedulable Apex',
                   count: this._mdInv[element.metadataType]['SchedulableApex']
                 });
+                extras.push({
+                  metadataSubType: 'TestClasses',
+                  label: '  Test Classes',
+                  count: this._mdInv[element.metadataType]['TestClasses']
+                });
+                extras.push({
+                  metadataSubType: 'CharacterCount',
+                  label: '  Total Apex Characters',
+                  count: this._mdInv[element.metadataType]['CharacterCount']
+                });
 
               }
               break;
@@ -859,6 +869,11 @@ export class packageInventory {
                   metadataSubType: 'AsyncTrigger',
                   label: '  Async Triggers',
                   count: this._mdInv[element.metadataType]['AsyncTrigger']
+                });
+                extras.push({
+                  metadataSubType: 'CharacterCount',
+                  label: '  Total Apex Characters',
+                  count: this._mdInv[element.metadataType]['CharacterCount']
                 });
                 const objects = Object.keys(this._mdInv[element.metadataType]['objects']);
                 for (const obj of objects) {
