@@ -174,7 +174,11 @@ interface IDataModel {
 
 const minAPI = 45;
 
+<<<<<<< HEAD
 const rulesVersion = '20201007';
+=======
+const rulesVersion = '20200630';
+>>>>>>> a22be30ebbf14cc3aaaad767fc77776a8840fb52
 
 const standardNamespaces = [
   'c',
@@ -250,10 +254,6 @@ const mdTypes: IMetadataType[] = [{
   metadataType: 'ConnectedApp'
 },
 {
-  label: 'In-App Prompts',
-  metadataType: 'Prompt'
-},
-{
   label: 'Static Resources',
   metadataType: 'StaticResource'
 },
@@ -325,11 +325,15 @@ const mdTypes: IMetadataType[] = [{
   label: 'Einstein Analytics Dashboards',
   metadataType: 'WaveDashboard'
 },
-
 {
   label: 'Record Types',
   metadataType: 'RecordType'
+},
+{
+  label: 'In-App guidance',
+  metadataType: 'Prompt'
 }
+
 ];
 
 const enablementRules: IRule[] = [{
@@ -530,6 +534,7 @@ const enablementRules: IRule[] = [{
     }
   },
   {
+<<<<<<< HEAD
     name: '@AuraEnabled Critical Update',
     condition: {
       metadataType: 'ApexClass.AuraEnabledCalls',
@@ -540,6 +545,17 @@ const enablementRules: IRule[] = [{
       label: 'Learn about @AuraEnabled Permissions',
       message: 'A Winter \'21 Critical update changed the permissions needed for users to access @AuraEnabled methods. See the blog below for more information',
       url: 'https://developer.salesforce.com/blogs/2020/08/breezing-through-the-upcoming-auraenabled-critical-update.html?utm_campaign=August_2020&utm_source=social&utm_medium=twitter&utm_source=twitter&utm_medium=organic_social&utm_campaign=amer_sfld&utm_content=AMER%2CDevelopers%2CEnglish'
+=======
+    name: 'In-App Walkthrough',
+    condition: {
+      metadataType: 'Prompt',
+      operator: 'notexists'
+    },
+    resultTrue: {
+      label: 'In-App Prompts & Walkthrough',
+      message: 'In-App Prompts & Walkthrough can guide the users with the steps to navigate',
+      url: 'https://help.salesforce.com/articleView?id=customhelp_lexguid.htm&type=5'
+>>>>>>> a22be30ebbf14cc3aaaad767fc77776a8840fb52
     }
   }
 
