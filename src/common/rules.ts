@@ -1280,6 +1280,12 @@ const dataModels: IDataModel[] = [{
   namespaces: ['HealthCloudGA','HealthCloudWave'],
   objects: ['Accreditation','BoardCertification','CareBarrier','CareBarrierDeterminant','CareBarrierType','CareDeterminant','CareDeterminantType','CareDiagnosis','CareInterventionType','CarePreauth','CarePreauthItem','CareProgram','CareProgramCampaign','CareProgramEligibilityRule','CareProgramEnrollee','CareProgramEnrolleeProduct','CareProgramEnrollmentCard','CareProgramGoal','CareProgramProduct','CareProgramProvider','CareProgramTeamMember','CareProviderAdverseAction','CareProviderFacilitySpecialty','CareProviderSearchableField','CareRequest','CareRequestDrug','CareRequestExtension','CareRequestItem','CareSpecialty','CareTaxonomy','CoverageBenefit','CoverageBenefitItem','EnrollmentEligibilityCriteria','HealthCareDiagnosis','HealthcareFacilityNetwork','HealthcarePayerNetwork','HealthcarePractitionerFacility','HealthCareProcedure','HealthcareProvider','HealthcareProviderNpi','HealthcareProviderSpecialty','HealthcareProviderTaxonomy','MemberPlan','PlanBenefit','PlanBenefitItem','PurchaserPlan','PurchaserPlanAssn']
 },
+{
+  name: 'FSC',
+  label: 'Financial Services Cloud',
+  namespaces: ['FinServ'],
+  objects: ['AccountParticipant','AuthorizedInsuranceLine','Award','BusinessLicense','BusinessMilestone','BusinessProfile','CaseGatewayRequest','Claim','ClaimCase','ClaimItem','ClaimParticipant','CoverageType','CustomerProperty','DistributorAuthorization','DocumentChecklistItem','DocumentType','Education','IdentityDocument','InsuranceClaimAsset','InsurancePolicy','InsurancePolicyAsset','InsurancePolicyCoverage','InsurancePolicyMemberAsset','InsurancePolicyParticipant','InsuranceProfile','LoanApplicant','LoanApplicantAddress','LoanApplicantAsset','LoanApplicantDeclaration','LoanApplicantEmployment','LoanApplicantIncome','LoanApplicantLiability','LoanApplicationAsset','LoanApplicationFinancial','LoanApplicationLiability','LoanApplicationProperty','LoanApplicationTitleHolder','OpportunityParticipant','ParticipantRole','PersonEducation','PersonLifeEvent','Producer','ProducerPolicyAssignment','ProductCoverage','ReciprocalRole','ResidentialLoanApplication','SecuritiesHolding','WealthAppConfig','WorkerCompCoverageClass' ]
+},
 ]
 
 export {
