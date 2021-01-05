@@ -1,7 +1,7 @@
 {
   "name": "isvte-sfdx-plugin",
   "description": "Salesforce ISV TE Plugin",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "author": "ISV Platform Expert Team",
   "bugs": "https://github.com/forcedotcom/isvte-sfdx-plugin/issues",
   "dependencies": {

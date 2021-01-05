@@ -13,10 +13,6 @@ import {
 } from './JSONUtilities';
 
 import {
-  Loggit
-} from './logger';
-
-import {
   mdmap
 } from './mdmap';
 
@@ -33,7 +29,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
   let dependencies = {};
   let language = {};
   let tmp; //just a temp variable for some ugly if magic
-  let loggit = new Loggit('isvtePlugin:metadataScan');
   let scanLanguage = options['scanLanguage'] ?  true: false;
   
   if (p.version) {
@@ -46,18 +41,13 @@ export function inventoryPackage(sourceDir, p, options = {}) {
 
     typeInv['index'] = typeIdx;
 
-    loggit.logLine('Checking MetadataType: ' + metadataType);
   
     //Check for wildcard members
     if (types[typeIdx]['members'].includes('*')) {
-      loggit.logLine('Found Wildcard Members');
       types[typeIdx]['members'] = getMembers(types[typeIdx], sourceDir);
-      //        loggit.loggit('Members: ' + JSON.stringify(types[typeIdx]['members']));
     }
     typeInv['count'] = types[typeIdx]['members'].length;
 
-    loggit.logLine('  Found ' + types[typeIdx]['members'].length + ' members');
-    loggit.logLine('Members: ' + JSON.stringify(types[typeIdx]['members']));
 
     switch (String(metadataType)) {
       case 'CustomField':
@@ -89,7 +79,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             if (objectJSON['CustomObject'] && objectJSON['CustomObject']['fields']) {
               for (var fieldDef of objectJSON['CustomObject']['fields']) {
                 if (fieldDef['fullName'] == field.fullName) {
-                  loggit.logLine('Checking Properties of Field: ' + fieldFullName);
                   let descExists = fieldDef['description'] ? 1 : 0;
                   setValue(componentProperties,`CustomField.${fieldFullName.replace(/\./g,"->")}.descriptionExists`,descExists);
             
@@ -107,11 +96,8 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         break;
       case 'CustomObject':
         // Look for Custom Settings, External Objects,  Person Accounts, Big Objects
-        loggit.logLine('Deep Inventory on Custom Objects');
         const objectPath = `${sourceDir}/objects`;
-        //let xoType = {count:0};
         let xoCount = 0;
-        //let boType = {count:0};
         let boCount = 0;
         let csType = {
           count: 0
@@ -124,7 +110,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         };
         for (var objIdx in types[typeIdx]['members']) {
           let object = getNameSpaceAndType(types[typeIdx]['members'][objIdx]);
-          loggit.logLine('Checking Object: ' + object.fullName);
           addObjectDependencies(dependencies,[object]);
           //Check external Objects
           if (object.extension == 'e') {
@@ -156,7 +141,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
 
             //Check for Descriptions
           if (object.type == 'Custom' && object.namespace == null) {
-            loggit.logLine('Checking properties of object ' + object.fullName);
             let descExists = getValue(objectJSON,'CustomObject.description',null) ? 1 : 0;
             setValue(componentProperties,`CustomObject.${object.fullName}.descriptionExists`,descExists);
 
@@ -184,13 +168,7 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         //Look for ChangeDataEvents
         break;
       case 'Flow':
-        //Check for Flow Templates
-
-        loggit.logLine('Checking flows');
-
         let templateCount = 0;
-     //   let screenTemplateCount = 0;
-     //   let autolaunchedTemplateCount = 0;
         let objects = {};
         let flowTypes = {};
         let flowTemplates = {};
@@ -199,7 +177,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
           let flowName = types[typeIdx]['members'][flowIdx];
           let flowXml = `${flowPath}/${flowName}.flow`;
           let flowJSON = parseXML(flowXml);
-          loggit.logLine('Checking file:' + flowXml);
           let processType = getValue(flowJSON,'Flow.processType','UnknownType');
           incrementValue(flowTypes,`${processType}.count`);
           if (getValue(flowJSON,'Flow.isTemplate.0',false)) {
@@ -210,23 +187,16 @@ export function inventoryPackage(sourceDir, p, options = {}) {
           if (scanLanguage && (tmp = languageScanMetadataObject(flowJSON))) {
             setValue(language, `Flow.${flowName}`,tmp);
           }
-
           addObjectDependencies(dependencies, extractObjectsApex(JSON.stringify(flowJSON)));
 
           //Do per object Inventory
-          loggit.logLine('Inventorying PB and Flow Triggers Per Object');
           let processMetadataValues;
           if (processMetadataValues = getValue(flowJSON,'Flow.processMetadataValues',null)) {
-           loggit.logLine('Flow Details: ' + JSON.stringify(flowJSON['Flow']['processMetadataValues']));
-           
               for (var processMetadataValue of processMetadataValues) {
-                loggit.logLine('Metadata Value Name: ' + processMetadataValue['name']);
                 if (processMetadataValue['name'] == 'ObjectType') {
-                  loggit.logLine('ObjectName:' + JSON.stringify(processMetadataValue['value'][0]));
                   let objectName = processMetadataValue['value'][0]['stringValue'][0];
                   let object = getNameSpaceAndType(objectName);
                   addObjectDependencies(dependencies,[object]);
-                  loggit.logLine('Extracted Object Name:' + objectName);
                   incrementValue(objects,`${objectName}.count`);
                 }
               }
@@ -248,7 +218,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
           let appName = types[typeIdx]['members'][appIdx];
           let uiType;
           let navType;
-          loggit.logLine('Checking App: ' + appName);
           const appPath = `${sourceDir}/applications`;
           let appXml = `${appPath}/${appName}.app`;
           let appJSON = parseXML(appXml);
@@ -278,7 +247,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         typeInv['ClassicConsoleCount'] = classicConsoleCount;
         break;
       case 'ConnectedApp':
-        loggit.logLine('Checking Connected Apps');
 
         let canvasCount = 0;
 
@@ -294,7 +262,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         typeInv['CanvasApp'] = canvasCount;
         break;
       case 'ApexClass':
-        loggit.logLine('Interrogating Apex');
         let futureCount = 0;
         let testCount = 0;
         let auraEnabledCount = 0;
@@ -318,8 +285,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             }
             classBody = stripApexComments(classBody);
             
-            // loggit(classBody);
-            //const testReg = /@istest/ig;
             const futureReg = /@future/i;
             const auraEnabledReg = /@AuraEnabled/i;
             const invocableReg = /@InvocableMethod|InvocableVariable/i;
@@ -371,12 +336,10 @@ export function inventoryPackage(sourceDir, p, options = {}) {
               addValue(componentProperties,`ApexClass.${className}.CharacterCount`,tmpCharCount);
             }
 
-        //    if (refersGuestComplexReg.test(classBody) || refersGuestSimpleReg.test(classBody)) {
             if (refersGuestTrivialReg.test(classBody)) {
               setValue(componentProperties,`ApexClass.${className}.RefersToGuest`,1);
             }
             //Find Object References
-            loggit.logLine('Looking for fields and objects referenced within APEX')
             
             addObjectDependencies(dependencies, extractObjectsApex(classBody));
                     
@@ -403,7 +366,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
 
         break;
       case 'ApexTrigger':
-        loggit.logLine('Interrogating Trigger');
         let triggerInv = {};
         //let asyncTrigger = {'count':0};
         let asyncCount = 0;
@@ -422,19 +384,12 @@ export function inventoryPackage(sourceDir, p, options = {}) {
           const refersGuestTrivialReg = /(["'])Guest\1/ig;
          
           let triggerDetail = triggerDetailReg.exec(triggerBody);
-          if (triggerDetail == null) {
-            loggit.logLine('Could not parse Trigger File: ' + triggerFile);
-          }
-          else {
+          if (triggerDetail !== null) {
             let triggerObject = getNameSpaceAndType(triggerDetail[2]);
-            let triggerType = triggerDetail[3];
-            loggit.logLine('Trigger Name:' + triggerName);
-            loggit.logLine('Trigger Object:' + triggerObject.fullName);
-            loggit.logLine('Trigger Type: ' + triggerType);
+         // let triggerType = triggerDetail[3];
             //Add Namespace Dependencies 
             addObjectDependencies(dependencies,[triggerObject]);
             if (triggerObject.type == 'Change Data Capture') {
-              //  asyncTrigger['count']++;
               asyncCount += 1;
             }
             incrementValue(triggerInv,`${triggerObject.fullName}.count`);
@@ -448,7 +403,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             addValue(componentProperties,`ApexTrigger.${triggerName}.CharacterCount`,tmpCharCount);
 
             //Find Object References
-            loggit.logLine('Looking for fields and objects referenced within APEX')
             
             addObjectDependencies(dependencies, extractObjectsApex(triggerBody));
           }
@@ -466,11 +420,9 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         typeInv['CharacterCount'] = triggerCharacterCount;
         break;
       case 'LightningComponentBundle':
-        loggit.logLine('Interrogating LWC');
         const lwcPath = `${sourceDir}/lwc`;
         let exposedCount = 0;
         let targets = {}
-
 
         for (var lwcIdx in types[typeIdx]['members']) {
           const lwcName = types[typeIdx]['members'][lwcIdx];
@@ -482,8 +434,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
           if (lwcJSON['LightningComponentBundle']) {
             lwcJSON = lwcJSON['LightningComponentBundle'];
 
-            loggit.logLine('Checking LWC ' + lwcName);
-            // loggit(lwcJSON,'JSON');
             if (lwcJSON['apiVersion']) {
               setValue(apiVersions,`LightningComponentBundle.${lwcName}`,parseFloat(lwcJSON['apiVersion'][0]));
             }
@@ -491,8 +441,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
               exposedCount += 1;
             }
             if (lwcJSON['targets'] && lwcJSON['targets'][0]['target']) {
-              loggit.logLine('Checking Targets');
-              loggit.logLine(lwcJSON['targets'][0]);
               for (let target of lwcJSON['targets'][0]['target']) {
                 if (targets[target] != undefined) {
                   targets[target] += 1;
@@ -517,7 +465,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
 
         break;
       case 'ApexPage':
-        loggit.logLine('Interrogating Visualforce');
         const vfPath = `${sourceDir}/pages`;
         for (var vfIdx in types[typeIdx]['members']) {
           const vfName =  types[typeIdx]['members'][vfIdx];
@@ -546,11 +493,9 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             }
 
             //Find namespaces in components used
-            loggit.logLine('Performing Regex search against component for namespaces');
             const componentsReg = /<(\w+:\w+)/ig;
             let referencedComponents = getMatches(vfBody, componentsReg);
             if (referencedComponents.length > 0) {
-              loggit.logLine(`Found the following Components: ${JSON.stringify(referencedComponents)}`);
               referencedComponents.forEach(element => {
                 let ns = element.split(":", 2)[0];
                 incrementValue(componentProperties,`ApexPage.${vfName}.namespaceReferences.${ns}`);
@@ -566,19 +511,16 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         }
         break;
       case 'AuraDefinitionBundle':
-        loggit.logLine('Interrogating Aura Components');
         const auraPath = `${sourceDir}/aura`;
         for (var auraIdx in types[typeIdx]['members']) {
           const auraName = types[typeIdx]['members'][auraIdx];
           const auraXml = `${auraPath}/${auraName}/${auraName}.cmp-meta.xml`;
           let auraJSON = parseXML(auraXml);
-          loggit.logLine('Checking Aura Component ' + auraName);
           if (auraJSON['AuraDefinitionBundle'] && auraJSON['AuraDefinitionBundle']['apiVersion']) {
             setValue(apiVersions,`AuraDefinitionBundle.${auraName}`,parseFloat(auraJSON['AuraDefinitionBundle']['apiVersion'][0]));
           }
           //Count Used Components by Namespace
           let auraCmpFile = `${auraPath}/${auraName}/${auraName}.cmp`;
-          loggit.logLine(`Extracting info from ${auraCmpFile}`);
           //TODO: Parse for object references
 
           if (fs.existsSync(auraCmpFile)) {
@@ -588,11 +530,9 @@ export function inventoryPackage(sourceDir, p, options = {}) {
               setValue(language,`AuraDefinitionBundle.${auraName}`,tmp);
             }
             
-            loggit.logLine('Performing Regex search against component for namespaces');
             const componentsReg = /<(\w+:\w+)/ig;
             let referencedComponents = getMatches(auraBody, componentsReg);
             if (referencedComponents.length > 0) {
-              loggit.logLine(`Found the following Components: ${JSON.stringify(referencedComponents)}`);
               referencedComponents.forEach(element => {
                 let ns = element.split(":", 2)[0];
                 incrementValue(componentProperties,`AuraDefinitionBundle.${auraName}.namespaceReferences.${ns}`);
@@ -600,11 +540,9 @@ export function inventoryPackage(sourceDir, p, options = {}) {
                 setValue(dependencies,`namespaces.${ns}`,1);
               });
             }
-            loggit.logLine('Extracting implemented and extended interfaces');
             const interfaceReg = /(?:implements|extends)\s*=\s*"([\w ,:]+)"/igm;
             let interfaceMatches = getMatches(auraBody, interfaceReg);
             if (interfaceMatches.length > 0) {
-              loggit.logLine(`Found the following Interfaces: ${JSON.stringify(interfaceMatches)}`);
               interfaceMatches.forEach(element => {
                 let interfaces = element.split(/ *, */);
                 interfaces.forEach(element => {
@@ -614,9 +552,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             }
             //Find Object References
             addObjectDependencies(dependencies,extractObjectsApex(auraBody));
-          }
-          else {
-            loggit.logLine('File not found');
           }
         }
         break;
@@ -630,7 +565,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
     }
 
     inventory[metadataType] = typeInv;
-   // this.ux.stopSpinner('Complete');
   }
  
   //Check Person Accounts
@@ -647,7 +581,6 @@ export function inventoryPackage(sourceDir, p, options = {}) {
 }
 
 function getMembers(mdTypeDef, sourceDir) {
-//  this.loggit.logLine('Getting wildcard members for ' + mdTypeDef.name);
   let retVal = mdTypeDef['members'];
   if (mdTypeDef.name == 'CustomField') {
     retVal = getFieldMembersFromObjects(sourceDir);
@@ -655,7 +588,6 @@ function getMembers(mdTypeDef, sourceDir) {
   else if (mdmap[mdTypeDef.name] != undefined) {
      if (mdmap[mdTypeDef.name]['folder'] != 'null' && mdmap[mdTypeDef.name]['extension'] != 'null') {
       retVal = getMembersFromFiles(`${sourceDir}/${mdmap[mdTypeDef.name]['folder']}`, mdmap[mdTypeDef.name]['extension']);
-      //        this.loggit.loggit("Added Members from files.:" + JSON.stringify(retVal));
     }
   }
   return retVal;
@@ -692,12 +624,9 @@ function getMembersFromFiles(folder, extension) {
   const typePath = folder;
   const members = [];
   if (!fs.existsSync(typePath)) {
-//    this.loggit.logLine(`Folder ${typePath} does not exist. Cannot find members`);
     return members;
   }
-//  this.loggit.logLine(`Looking in folder ${typePath} for members`);
   const folderContents = fs.readdirSync(typePath);
-//  this.loggit.logLine('Folder Contents: ' + JSON.stringify(folderContents));
   folderContents.forEach(element => {
 
     const [fileName, ext] = [element.substr(0, element.lastIndexOf('.')), element.substr(element.lastIndexOf('.') + 1, element.length)]
@@ -706,7 +635,6 @@ function getMembersFromFiles(folder, extension) {
     }
   });
 
-//  this.loggit.logLine('Found Members: ' + JSON.stringify(members));
   return members;
 }
 
@@ -905,10 +833,8 @@ export function parseXML(xmlfile, dieOnError = false) {
   if (!fs.existsSync(xmlfile)) {
     let message = `Cannot find XML File: ${xmlfile}`;
     if (dieOnError == true) {
- //     this.loggit.logLine(message, 'Error');
       throw new SfdxError(message, 'XMLNotFoundError');
     } else {
- //     this.loggit.logLine(message, 'Warn');
       return json;
     }
   }
@@ -919,7 +845,6 @@ export function parseXML(xmlfile, dieOnError = false) {
   });
 
   if (error && dieOnError) {
- //   this.loggit.logLine(`Error parsing ${xmlfile}: ${error}`, 'Error');
     throw new SfdxError(`Error parsing ${xmlfile}: ${error}`, 'XMLParseError');
   }
   return json;

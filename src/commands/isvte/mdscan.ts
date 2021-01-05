@@ -151,13 +151,9 @@ For more information, please connect in the ISV Technical Enablement Plugin
       try {
         // force:source:convert in a temporary folder
         const sfdxConvertCommand = `sfdx force:source:convert -d ${this.sfdxConvertFolder} -r ${(this.sourceFolder != mdscan.flagsConfig.sourcefolder.default) ? this.sourceFolder : '.'}`;
-        this.loggit.logLine(`Converting ${this.sourceFolder} into metadata...`);
         const { stderr } = await exec(sfdxConvertCommand);
         if (stderr) {
           throw new SfdxError(`Unable to convert ${this.sourceFolder} to metadatas`, 'ConversionToMetadataError');
-        }
-        else {
-          this.loggit.logLine(`Converted ${this.sourceFolder} into metadata`);
         }
 
         // Filter metadatas folder using package.xml
@@ -190,13 +186,10 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
     }
 
-    this.loggit.logLine('Cleaning inventory');
     this.cleanInventory(packageJSON);
-    this.loggit.logLine('Parsing Package');
     this.packageInventory = new packageInventory();
 
     if (this.flags.minapi) {
-      this.loggit.logLine(`Setting Minimum API version for quality checks to ${this.flags.minapi}`);
       this.packageInventory.setMinAPI(this.flags.minapi);
     }
     this.packageInventory.setMetadata(inventoryPackage(this.flags.sourcefolder, packageJSON, {scanLanguage: this.languageScan}));
