@@ -172,9 +172,9 @@ interface IDataModel {
   namespaces?: string[], //Array of namespaces included in this data model
 }
 
-const minAPI = 45;
+const minAPI = 47;
 
-const rulesVersion = '20201007';
+const rulesVersion = '20210105';
 
 const standardNamespaces = [
   'c',
@@ -344,6 +344,35 @@ const enablementRules: IRule[] = [{
       url: 'http://p.force.com/TECenter'
     }
   },
+  
+  {
+    name: 'SFDXScanner',
+    condition: {
+      metadataType: 'ApexClass',
+      operator: 'exists',
+      conditionOr: {
+        metadataType: 'ApexTrigger',
+        operator: 'exists',
+        conditionOr: {
+          metadataType: 'LightningComponentBundle',
+          operator: 'exists',
+          conditionOr: {
+            metadataType: 'AuraDefinitionBundle',
+            operator: 'exists',
+            conditionOr: {
+              metadataType: 'ApexPage',
+              operator: 'exists'
+            }
+          }
+        }
+      }
+    },
+    resultTrue: {
+      label: 'Scan your code for vulnerabilities',
+      message: 'Scan your Apex, Javascript, and Visualforce code for vulnerabilities and violations using the sfdx-scanner plugin. Learn more about sfdx-scanner here.',
+      url: 'https://forcedotcom.github.io/sfdx-scanner/'
+    },
+  },
   {
     name: 'Flows',
     condition: {
@@ -354,6 +383,18 @@ const enablementRules: IRule[] = [{
       label: 'Take Advantage of Flows',
       message: 'Flows are a powerful tool to enable forms based workflows and process automation to your users. See this webinar for more information.',
       url: 'https://partners.salesforce.com/0693A000007S2Dq'
+    },
+  },
+  {
+    name: 'FlowsLimitations',
+    condition: {
+      metadataType: 'Flow',
+      operator: 'exists',
+    },
+    resultTrue: {
+      label: 'Be aware of packaging limitations for Flows',
+      message: 'There are limitations on Flows within packages. Please review the following document before packaging your flow.',
+      url: 'https://help.salesforce.com/articleView?id=flow_considerations_distribute_package.htm'
     },
   },
   {
@@ -791,7 +832,8 @@ const qualityRules: IRule[] = [{
   }
 ];
 
-const alertRules: IRule[] = [{
+const alertRules: IRule[] = [
+  {
     name: 'Alerts Signup',
     condition: {
       metadataType: 'any',
@@ -808,7 +850,7 @@ const alertRules: IRule[] = [{
     condition: {
       metadataType: 'ApexClass.AuraEnabledCalls',
       operator: 'exists',
-      expiration: '2020-10-01T00:00:00.000Z',
+      expiration: '2021-05-01T00:00:00.000Z',
       showDetails: true
     },
     resultTrue: {
@@ -823,7 +865,7 @@ const alertRules: IRule[] = [{
     condition: {
       metadataType: 'componentProperties.AuraDefinitionBundle.*.namespaceReferences.ui',
       operator: 'exists',
-      expiration: '2020-10-01T00:00:00.000Z',
+      expiration: '2021-05-01T00:00:00.000Z',
       showDetails: true
     },
     resultTrue: {
@@ -838,7 +880,7 @@ const alertRules: IRule[] = [{
     condition: {
       metadataType: 'CustomMetadata',
       operator: 'exists',
-      expiration: '2020-10-01T00:00:00.000Z'
+      expiration: '2021-05-01T00:00:00.000Z'
     },
     resultTrue: {
       label: 'Custom Metadata',
@@ -851,7 +893,7 @@ const alertRules: IRule[] = [{
     condition: {
       metadataType: 'CustomSetting__c',
       operator: 'exists',
-      expiration: '2020-10-01T00:00:00.000Z'
+      expiration: '2021-05-01T00:00:00.000Z'
     },
     resultTrue: {
       label: 'Custom Settings',
@@ -889,6 +931,7 @@ const alertRules: IRule[] = [{
     name: 'Lightning Platform API Versions 7-20',
     condition: {
       metadataType: 'apiVersions.*.*',
+      expiration: '2021-05-1T00:00:00.000Z',
       operator: 'between',
       operand: [7,20],
     },
@@ -898,6 +941,20 @@ const alertRules: IRule[] = [{
       url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GXNIDQA5'
     }
  },
+ {
+  name: 'Salesforce Platform API Versions 21.0 thru 30.0 in Summer 22',
+  condition: {
+    metadataType: 'apiVersions.*.*',
+    expiration: '2021-05-1T00:00:00.000Z',
+    operator: 'between',
+    operand: [5,30],
+  },
+  resultTrue: {
+    label: 'Salesforce Platform API Versions 21.0 thru 30.0 in Summer \'22',
+    message: 'With the Summer ‘22 release, SOAP, REST, and Bulk API legacy versions 21 through 30 will be retired and no longer supported by Salesforce. When these legacy versions are retired, applications consuming impacted versions of the APIs will experience a disruption as the requests will fail and result in an error indicating that the requested endpoint has been deactivated.',
+    url: 'https://partners.salesforce.com/partnerAlert?id=a034V00000GsYCdQAN'
+  }
+},
  {
     name: 'External Sharing Model set to Private for all entities',
     condition: {
@@ -914,6 +971,7 @@ const alertRules: IRule[] = [{
  {
    name: 'Enhancement to Guest User Sharing Policy',
    condition: {
+    expiration: '2021-05-1T00:00:00.000Z',
     metadataType: 'LightningComponentBundle.targets.lightningCommunity__Page',
     operator: 'exists',
     conditionOr: {
@@ -950,7 +1008,86 @@ const alertRules: IRule[] = [{
     message: 'The secure guest user record access and assign new records created by guest users to the default owner will be auto-enabled in Summer ‘20 with opt-out & disable options available. The settings will be enforced in Winter ‘21 without opt-out & disable options. If your application uses or can use Guest Users, please refer to this alert link to ensure you will not be impacted.',
     url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GNp0vQAD'
   }
+ },
+ {
+  name: 'Enhancement to Guest User Sharing Policy',
+  condition: {
+   expiration: '2021-05-1T00:00:00.000Z',
+   metadataType: 'LightningComponentBundle.targets.lightningCommunity__Page',
+   operator: 'exists',
+   conditionOr: {
+     metadataType: 'LightningComponentBundle.targets.lightningCommunity__Default',
+     operator: 'exists',
+     conditionOr: {
+       metadataType: 'ExperienceBundle',
+       operator: 'exists',
+       conditionOr: {
+         metadataType: 'CommunityTemplateDefinition',
+         operator: 'exists',
+         conditionOr: {
+           metadataType: 'componentProperties.AuraDefinitionBundle.*.interfaces.forceCommunity:availableForAllPageTypes',
+           operator: 'exists',
+           conditionOr: {
+             metadataType: 'componentProperties.ApexPage.*.RefersToSite',
+             operator: 'exists',
+             conditionOr: {
+               metadataType: 'componentProperties.ApexTrigger.*.RefersToGuest',
+               operator: 'exists',
+               conditionOr: {
+                 metadataType:  'componentProperties.ApexClass.*.RefersToGuest',
+                 operator: 'exists'
+               }
+             }
+           }
+         }
+       }
+     }
+   }
+ },
+ resultTrue: {
+   label: 'Upcoming Enforcing Changes Affecting Guest User Object Permissions',
+   message: 'As part of the new Guest User Security Policy for Salesforce public sites, Salesforce will permanently remove several guest user object permissions with the Spring 21 release. The object permissions due to be removed are: Edit, Delete, Modify All, & View All. These permissions will be permanently removed for custom objects and standard objects. Major impact will be seen on standard objects - Order, Survey Response, Contract, ProfileSkillUser, and ProfileSkillEndorsement, and all custom objects.',
+   url: 'https://partners.salesforce.com/partnerAlert?id=a034V00000GsZgpQAF'
  }
+},
+{
+  name: 'Work.com Search',
+  condition: {
+    expiration: '2021-10-1T00:00:00.000Z',
+    metadataType: 'dependencies.namespaces.wkcc',
+    operator: 'exists'
+  },
+  resultTrue: {
+    label: 'Changing the Location Search Filter Level setting in Command Center, by administrators, may impact Work.com Components',
+    message: 'With the v5 of Workplace Command Center, Salesforce provides System Administrators with the option of allowing end users to search all levels of the location hierarchy. In previous versions, and by default in Version 5, end users can search only level-1 locations. Not all components running in Workplace Command Center fully support the option to search locations at all levels of the hierarchy. The components that support search at all levels are: Wellness Status, Wellness Status by Location, Location Status, and Operations Feed (tasks).',
+    url: 'https://partners.salesforce.com/partnerAlert?id=a034V00000GsZJuQAN'
+  }
+},
+{
+  name: 'New Order Save Behavior',
+  condition: {
+    metadataType: 'ApexTrigger.object.Order',
+    operator: 'exists',
+    conditionOr: {
+      metadataType: 'ApexTrigger.object.OrderItem',
+      operator: 'exists',
+      conditionOr: {
+        metadataType: 'Flow.object.Order',
+        operator: 'exists',
+        conditionOr: {
+          metadataType: 'Flow.object.OrderItem',
+          operator: 'exists',
+        },
+      },
+    },
+
+  },
+  resultTrue: {
+    label: 'New Order Save Behavior',
+    message: 'To align with Force.com platform requirements, we’re updating the Order Save Behavior feature starting with the Winter ’21 release. This update improves the evaluation of custom application logic on the parent record. Unlike the previous version, the New Order Save Behavior makes Salesforce run custom application logic whenever an order product update causes a change to the parent order. Custom application logic consists of validation rules, Apex triggers, workflow rules, flows, and processes.',
+    url: 'https://partners.salesforce.com/partnerAlert?id=a034V00000GsVZEQA3'
+  }
+},
 ];
 
 const editionWarningRules: IInstallRule[] = [{

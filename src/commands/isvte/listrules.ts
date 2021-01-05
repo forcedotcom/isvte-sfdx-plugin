@@ -19,12 +19,9 @@ import {
   dependencyRules,
   dataModels
 } from '../../common/rules';
-import {
-  Loggit
-} from '../../common/logger';
 
 export default class listrules extends SfdxCommand {
-  private loggit;
+
 
   public static description = 'display all enablement rules and edition warnings';
 
@@ -41,10 +38,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
   public async run(): Promise < any > { // tslint:disable-line:no-any
 
-    this.loggit = new Loggit('isvtePluginListRules');
-
-    this.loggit.logLine('Exporting all isvte Rules');
-
+ 
     this.ux.log(`Rule Definition version: ${rulesVersion}\n\n`);
 
     this.ux.styledHeader('Monitored Metadata Types');
@@ -136,7 +130,6 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
   
   private getAllEditionWarnings() {
-    this.loggit.logLine('Formatting Edition Warnings for export');
     let retVal = [];
     for (let edition of editionWarningRules) {
       retVal.push({
@@ -154,7 +147,6 @@ For more information, please connect in the ISV Technical Enablement Plugin
   };
 
   private getAllAdoptionRules() {
-    this.loggit.logLine('Formatting Tech Adoption Rules for export');
     let retVal = [];
     for (let category of techAdoptionRules) {
       retVal.push({
