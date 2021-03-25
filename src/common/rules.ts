@@ -947,6 +947,17 @@ const alertRules: IRule[] = [
       url: 'https://sfdc.co/ISVTEAlert20210202'
     }
  },
+ {name: 'Stricter Validation in Visualforce Remoting API',
+ condition: {
+   expiration: '2021-12-1T00:00:00.000Z',
+   metadataType: 'ApexClass.RemoteActionCalls',
+   operator: 'exists'
+ },
+ resultTrue: {
+   label: 'Stricter Validation in Visualforce Remoting API',
+   message: 'To ensure that the Visualforce Remoting API is properly secured, calls now have stricter validation. This update is enforced in Winter \'22. Click here to find out more',
+   url: 'https://sfdc.co/ISVTEremotingupdate'}
+ }
 ];
 
 const editionWarningRules: IInstallRule[] = [{
