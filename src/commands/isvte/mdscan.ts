@@ -296,13 +296,23 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
       if (this.showTechAdoption) {
         this.ux.styledHeader('Technology Adoption:');
+        this.ux.log('The responses below correspond to the ISV Technology Adoption Survey for FY\'22.\nPlease note that the points and answers are not indended to be exhaustive and only reflect that which can be identified within the metadata of this package.\n\n');
         for (var category of this.packageInventory.getTechAdoptionScore()) {
-          this.ux.log(`${category.categoryLabel}\n`);
-          for (var item of category.items) {
-            this.ux.log(`   ${item.label}: ${item.isIncluded ? 'Found' : 'Not Found'}`)
+          this.ux.log(`${category.categoryLabel} (${category.points} Points)\n`);
+          let i = 1;
+          for (var tech of category.technologies) {
+            this.ux.log(` ${i++}. ${tech.name}: ${tech.question} \n   ${tech.found ? 'YES' : tech.detectable ? 'NO': 'UNKNOWN'} (${tech.points}/${tech.maxPoints} Points)`);
+            if (tech.levelUp != undefined) {
+              this.ux.log(`\t${tech.levelUp.message}`);
+              if (tech.levelUp.url != undefined) {
+                this.ux.log(`\tURL:${tech.levelUp.url}`);
+              }
+            }
+            this.ux.log('\n');
           }
           this.ux.log('\n');
         }
+      
       }
 
       if (this.languageScan) {

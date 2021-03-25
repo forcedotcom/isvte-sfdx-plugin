@@ -20,6 +20,8 @@ import fs = require('fs-extra');
 
 import xml2js = require('xml2js');
 
+import {alexConfig} from './rules';
+
 
 export function inventoryPackage(sourceDir, p, options = {}) {
   let types = p.types;
@@ -271,6 +273,7 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         let apexRestCount = 0;
         let apexSoapCount = 0;
         let characterCount = 0;
+        let remoteActionCount = 0;
 
 
         const apexPath = `${sourceDir}/classes`;
@@ -287,6 +290,7 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             
             const futureReg = /@future/i;
             const auraEnabledReg = /@AuraEnabled/i;
+            const remoteActionReg = /@remoteAction/i;
             const invocableReg = /@InvocableMethod|InvocableVariable/i;
             const batchReg = /implements\s+Database\.Batchable/i;
             const scheduleReg = /implements\s+Schedulable/i;
@@ -304,6 +308,9 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             }
             if (auraEnabledReg.test(classBody)) {
               auraEnabledCount += 1;
+            }
+            if (remoteActionReg.test(classBody)) {
+              remoteActionCount += 1;
             }
             if (invocableReg.test(classBody)) {
               invocableCount += 1;
@@ -356,6 +363,7 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         }
         typeInv['FutureCalls'] = futureCount;
         typeInv['AuraEnabledCalls'] = auraEnabledCount;
+        typeInv['RemoteActionCalls'] = remoteActionCount;
         typeInv['InvocableCalls'] = invocableCount;
         typeInv['BatchApex'] = batchCount;
         typeInv['SchedulableApex'] = schedulableCount;
@@ -688,8 +696,6 @@ function getMatches(searchString, regex) {
   while (match = regex.exec(searchString)) {
     matches.push(match[1]);
   }
- // logLine(`Found ${matches.length} matches`);
- // logJSON(matches);
   return matches;
 }
 
@@ -704,7 +710,6 @@ function getNameSpaceAndType(fullComponentName) {
   CustomField__location__s
   Namespace__CustomField__location__s
   */
- // logLine('Breaking down component name:' + fullComponentName);
   
   const retVal = {
     type:null,
@@ -715,7 +720,6 @@ function getNameSpaceAndType(fullComponentName) {
   };
 
   let breakdown = fullComponentName.split("__");
- // logLine('Component Breakdown: ' + JSON.stringify(breakdown));
   if (breakdown.length == 1) {
       //Standard Object
       retVal.type = 'Standard';
@@ -723,9 +727,7 @@ function getNameSpaceAndType(fullComponentName) {
   }
   else {
     //Check for and fixup locations
- //   logLine('Proposed Suffix:' + breakdown[breakdown.length -1]);
     if (breakdown[breakdown.length -1] == 's'  && breakdown.length > 2 && (breakdown[breakdown.length-2] == 'latitude' || breakdown[breakdown.length-2] == 'longitude' )) {
-   //   logLine('This appears to be a location field with an extra __ in the suffix. Adjusting expectations'); 
         breakdown.pop();
         breakdown[breakdown.length -1] = breakdown[breakdown.length -1] + '__s';
       
@@ -743,8 +745,7 @@ function getNameSpaceAndType(fullComponentName) {
       retVal.namespace = breakdown[0];
     }
     else {
-      //WE probably shouldn't end up here.
-  //    logLine('Unsure how to parse ' + fullComponentName);
+      //We probably shouldn't end up here.
       retVal.name = fullComponentName;
     }
     switch (retVal.extension) {
@@ -819,7 +820,6 @@ function getNameSpaceAndType(fullComponentName) {
     }
 
   }
-//  logLine('Parsed component: ' + JSON.stringify(retVal));
   return retVal;
 }
 
@@ -912,21 +912,17 @@ function languageScan(text: string, type : string = 'text') : any {
     return false;
   }
   let scanResult = {};
-  let config= {
-    "noBinary": true,
-    "profanitySureness": 1,
-    "allow": ["simple","invalid","special","just","fires","host-hostess","gross","period","executes","execution"]
-  };
+  //let config= alexConfig;
 
   switch (type) {
     case 'text':
-      scanResult = alex.text(text,config);
+      scanResult = alex.text(text, alexConfig);
     break;
     case 'html':
-      scanResult = alex.html(text),config;
+      scanResult = alex.html(text, alexConfig);
     break;
     case 'markdown':
-      scanResult = alex(text,config)
+      scanResult = alex(text, alexConfig);
     break;
   }
   if (scanResult['messages'].length > 0) {

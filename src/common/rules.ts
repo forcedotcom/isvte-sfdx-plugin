@@ -5,176 +5,9 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
+const minAPI = 48;
 
-/*
-Rules explained:
-ruleSet = [rule,rule,...]
-
-rule = {
-  name: The Rule Name
-  condition: ruleCondition
-  resultTrue: result 
-  resultFalse: result
-}
-
-
-   
-result = {
-  label: Friendly output to display when rule is triggered 
-  message: Text to display
-  url: link to content
-  showDetails: boolean
-}
-A result must have a message and a label
-if showDetails is true, then the individual components which pass the condition are included in the result 
-e.g the first will output just the message. The second will output the message as well as each individual class with and API version that meets the criteria
-{
-    name: 'Metadata API Version',
-    condition: {
-      metadataType: 'apiVersions.mdapi',
-      operator: 'between',
-      operand: [20,'minAPI'],
-    },
-    resultTrue: {
-      label: 'Using old Metadata API Version',
-      message: `You appear to be using a version of Metadata API less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
-    },
-  },
-  {
-    name: 'Apex API Version',
-    condition: {
-      metadataType: 'apiVersions.ApexClass.*',
-      operator: 'between',
-      operand: [20,'minAPI'],
-    },
-    resultTrue: {
-      label: 'Using old Apex API Version',
-      message: `You appear to be using an API version less than the minimum specified. Use the --minapi flag to adjust the minimum API version.`,
-      showDetails: true
-    }
-  },
-
-  If condition resolves to True, then resultTrue is fired. If Condition resolves to false, then resultFalse is fired.
-a rule must have a name, a label and a condition. AlertRules, EnablementRules and QualityRules must have  a resultTrue and/or a resultFalse
-
-ruleCondition = {
-  metadataType: The Metadata Type to query
-  operator: One of: ['always', 'never', 'exists', 'notexists', 'null', 'gt', 'gte', 'lt', 'lte', 'eq','between']
-  operand: value that operator works on.
-  expiration: dateTime
-  processAlways: boolean (only within a conditionOr OR a conditionAnd)
-  conditionPerItem: boolean (only within a conditionAnd)
-  conditionOr: ruleCondition
-  conditionAnd: ruleCondition
-}
-
-A ruleCondition must have an operator
-If operator is anything other than 'always' or 'never' then ruleCondition must have an operand and a metadataType
-If operator is 'between', then operand must be a 2 element array noting the bounds of the between (non inclusive)
-ruleCondition cannot have both a conditionAnd AND a conditionOR, but both are optional
-
-OR:
-If conditionOr exists, then the result is an OR of the result of the main condition and the conditionOr condition
-If processAlways is true within the conditionOr, then conditionOr will be evaluated even if the main condition is already true
-
-AND:
-If conditionAnd exists then the resuls is an AND of the result of the main condition and the conditionAnd condition
-If process Always is true within the conditionAnd, then conditionAnd will be evaluated even if the main condition is already false.
-If conditionPerItem is true within the conditionAnd, then the ultimate result is based on the union of items which pass each side of the condition
-  e.g.:
-    condition: {
-      metadataType: 'ApexTrigger.objects.*',
-      operator: 'gte',
-      operand: 1,
-      conditionAnd: {
-        metadataType: 'Flow.objects.*',
-        operator: 'gte',
-        operand: 1,
-      },
-    },
-    the above condition will resolve to true if there is any object with an apex trigger and if there is any object with a process builder trigger
-
-    If the condition looks like:
-    condition: {
-      metadataType: 'ApexTrigger.objects.*',
-      operator: 'gte',
-      operand: 1,
-      conditionAnd: {
-        metadataType: 'Flow.objects.*',
-        operator: 'gte',
-        operand: 1,
-        conditionPerItem: true
-      },
-    },
-    the condition will resolve to true if any object has both an apex trigger and a process builder trigger.
-    */
-
-/*Interface Definitions */
-
-/* Monitored Metadata Types are those which are listed and counted in the output */
-
-interface IMetadataType {
-  label: string,
-  metadataType: string;
-}
-
-type operatorTypes = 'always' | 'never' | 'exists' | 'notexists' | 'null' | 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'between';
-
-interface ICondition {
-  metadataType: string, //The Metadata Type to query
-  operator: operatorTypes, // The operator of the condition
-  operand?: number | [number | 'minAPI',number | 'minAPI'], //value that operator works on
-  expiration?: string, //Expiration date of the condition
-  processAlways?: Boolean,  //(only within a conditionOr OR a conditionAnd)
-  conditionPerItem?: Boolean, // (only within a conditionAnd)
-  conditionOr?: ICondition, //Extra condition to be ORed with this condition
-  conditionAnd?: ICondition //Extra condition to be ANDed with this condition
-  showDetails?: Boolean //Toggle whether individual items that meet the condition are displayed
-
-}
-
-interface IResult {
-  label: string, //Friendly output to display when rule is triggered 
-  message: string, //Text block to display
-  url?: string, //link to content
-  showDetails?: Boolean //Toggle whether individual items that trigger the rule are displayed
-}
-
-interface IRule {
-  name: string, // The Rule Name
-  condition: ICondition, // Logic to determine whether the rule is triggered
-  resultTrue?: IResult, //Output if the condition is met 
-  resultFalse?: IResult //Output if the condition is not met
-}
-
-interface IInstallRule {
-  name: string, //Salesforce Edition
-  blockingItems: {label: String, condition: ICondition}[] //Conditions which, if true, mean the package cannot be installed in this edition
-}
-
-interface ITechAdoptionRule {
-  categoryName: string, // Category for the Tech score rule
-  categoryLabel: string, //Friendly output for the score rule category
-  items: IMetadataType[]
-}
-
-interface IDependecyRule {
-  name: string, //Name for the dependency rule
-  label: string, //Friendly output of the dependency rule
-  condition: ICondition //Condition which fires the dependency rule
-}
-
-interface IDataModel {
-  name: string, //Name of the cloud or feature this data model describes
-  label: string,  //Friendly output of the cloud or feature name
-  fields?: string[], //Array of fields (in Object.Field format) included in this datamodel
-  objects?: string[], //Array of objects included in this data model
-  namespaces?: string[], //Array of namespaces included in this data model
-}
-
-const minAPI = 47;
-
-const rulesVersion = '20210105';
+const rulesVersion = '20210324';
 
 const standardNamespaces = [
   'c',
@@ -183,7 +16,14 @@ const standardNamespaces = [
   'ui',
   'apex',
   'ltng'
-]
+];
+
+//See  https://github.com/get-alex/alex#configuration for more information on how to configure the Language Scanner
+const alexConfig = {
+  "noBinary": true,
+  "profanitySureness": 1,
+  "allow": ["period","simple","invalid","special","just","fires","host-hostess","gross","executes","execution"]
+}
 
 const mdTypes: IMetadataType[] = [{
   label: 'Permission Sets',
@@ -445,9 +285,9 @@ const enablementRules: IRule[] = [{
       operator: 'notexists'
     },
     resultTrue: {
-      label: 'Take Advantage of Platform Cache',
-      message: 'Use Platform Cache to improve the performance of your application.',
-      url: 'https://medium.com/inside-the-salesforce-ecosystem/leverage-platform-cache-to-reduce-transaction-time-and-increase-customer-satisfaction-cd3616c9c6ee'
+      label: 'Supercharge Your App’s Performance with Free Platform Cache',
+      message: 'As part of the partner program and, with the Spring ’21 release, ISVs can now include that 3MB of platform cache into their managed packages. Check out this blog to see how the free cache provisioning works and what you need to do to take advantage of it.',
+      url: 'http://bit.ly/ISVTEPlatformCache'
     }
   },
   {
@@ -583,19 +423,6 @@ const enablementRules: IRule[] = [{
       url: 'https://developer.salesforce.com/blogs/2020/08/breezing-through-the-upcoming-auraenabled-critical-update.html?utm_campaign=August_2020&utm_source=social&utm_medium=twitter&utm_source=twitter&utm_medium=organic_social&utm_campaign=amer_sfld&utm_content=AMER%2CDevelopers%2CEnglish'
     }
   },
-  {
-    name: 'In-App Walkthrough',
-    condition: {
-      metadataType: 'Prompt',
-      operator: 'notexists'
-    },
-    resultTrue: {
-      label: 'In-App Prompts & Walkthrough',
-      message: 'In-App Prompts & Walkthrough can guide the users with the steps to navigate',
-      url: 'https://help.salesforce.com/articleView?id=customhelp_lexguid.htm&type=5'
-    }
-  }
-
 ];
 
 const qualityRules: IRule[] = [{
@@ -842,7 +669,7 @@ const alertRules: IRule[] = [
     resultTrue: {
       label: 'Stay on Top of Alerts',
       message: 'Sign up here to be notified of all Partner Alerts',
-      url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000FtFWqQAN'
+      url: 'https://sfdc.co/ISVTEAlertsAll'
     }
   },
   {
@@ -865,13 +692,13 @@ const alertRules: IRule[] = [
     condition: {
       metadataType: 'componentProperties.AuraDefinitionBundle.*.namespaceReferences.ui',
       operator: 'exists',
-      expiration: '2021-05-01T00:00:00.000Z',
+      expiration: '2021-08-01T00:00:00.000Z',
       showDetails: true
     },
     resultTrue: {
       label: 'Aura Components in UI Namespace Retiring in Summer \'21',
       message: 'In Summer \'21, Lightning Base Components in the ui namespace will be retired.',
-      url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GXNKsQAP',
+      url: 'https://sfdc.co/ISVTEAlert20191210',
       showDetails: true
     }
   },
@@ -906,7 +733,7 @@ const alertRules: IRule[] = [
     condition: {
       metadataType: 'Territory',
       operator: 'exists',
-      expiration: '2020-10-01T00:00:00.000Z'
+      expiration: '2021-07-01T00:00:00.000Z'
     },
     resultTrue: {
       label: 'Territory Management 1.0',
@@ -931,28 +758,28 @@ const alertRules: IRule[] = [
     name: 'Lightning Platform API Versions 7-20',
     condition: {
       metadataType: 'apiVersions.*.*',
-      expiration: '2021-05-1T00:00:00.000Z',
+      expiration: '2021-08-1T00:00:00.000Z',
       operator: 'between',
       operand: [7,20],
     },
     resultTrue: {
       label: 'Lightning Platform API Versions 7-20 Retiring in Summer ‘21',
       message: 'With the Summer ‘21 release, SOAP, REST, and Bulk API legacy versions 7 through 20 will be retired and no longer supported by Salesforce. When these legacy versions are retired, applications consuming impacted versions of the APIs will experience a disruption as the requests will fail and result in an error indicating that the requested endpoint has been deactivated.',
-      url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GXNIDQA5'
+      url: 'https://sfdc.co/ISVTEAlert20200120'
     }
  },
  {
   name: 'Salesforce Platform API Versions 21.0 thru 30.0 in Summer 22',
   condition: {
     metadataType: 'apiVersions.*.*',
-    expiration: '2021-05-1T00:00:00.000Z',
+    expiration: '2022-008-1T00:00:00.000Z',
     operator: 'between',
     operand: [5,30],
   },
   resultTrue: {
     label: 'Salesforce Platform API Versions 21.0 thru 30.0 in Summer \'22',
     message: 'With the Summer ‘22 release, SOAP, REST, and Bulk API legacy versions 21 through 30 will be retired and no longer supported by Salesforce. When these legacy versions are retired, applications consuming impacted versions of the APIs will experience a disruption as the requests will fail and result in an error indicating that the requested endpoint has been deactivated.',
-    url: 'https://partners.salesforce.com/partnerAlert?id=a034V00000GsYCdQAN'
+    url: 'https://sfdc.co/ISVTEAlert20201109'
   }
 },
  {
@@ -1006,7 +833,7 @@ const alertRules: IRule[] = [
   resultTrue: {
     label: 'Enhancement to Guest User Sharing Policy',
     message: 'The secure guest user record access and assign new records created by guest users to the default owner will be auto-enabled in Summer ‘20 with opt-out & disable options available. The settings will be enforced in Winter ‘21 without opt-out & disable options. If your application uses or can use Guest Users, please refer to this alert link to ensure you will not be impacted.',
-    url: 'https://partners.salesforce.com/partnerAlert?id=a033A00000GNp0vQAD'
+    url: 'https://sfdc.co/ISVTEAlert20200414'
   }
  },
  {
@@ -1047,7 +874,7 @@ const alertRules: IRule[] = [
  resultTrue: {
    label: 'Upcoming Enforcing Changes Affecting Guest User Object Permissions',
    message: 'As part of the new Guest User Security Policy for Salesforce public sites, Salesforce will permanently remove several guest user object permissions with the Spring 21 release. The object permissions due to be removed are: Edit, Delete, Modify All, & View All. These permissions will be permanently removed for custom objects and standard objects. Major impact will be seen on standard objects - Order, Survey Response, Contract, ProfileSkillUser, and ProfileSkillEndorsement, and all custom objects.',
-   url: 'https://partners.salesforce.com/partnerAlert?id=a034V00000GsZgpQAF'
+   url: 'https://sfdc.co/ISVTEAlert20201215'
  }
 },
 {
@@ -1060,7 +887,7 @@ const alertRules: IRule[] = [
   resultTrue: {
     label: 'Changing the Location Search Filter Level setting in Command Center, by administrators, may impact Work.com Components',
     message: 'With the v5 of Workplace Command Center, Salesforce provides System Administrators with the option of allowing end users to search all levels of the location hierarchy. In previous versions, and by default in Version 5, end users can search only level-1 locations. Not all components running in Workplace Command Center fully support the option to search locations at all levels of the hierarchy. The components that support search at all levels are: Wellness Status, Wellness Status by Location, Location Status, and Operations Feed (tasks).',
-    url: 'https://partners.salesforce.com/partnerAlert?id=a034V00000GsZJuQAN'
+    url: 'https://sfdc.co/ISVTEAlert20201207'
   }
 },
 {
@@ -1085,9 +912,41 @@ const alertRules: IRule[] = [
   resultTrue: {
     label: 'New Order Save Behavior',
     message: 'To align with Force.com platform requirements, we’re updating the Order Save Behavior feature starting with the Winter ’21 release. This update improves the evaluation of custom application logic on the parent record. Unlike the previous version, the New Order Save Behavior makes Salesforce run custom application logic whenever an order product update causes a change to the parent order. Custom application logic consists of validation rules, Apex triggers, workflow rules, flows, and processes.',
-    url: 'https://partners.salesforce.com/partnerAlert?id=a034V00000GsVZEQA3'
+    url: 'https://sfdc.co/ISVTEAlert20200925'
   }
 },
+  {
+      name: "Lightning Platform Components Proactive Enablement",
+
+      condition: {
+        expiration: '2021-10-01T00:00:00.000Z',
+        metadataType: "LightningComponentBundle",
+        operator: "exists",
+        conditionOr: {
+          metadataType: "AuraDefinitionBundle",
+          operator: "exists",
+        }
+      },
+      resultTrue: {
+        label: "Access Security Changes to Lightning Platform Components Proactive Enablement",
+        message: "During the Summer ‘21 release, Salesforce will be automatically enforcing the Disable Access to Non-global Apex Controller Methods in Managed Packages and Enforce Access Modifiers on Apex Properties in Lightning Component Markup release updates. View the alert to understand the changes and prepare for their impact.",
+        url: "https://sfdc.co/ISVTEAlert20210209"
+      }
+
+  },
+  {
+    name: 'MFA Mandate',
+    condition: {
+      expiration: '2022-03-1T00:00:00.000Z',
+      metadataType: 'any',
+      operator: 'always'
+    },
+    resultTrue: {
+      label: 'MFA Mandate - Alert to All Partners (w/ emphasis on OEM/reseller partners)',
+      message: 'Beginning February 1, 2022, all users will be required to adopt Multi-Factor Authentication (MFA) to login to Salesforce products, including OEM products and Salesforce products purchased through a reseller.',
+      url: 'https://sfdc.co/ISVTEAlert20210202'
+    }
+ },
 ];
 
 const editionWarningRules: IInstallRule[] = [{
@@ -1209,6 +1068,13 @@ const editionWarningRules: IInstallRule[] = [{
     }
     },
     {
+      label: 'Platform Cache',
+      condition: {
+        metadataType: 'PlatformCachePartition',
+        operator: 'exists'  
+      }
+    },
+    {
       label: 'Custom Report Types',
       condition: {
         metadataType: 'ReportType',
@@ -1242,78 +1108,418 @@ const editionWarningRules: IInstallRule[] = [{
 
 const techAdoptionRules: ITechAdoptionRule[] = [
   {
-    categoryName: 'DataStore',
-    categoryLabel: 'Which platform technology does your application use as its primary data store?',
-    items: [
-      {
-        metadataType: 'CustomObject',
-        label: 'Custom Objects'
-      }
-    ]
-  },
-  {
-    categoryName: 'DataProcess',
-    categoryLabel: 'Which other platform technologies does your application use to process and store data?',
-    items: [
-      {
-        metadataType: 'CustomObject',
-        label: 'Custom Objects'
-      },
-      {
-        metadataType: 'CustomObject.BigObject',
-        label: 'Big Objects'
-      },
-      {
-        metadataType: 'PlatformEvent__c',
-        label: 'Platform Events'     
-      },
-      {
-        metadataType: 'PlatformEventChannel',
-        label: 'Change Data Capture'     
-      }
-    ]
-  },
-  {
     categoryName: 'UX',
-    categoryLabel: 'Which user interface technologies does your application use to deliver the end-user experience?',
-    items: [
+    categoryLabel: 'User Experience',
+    technologies: [
       {
-        metadataType: 'LightningComponentBundle',
-        label: 'Lightning Web Components',
+        name: 'Lightning Web Components',
+        question: 'Does your application metadata contain Lightning web components?',
+        points: 10,
+        condition: {
+            metadataType: 'LightningComponentBundle',
+            operator: 'exists'
+          },
+        levelUp: {
+          label: 'Take advantage of Lightning Web Components',
+          message: 'Find more information about how to leverage the power of LWC and for best practices, see this webinar.',
+          url: 'https://partners.salesforce.com/0693A000007Kd7oQAC'
+        }
       },
       {
-        metadataType: 'AuraDefinitionBundle',
-        label: 'Aura Lightning Components',
+        name: 'In-App Guidance',
+        question: 'Does your application metadata contain In-App Guidance for walkthroughs?',
+        points: 10,
+        condition: {
+            metadataType: 'Prompt',
+            operator: 'exists'
+          },
+        levelUp: {
+          label: 'Take Advantage of In-App Prompts',
+          message: 'For more information about how to use In-App Prompts to keep your users informed, see this blog.',
+          url: 'https://medium.com/inside-the-salesforce-ecosystem/in-app-prompts-for-isvs-e9b013969016'
+        }
       },
       {
-        metadataType: 'ApexPage',
-        label: 'Visualforce Pages',
+        name: 'Lightning Flow',
+        question: 'Does your application metadata contain Lightning Flows?',
+        points: 10,
+        condition: {
+            metadataType: 'Flow',
+            operator: 'exists'
+          },
+        levelUp: {
+          label: 'Take Advantage of Flows',
+          message: 'Flows are a powerful tool to enable forms based workflows and process automation to your users. See this webinar for more information.',
+          url: 'https://partners.salesforce.com/0693A000007S2Dq'
+        }
       }
     ]
   },
   {
-    categoryName: 'ApplicationProcessing',
-    categoryLabel: 'Which technologies does your app use for application processing and security?',
-    items: [
+    categoryName: 'Analytics',
+    categoryLabel: 'Analytics & Einstein',
+    technologies: [
       {
-        metadataType: 'Flow.FlowTypes.Workflow',
-        label: 'Process Builder',
+        name: 'Reports and Dashboards',
+        question: 'Does your application metadata contain custom reports or dashboards?',
+        points: 5,
+        condition: {
+            metadataType: 'Report',
+            operator: 'exists',
+            conditionOr: {
+              metadataType: 'ReportType',
+              operator:'exists',
+              conditionOr: {
+                metadataType: 'Dashboard',
+                operator: 'exists'
+              }
+            }
+          }
       },
       {
-        metadataType: 'Flow.FlowTypes.Flow',
-        label: 'Screen Flows',
+        name: 'TableauCRM',
+        question: 'Does your application metadata contain custom analytics implemented using Tableau CRM (formerly Einstein Analytics)?',
+        points: 10,
+        condition: {
+            metadataType: 'WaveTemplateBundle',
+            operator: 'exists',
+            conditionOr: {
+              metadataType: 'WaveApplication',
+              operator: 'exists',
+              conditionOr: {
+                metadataType: 'WaveDashboard',
+                operator: 'exists',
+                conditionOr: {
+                  metadataType: 'WaveDataflow',
+                  operator: 'exists',
+                  conditionOr: {
+                    metadataType: 'WaveDataset',
+                    operator: 'exists',
+                    conditionOr: {
+                      metadataType: 'WaveLens',
+                      operator: 'exists'
+                    }
+                  }
+                }
+              }
+            }
+          },
+
       },
       {
-        metadataType: 'Flow.FlowTypes.AutoLaunchedFlow',
-        label: 'Autolaunched Flows',
+        name: 'Einstein Predictions',
+        question: 'Does your application metadata contain predictions using Einstein Prediction Builder or Einstein Discovery?',
+        points: 7,
+        condition: {
+            metadataType: 'AIApplication',
+            operator: 'exists',
+            conditionOr: {
+              metadataType: 'MLPredictionDefinition',
+              operator:'exists',
+              conditionOr: {
+                metadataType: 'MLDataDefinition',
+                operator: 'exists'
+              }
+            }
+          }
       },
       {
-        metadataType: 'ApexClass',
-        label: 'Apex',
+        name: 'Next Best Action',
+        question: 'Does your application metadata contain Next Best Actions to surface recommendations to end users?',
+        points: 5,
+        condition: {
+            metadataType: 'RecordActionDeployment',
+            operator: 'exists',
+            
+          }
+      },
+    ]
+  },
+  {
+    categoryName: 'Processing and Platform',
+    categoryLabel: 'Processing & Platform Adoption',
+    technologies: [
+      {
+        name: 'Experience Cloud',
+        question: 'Does your application metadata contain Lightning Web Components which are rendered on Experience Cloud?',
+        points: 5,
+        condition: {
+          metadataType: 'LightningComponentBundle.targets.lightningCommunity__Page',
+          operator: 'exists',
+          conditionOr: {
+            metadataType: 'LightningComponentBundle.targets.lightningCommunity__Default',
+            operator: 'exists'
+          }
+        }
       },
       {
-        metadataType: 'PlatformCachePartition',
-        label: 'Platform Cache',
+        name: 'Apex',
+        question: 'Does your application metadata contain Apex?',
+        points: 5,
+        condition: {
+          metadataType: 'ApexClass',
+          operator: 'exists',
+          conditionOr: {
+              metadataType: 'ApexTrigger',
+              operator: 'exists'
+          }
+        }
+      },
+      {
+        name: 'Custom Objects',
+        question: 'Does your application metadata contain Custom Objects?',
+        points: 5,
+        condition: {
+            metadataType: 'CustomObject',
+            operator: 'exists'
+        }
+      },
+      {
+        name: 'Platform Cache',
+        question: 'Does your application metadata contain the free Platform Cache for ISVs?',
+        points: 7,
+        condition: {
+          metadataType: 'PlatformCachePartition',
+          operator: 'exists'
+        },
+        levelUp: {
+          label: 'Supercharge Your App’s Performance with Free Platform Cache',
+          message: 'As part of the partner program and, with the Spring ’21 release, ISVs can now include that 3MB of platform cache into their managed packages. Check out this blog to see how the free cache provisioning works and what you need to do to take advantage of it.',
+          url: 'http://bit.ly/ISVTEPlatformCache'
+        }
+      },
+      {
+        name: 'Shield',
+        question: 'Is your application compatible with Shield Platform Encryption?',
+        points: 5
+      }
+    ]
+  },
+  {
+    categoryName: 'Dev and Deploy',
+    categoryLabel: 'Development & Deployment',
+    technologies: [
+      {
+        name: 'Trialforce',
+        question: 'Are you using trialforce technologies to provide free trials for your customers?',
+        points: 10
+      },
+      {
+        name: 'ISV Debugger',
+        question: 'Have you used the ISV Debugger to troubleshoot an issue in a subscriber\'s org?',
+        points: 7
+      },
+      {
+        name: '2GP Packaging',
+        question: 'Is your metadata stored in a second-generation managed package (2GP)?',
+        points: 10,
+        levelUp: {
+          label: '2GP Deep Dive Trailmix',
+          message: 'Learn more about Second Generation Packaging and how to get started with this 2GP Deep Dive Trailmix',
+          url: 'http://sfdc.co/deep-dive-2gp'
+        }
+      },
+      {
+        name: 'LDV/Enterprise Scale Testing',
+        question: 'Have you requested an LDV (Large Data Volume) test org and executed performance testing by opening up a case?',
+        points: 7
+      },
+      {
+        name: 'Partner Intelligence',
+        question: 'Do you use AppExchange App Analytics to track the usage of any of your published apps?',
+        points: 10
+      },
+      {
+        name: 'Push Upgrades',
+        question: 'Do you use Push Upgrades to push application changes to your subscriber orgs?',
+        points: 10
+      },
+      {
+        name: 'DX/Scratch Orgs',
+        question: 'Do you use scratch orgs when developing code or features for your managed packages?',
+        points: 7
+      }
+    ]
+  },
+  {
+    categoryName: 'Secondary Tech UX',
+    categoryLabel: 'Secondary Technology: User Experience',
+    technologies: [
+      {
+        name: 'Lightning Console',
+        question: 'Does your application contain metadata that make your application components accessible in the  Lightning Console?',
+        points: 5,
+        condition: {
+          metadataType: 'CustomApplication.LightningConsoleCount',
+          operator: 'gt',
+          operand: 0
+        }
+      },
+      {
+        name: 'Surveys',
+        question: 'Does your application metadata contain Survey templates?',
+        points: 5,
+        condition: {
+          metadataType: 'Flow.FlowTypes.Survey',
+          operator: 'exists',
+          conditionOr: {
+            metadataType: 'Flow.FlowTypes.SurveyEnrich',
+            operator: 'exists',
+            conditionOr: {
+              metadataType : 'Flow.FlowTypes.CustomerLifecycle',
+              operator: 'exists'
+            }
+          }
+        }
+      },
+      {
+        name: 'Marketing Cloud - (Exact Target) specific UI',
+        question: 'Have you created something manifested in the Marketing Cloud UI (not headless)?',
+        points: 20,
+      },
+      {
+        name: 'Lightning Design System',
+        question: 'Does your application use the Lightning Design System?',
+        points: 5
+      },
+      {
+        name: 'Salesforce Mobile',
+        question: 'Does your application metadata contain the Salesforce Mobile App OR have you built a native mobile app using Salesforce SDK?',
+        points: 5
+      }
+    ]
+  },
+  {
+    categoryName: 'Secondary Tech Processing',
+    categoryLabel: 'Secondary Technology: Data Storage & Processing',
+    technologies: [
+      {
+        name: 'Salesforce Connect',
+        question: 'Does your application metadata contain external objects?',
+        points: 5,
+        condition: {
+          metadataType: 'CustomObject.ExternalObject',
+          operator: 'exists'
+        }
+      },
+      {
+        name: 'Heroku',
+        question: 'Have you built any part of your application on Heroku?',
+        points: 5
+      },
+      {
+        name: 'Platform Events',
+        question: 'Does your application metadata contain Platform Events?',
+        points: 5,
+        condition: {
+          metadataType: 'PlatformEvent__c',
+          operator: 'exists'
+        }
+      },
+      {
+        name: 'Big Objects',
+        question: 'Does your application metadata contain Big Objects?',
+        points: 5,
+        condition: {
+          metadataType: 'CustomObject.BigObject',
+          operator: 'exists'
+        }
+      }
+    ]
+  },
+  {
+    categoryName: 'Secondary Tech Industry',
+    categoryLabel: 'Secondary Technology: Cloud and Industry Adoption',
+    technologies: [
+      {
+        name: 'CPQ',
+        question: 'Does your application have a technical dependency on CPQ features that can only be accessed via user Permission Set Licenses (PSL) assignment?',
+        points: 5
+      },
+      {
+        name: 'Sales Cloud',
+        question: 'Does your application have a technical dependency on Sales Cloud features that can only be accessed with a CRM User Permission Set License (PSL)?',
+        points: 5
+      },
+      {
+        name: 'Service Cloud',
+        question: 'Does your application have a technical dependency on Service Cloud features that can only be accessed with a Service Cloud User Feature License?',
+        points: 5
+      },
+      {
+        name: 'Commerce Cloud',
+        question: 'Does your most recent B2C LINK integration release comply with the latest Certification Checklist?',
+        points: 10
+      },
+      {
+        name: 'Health Cloud',
+        question: 'Does your application have a technical dependency on Health Cloud features that can only be accessed via user Permission Set Licenses (PSL) assignment?',
+        points: 5,
+        condition: {
+          metadataType: 'dependencies.HealthCloud',
+          operator: 'exists',
+          conditionOr: {
+            metadataType: 'dependencies.HealthCloudEHR',
+            operator: 'exists'
+          }
+        }
+      },
+      {
+        name: 'Marketing Cloud - Exact Target',
+        question: 'Are you distributing your application via the install URL to customers (vs. sever-to-server)?',
+        points: 15
+      },
+      {
+        name: 'Marketing Cloud - Exact Target',
+        question: 'Are you using Lightning Design Systems for a fluid user experience?',
+        points: 15
+      },
+      {
+        name: 'Pardot',
+        question: 'Does your application have a technical dependency on Pardot features that can only be accessed via user Permission Set Licenses (PSL) assignment?',
+        points: 5
+      },
+      {
+        name: 'Consumer Goods Cloud',
+        question: 'Does your application have a technical dependency on Consumer Goods Cloud features that can only be accessed via user Permission Set Licenses (PSL) assignment?',
+        points: 5,
+        condition: {
+          metadataType: 'dependencies.CGCloud',
+          operator: 'exists'
+        }
+      },
+      {
+        name: 'Financial Services Cloud',
+        question: 'Does your application have a technical dependency on Financial Services Cloud features that can only be accessed via user Permission Set Licenses (PSL) assignment?',
+        points: 5,
+        condition: {
+          metadataType: 'dependencies.FSC',
+          operator: 'exists'
+        }
+      },
+      {
+        name: 'Manufacturing Cloud',
+        question: 'Does your application have a technical dependency on Manufacturing Cloud features that can only be accessed via user Permission Set Licenses (PSL) assignment?',
+        points: 5,
+        condition: {
+          metadataType: 'dependencies.MFGCloud',
+          operator: 'exists'
+        }
+      },
+      {
+        name: 'Government Cloud',
+        question: 'Is your application compatible with Government Cloud and Government Cloud Plus?',
+        points: 5,
+        levelUp: {
+          label: 'Is your App Gov Cloud Ready?',
+          message: 'Review the following guide to see if your app is ready for Govement Cloud and Government Cloud Plus',
+          url: 'https://sfdc.co/GovCloudReady'
+        }
+      },
+      {
+        name: 'Field Service',
+        question: 'Does your application have a technical dependency on Field Service features that can only be accessed via user Permission Set Licenses (PSL) assignment?',
+        points: 5
       }
     ]
   }
@@ -1423,6 +1629,11 @@ const dataModels: IDataModel[] = [{
   namespaces: ['FinServ'],
   objects: ['AccountParticipant','AuthorizedInsuranceLine','Award','BusinessLicense','BusinessMilestone','BusinessProfile','CaseGatewayRequest','Claim','ClaimCase','ClaimItem','ClaimParticipant','CoverageType','CustomerProperty','DistributorAuthorization','DocumentChecklistItem','DocumentType','Education','IdentityDocument','InsuranceClaimAsset','InsurancePolicy','InsurancePolicyAsset','InsurancePolicyCoverage','InsurancePolicyMemberAsset','InsurancePolicyParticipant','InsuranceProfile','LoanApplicant','LoanApplicantAddress','LoanApplicantAsset','LoanApplicantDeclaration','LoanApplicantEmployment','LoanApplicantIncome','LoanApplicantLiability','LoanApplicationAsset','LoanApplicationFinancial','LoanApplicationLiability','LoanApplicationProperty','LoanApplicationTitleHolder','OpportunityParticipant','ParticipantRole','PersonEducation','PersonLifeEvent','Producer','ProducerPolicyAssignment','ProductCoverage','ReciprocalRole','ResidentialLoanApplication','SecuritiesHolding','WealthAppConfig','WorkerCompCoverageClass' ]
 },
+{
+  name: 'HealthCloudEHR',
+  label: 'Health Cloud EHR Data Model',
+  objects: ['HealthCloudGA__EhrAllergyIntolerance__c','HealthCloudGA__EhrCarePlan__c','HealthCloudGA__EhrCarePlanActivity__c','HealthCloudGA__EhrCarePlanConcern__c','HealthCloudGA__EhrCarePlanGoal__c','HealthCloudGA__EhrCarePlanParticipant__c','HealthCloudGA__EhrCondition__c','HealthCloudGA__EhrConditionRelatedItem__c','HealthCloudGA__EhrDevice__c','HealthCloudGA__EhrDosageInstruction__c','HealthCloudGA__EhrEncounter__c','HealthCloudGA__EhrEncounterAccommodation__c','HealthCloudGA__EhrEncounterParticipant__c','HealthCloudGA__EhrImmunization__c','HealthCloudGA__EhrImmunizationReaction__c','HealthCloudGA__EhrMedicationPrescription__c','HealthCloudGA__EhrMedicationStatement__c','HealthCloudGA__EhrObservation__c','HealthCloudGA__EhrPatient__c','HealthCloudGA__EhrPatientContact__c','HealthCloudGA__EhrPractitioner__c','HealthCloudGA__EhrPractitionerIdentity__c','HealthCloudGA__EhrPractitionerQualification__c','HealthCloudGA__EhrPractitionerRole__c','HealthCloudGA__EhrProcedure__c','HealthCloudGA__EhrProcedurePerformer__c','HealthCloudGA__EhrProcedureRequest__c','HealthCloudGA__EhrProgram__c','HealthCloudGA__EhrRelatedObservation__c','HealthCloudGA__EhrRelatedPerson__c','HealthCloudGA__EhrVaccinationProtocol__c','HealthCloudGA__EhrVirtualDevice__c','HealthCloudGA__EhrVirtualDeviceChannel__c']
+},
 ]
 
 export {
@@ -1436,7 +1647,8 @@ export {
   rulesVersion,
   dependencyRules,
   dataModels,
-  standardNamespaces
+  standardNamespaces,
+  alexConfig
 };
 
 

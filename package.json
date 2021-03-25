@@ -1,7 +1,7 @@
 {
   "name": "isvte-sfdx-plugin",
   "description": "Salesforce ISV TE Plugin",
-  "version": "1.1.8",
+  "version": "1.1.10",
   "author": "ISV Platform Expert Team",
   "bugs": "https://github.com/forcedotcom/isvte-sfdx-plugin/issues",
   "dependencies": {
@@ -11,12 +11,12 @@
     "@oclif/plugin-help": "^2",
     "@salesforce/command": "^2.2.0",
     "@salesforce/core": "^2.1.6",
-    "alex": "^9.0.0",
+    "alex": "^9.1.0",
     "fs-extra": "^8.1.0",
     "sfdx-essentials": "^2.1.5",
+    "snyk": "^1.316.1",
     "tslib": "^1",
-    "xml2js": "^0.4.19",
-    "snyk": "^1.316.1"
+    "xml2js": "^0.4.19"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1",
