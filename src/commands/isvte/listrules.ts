@@ -105,7 +105,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
     }
     this.ux.log('\n');
     this.ux.styledHeader('Tech Adoption');
-    this.ux.table(this.getAllAdoptionRules(),['Category','MetadataType']);
+    this.ux.table(this.getAllAdoptionRules(),['Category','MetadataType','Condition']);
     return {
       'rulesVersion' : rulesVersion,
       'monitoredTypes': mdTypes,
@@ -150,11 +150,13 @@ For more information, please connect in the ISV Technical Enablement Plugin
     let retVal = [];
     for (let category of techAdoptionRules) {
       retVal.push({
-        Category: category['categoryName']
+        Category: category['categoryLabel']
       });
-      for (let rule of category['items']) {
+      for (let rule of category['technologies']) {
+        const conditionString = rule.condition? this.conditionToString(rule.condition) : 'N/A';
         retVal.push({
-          MetadataType: rule.label
+          MetadataType: rule.name,
+          Condition: conditionString
         })
       }
     }

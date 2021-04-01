@@ -1191,6 +1191,11 @@ const techAdoptionRules: ITechAdoptionRule[] = [
         name: 'TableauCRM',
         question: 'Does your application metadata contain custom analytics implemented using Tableau CRM (formerly Einstein Analytics)?',
         points: 10,
+        levelUp: {
+          label: 'Tableau CRM on Trailhead',
+          message: 'Start here to learn how to use TableauCRM in your application',
+          url: 'https://sfdc.co/ISVTETCMGetStarted'
+        },
         condition: {
             metadataType: 'WaveTemplateBundle',
             operator: 'exists',
@@ -1221,6 +1226,11 @@ const techAdoptionRules: ITechAdoptionRule[] = [
         name: 'Einstein Predictions',
         question: 'Does your application metadata contain predictions using Einstein Prediction Builder or Einstein Discovery?',
         points: 7,
+        levelUp: {
+          label: 'Einstein Prediction Builder on Trailhead',
+          message: 'Start here to learn how to use Einstein Prediction Builder and Einstein Discovery in your application',
+          url: 'https://sfdc.co/ISVTEPredictionBuilder'
+        },
         condition: {
             metadataType: 'AIApplication',
             operator: 'exists',
@@ -1238,6 +1248,11 @@ const techAdoptionRules: ITechAdoptionRule[] = [
         name: 'Next Best Action',
         question: 'Does your application metadata contain Next Best Actions to surface recommendations to end users?',
         points: 5,
+        levelUp: {
+          label: 'Next Best Action on Trailhead',
+          message: 'Start here to learn how to use Einstein Next Best Actions in your application',
+          url: 'https://sfdc.co/ISVTENBA'
+        },
         condition: {
             metadataType: 'RecordActionDeployment',
             operator: 'exists',
@@ -1458,6 +1473,15 @@ const techAdoptionRules: ITechAdoptionRule[] = [
         points: 5
       },
       {
+        name: 'Work.com',
+        question: 'Does your application have a technical dependency on Work.com features that can only be accessed via user Permission Set Licenses (PSL) assignment?',
+        points: 5,
+        condition: {
+          metadataType: 'dependencies.workcom',
+          operator: 'exists'
+        }
+      },
+      {
         name: 'Commerce Cloud',
         question: 'Does your most recent B2C LINK integration release comply with the latest Certification Checklist?',
         points: 10
@@ -1607,7 +1631,7 @@ const dependencyRules: IDependecyRule[] = [{
 ]
 
 const dataModels: IDataModel[] = [{
-  name: 'work.com',
+  name: 'workcom',
   label: 'Work.com',
   namespaces: ['wkcc'],
   objects: ['Employee','EmployeeCrisisAssessment','InternalOrganizationUnit','Crisis'],
