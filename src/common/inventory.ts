@@ -416,6 +416,7 @@ export class packageInventory {
           points: 0,
           maxPoints: tech.points,
           found: false,
+          levelUp: undefined,
           detectable: tech.hasOwnProperty('condition')
         };
 
@@ -425,11 +426,11 @@ export class packageInventory {
         }
 
         techResult.points = techResult.found ? tech.points : 0; 
-        
-        if (!techResult.found && tech.levelUp != undefined) {
+        techResult.levelUp = tech.levelUp; 
+  /*      if (!techResult.found && tech.levelUp != undefined) {
             techResult['levelUp'] = tech.levelUp;
         }
-          
+    */      
         categoryResult.technologies.push(techResult);
         categoryResult.points += techResult.points;
         }

@@ -296,12 +296,12 @@ For more information, please connect in the ISV Technical Enablement Plugin
 
       if (this.showTechAdoption) {
         this.ux.styledHeader('Technology Adoption:');
-        this.ux.log('The responses below correspond to the ISV Technology Adoption Survey for FY\'22.\nPlease note that the points and answers are not indended to be exhaustive and only reflect that which can be identified within the metadata of this package.\n\n');
+        this.ux.log('The responses below correspond to the ISV Technology Adoption Survey for FY\'22.\nPlease note that the points and answers are not indended to be exhaustive and only reflect that which can be identified within the metadata source.\nAccess the Survey here: https://www.getfeedback.com/r/2ssZhMKB/\n\n');
         for (var category of this.packageInventory.getTechAdoptionScore()) {
           this.ux.log(`${category.categoryLabel} (${category.points} Points)\n`);
           let i = 1;
           for (var tech of category.technologies) {
-            this.ux.log(` ${i++}. ${tech.name}: ${tech.question} \n   ${tech.found ? 'YES' : tech.detectable ? 'NO': 'UNKNOWN'} (${tech.points}/${tech.maxPoints} Points)`);
+            this.ux.log(` ${i++}. ${tech.name}: ${tech.question} (${tech.maxPoints} Points) \n   ${tech.found ? 'Found' : tech.detectable ? 'Not Found': 'Not Identifiable in Metadata'} `);
             if (tech.levelUp != undefined) {
               this.ux.log(`\t${tech.levelUp.message}`);
               if (tech.levelUp.url != undefined) {
