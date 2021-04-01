@@ -1269,6 +1269,11 @@ const techAdoptionRules: ITechAdoptionRule[] = [
         name: 'Experience Cloud',
         question: 'Does your application metadata contain Lightning Web Components which are rendered on Experience Cloud?',
         points: 5,
+        levelUp: {
+          label: 'Learn more about Experience Cloud',
+          message: 'Start here to learn more about how to use Experience Cloud in your applicatin',
+          url: 'https://trailhead.salesforce.com/en/content/learn/trails/communities'
+        },
         condition: {
           metadataType: 'LightningComponentBundle.targets.lightningCommunity__Page',
           operator: 'exists',
@@ -1317,8 +1322,15 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'Shield',
         question: 'Is your application compatible with Shield Platform Encryption?',
-        points: 5
-      }
+        points: 5,
+        levelUp: {
+          label: 'Platform Encryption for ISVs',
+          message: 'Learn how to test your app against Shield Plaftorm Encryption',
+          url: 'http://bit.ly/ISVTEPlatformEncryption'
+        }
+      },
+      
+      
     ]
   },
   {
@@ -1328,12 +1340,22 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'Trialforce',
         question: 'Are you using trialforce technologies to provide free trials for your customers?',
-        points: 10
+        points: 10,
+        levelUp: {
+          label: 'Deliver Trials with Trialforce',
+          message: 'Learn how to use Trialforce to allow your prospects to try your application',
+          url: 'https://sfdc.co/ISVTETrialforce'
+        }
       },
       {
         name: 'ISV Debugger',
         question: 'Have you used the ISV Debugger to troubleshoot an issue in a subscriber\'s org?',
-        points: 7
+        points: 7,
+        levelUp: {
+          label: 'Debug subscriber issues',
+          message: 'Learn how to use the ISV Debugger to troubleshoot issues in subscriber orgs',
+          url: 'https://sfdc.co/ISVTEDebugger'
+        }
       },
       {
         name: '2GP Packaging',
@@ -1348,22 +1370,42 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'LDV/Enterprise Scale Testing',
         question: 'Have you requested an LDV (Large Data Volume) test org and executed performance testing by opening up a case?',
-        points: 7
+        points: 7,
+        levelUp: {
+          label: 'Test for Scale',
+          message: 'Test your app for large data volumes to when your potential customers include large enterprises',
+          url: 'https://sfdc.co/ISVTELargeData'
+        }
       },
       {
         name: 'Partner Intelligence',
         question: 'Do you use AppExchange App Analytics to track the usage of any of your published apps?',
-        points: 10
+        points: 10,
+        levelUp: {
+          label: 'Gain insight with Partner Intelligence',
+          message: 'Discover how subscribers interact with your package by exploring App Analytics data.',
+          url: 'https://bit.ly/AAGetStartedBlog'
+        }
       },
       {
         name: 'Push Upgrades',
         question: 'Do you use Push Upgrades to push application changes to your subscriber orgs?',
-        points: 10
+        points: 10,
+        levelUp: {
+          label: 'Manage subscriber updates with Push Upgrades',
+          message: 'Refer to these resources to understand and implement push upgrades for first and second-generation managed packages.',
+          url: 'https://sfdc.co/ISVTEPushUpgrades'
+        }
       },
       {
         name: 'DX/Scratch Orgs',
         question: 'Do you use scratch orgs when developing code or features for your managed packages?',
-        points: 7
+        points: 7,
+        levelUp: {
+          label: 'SalesforceDX for ISVs',
+          message: 'Learn how ISVs can leverage Salesforce DX to build apps faster and with more agility than ever.',
+          url: 'https://sfdc.co/ISVTESalesforceDXISVs'
+        }
       }
     ]
   },
