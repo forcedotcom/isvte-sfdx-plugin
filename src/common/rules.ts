@@ -1417,6 +1417,11 @@ const techAdoptionRules: ITechAdoptionRule[] = [
         name: 'Lightning Console',
         question: 'Does your application contain metadata that make your application components accessible in the  Lightning Console?',
         points: 5,
+        levelUp: {
+          label: 'Create a console App',
+          message: 'Learn how to use Lightning Console Apps to improve productivity',
+          url: 'https://sfdc.co/ISVTEConsoleApp'
+        },
         condition: {
           metadataType: 'CustomApplication.LightningConsoleCount',
           operator: 'gt',
@@ -1448,12 +1453,30 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'Lightning Design System',
         question: 'Does your application use the Lightning Design System?',
-        points: 5
+        points: 5,
+        levelUp: {
+          label: 'Use SLDS',
+          message: 'Learn how to use the Ligthning Design System in your App',
+          url: 'https://sfdc.co/ISVTELDS'
+        }
       },
       {
         name: 'Salesforce Mobile',
         question: 'Does your application metadata contain the Salesforce Mobile App OR have you built a native mobile app using Salesforce SDK?',
-        points: 5
+        points: 5,
+        condition: {
+          metadataType: 'BriefcaseDefinition',
+          operator: 'exists', 
+          conditionOr: {
+            metadataType: 'MobileApplicationDetail',
+            operator: 'exists'
+          }
+        },
+        levelUp: {
+          label: 'Optimize your app for Mobile',
+          message: 'Learn more about making your app Mobile',
+          url: 'https://sfdc.co/ISVTEMobile'
+        }
       }
     ]
   },
@@ -1468,6 +1491,11 @@ const techAdoptionRules: ITechAdoptionRule[] = [
         condition: {
           metadataType: 'CustomObject.ExternalObject',
           operator: 'exists'
+        },
+        levelUp: {
+          label: 'Salesforce Connect',
+          message: 'Learn more about using Salesforce Connect to interact with data outside a Salesforce Org',
+          url: 'https://sfdc.co/ISVTEConnect'
         }
       },
       {
@@ -1482,6 +1510,11 @@ const techAdoptionRules: ITechAdoptionRule[] = [
         condition: {
           metadataType: 'PlatformEvent__c',
           operator: 'exists'
+        },
+        levelUp: {
+          label: 'Plaform Events on Trailhead',
+          message: 'Learn more about Platform Events on Trailhead',
+          url: 'https://sfdc.co/ISVTEPETrail'
         }
       },
       {
@@ -1491,6 +1524,11 @@ const techAdoptionRules: ITechAdoptionRule[] = [
         condition: {
           metadataType: 'CustomObject.BigObject',
           operator: 'exists'
+        },
+        levelUp: {
+          label: 'Big Objects on Trailhead',
+          message: 'Learn more about Big Objects on Traihead',
+          url: 'https://sfdc.co/ISVTEBigObj'
         }
       }
     ]
@@ -1554,7 +1592,12 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'Pardot',
         question: 'Does your application have a technical dependency on Pardot features that can only be accessed via user Permission Set Licenses (PSL) assignment?',
-        points: 5
+        points: 5,
+        levelUp: {
+          url: 'https://sfdc.co/ISVTEPardot',
+          label: 'Pardot for ISVs',
+          message: 'Learn more about how ISV partners can leverage Pardot for B2B Marketing Automation'
+        }
       },
       {
         name: 'Consumer Goods Cloud',
