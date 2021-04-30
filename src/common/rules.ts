@@ -957,6 +957,31 @@ const alertRules: IRule[] = [
    label: 'Stricter Validation in Visualforce Remoting API',
    message: 'To ensure that the Visualforce Remoting API is properly secured, calls now have stricter validation. This update is enforced in Winter \'22. Click here to find out more',
    url: 'https://sfdc.co/ISVTEremotingupdate'}
+ },
+ {
+   name: 'Candidate Patient Entity Retirement',
+   condition: {
+     expiration: '2022-08-1T00:00:00.000Z',
+     metadataType: 'dependencies.components.HealthCloudGA__CandidatePatient__c',
+    operator: 'exists',
+    conditionOr: {
+      metadataType: 'ApexTrigger.objects.HealthCloudGA__CandidatePatient__c',
+      operator: 'exists',
+      conditionOr: {
+        metadataType: 'Flow.objects.HealthCloudGA__CandidatePatient__c',
+        operator: 'exists',
+        conditionOr: {
+          metadataType: 'CustomField.objects.HealthCloudGA__CandidatePatient__c',
+          operator: 'exists'
+        }
+      }
+    }
+    },
+    resultTrue: {
+      label: 'Health Cloud “Candidate Patient” data entity retirement',
+      message: 'We are planning to retire the Health Cloud “Candidate Patient” data entity with the Spring ‘22* release and we recommend that you use the Lead object by that time.',
+      url: 'https://sfdc.co/ISVTEAlertCandidatePatient'
+    }
  }
 ];
 
