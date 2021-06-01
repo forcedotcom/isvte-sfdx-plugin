@@ -15,14 +15,15 @@ const standardNamespaces = [
   'lightning',
   'ui',
   'apex',
-  'ltng'
+  'ltng',
+  'force'
 ];
 
 //See  https://github.com/get-alex/alex#configuration for more information on how to configure the Language Scanner
 const alexConfig = {
   "noBinary": true,
-  "profanitySureness": 1,
-  "allow": ["period","simple","invalid","special","just","fires","host-hostess","gross","executes","execution"]
+  "profanitySureness": 2,
+  "allow": ["period","simple","invalid","special","just","fires","host-hostess","gross","executes","execution","KY"]
 }
 
 const mdTypes: IMetadataType[] = [{
