@@ -3752,6 +3752,11 @@ node-environment-flags@1.0.6:
     object.getownpropertydescriptors "^2.0.3"
     semver "^5.7.0"
 
+node-json2html@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/node-json2html/-/node-json2html-2.1.0.tgz#4f7187a0e2063683145866ab17ad32fa893c7b92"
+  integrity sha512-HHt93utrlAc/K8U7dnSPb3YvsRsknx8pLbmmT2/KS8x5MmcmakgsaTr2tFqQawvVSFKRGm49RW8NWtCt+VUVJw==
+
 node-preload@^0.2.0:
   version "0.2.1"
   resolved "https://registry.yarnpkg.com/node-preload/-/node-preload-0.2.1.tgz#c03043bb327f417a18fee7ab7ee57b408a144301"

@@ -13,10 +13,13 @@ import {
 import {
   SfdxError
 } from '@salesforce/core';
+import cli from 'cli-ux';
+
 import {
   Loggit
 } from '../../common/logger';
 import fs = require('fs-extra');
+import json2html = require('node-json2html');
 
 import {
   packageInventory
@@ -37,9 +40,11 @@ import *
   import MetadataFilterFromPackageXml
   from 'sfdx-essentials/lib/commands/essentials/metadata/filter-from-packagexml';
 
+
 export default class mdscan extends SfdxCommand {
 
   private showFullInventory = false;
+  private formatHTML = false;
   private languageScan = false;
   private showTechAdoption = false;
   private sourceFolder = '';
@@ -110,7 +115,10 @@ For more information, please connect in the ISV Technical Enablement Plugin
     languagescan: flags.boolean({
       char: 'l',
       description: 'perform a scan for potentially exclusive or offensive language'
-    })
+    }),
+    html: flags.boolean({
+      description: 'generate html formatted output'
+    }),
 
   };
 
@@ -124,6 +132,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
     this.showTechAdoption = this.flags.techadoption;
     this.sfdxPackageXml = this.flags.sfdxpackagexml;
     this.languageScan = this.flags.languagescan;
+    this.formatHTML = this.flags.html;
 
     //Check Suppress Flags
     if (this.flags.suppress) {
@@ -193,11 +202,150 @@ For more information, please connect in the ISV Technical Enablement Plugin
       this.packageInventory.setMinAPI(this.flags.minapi);
     }
     this.packageInventory.setMetadata(inventoryPackage(this.flags.sourcefolder, packageJSON, {scanLanguage: this.languageScan}));
-   
+   // Generate Report
+
+   //Just show inventory
     if (this.showFullInventory) {
       this.ux.styledHeader('Inventory of Package:');
       this.ux.table(this.packageInventory.getFullInvArray(), ['metadataType', 'count']);
-    } else {
+    }
+    //HTML Format
+    else if (this.formatHTML) {
+      let htmlOut = '';
+
+      /*
+      Header
+        Title
+        Date
+      
+      Monitored Inventory
+        [Items]
+      
+      Enablement
+        [Items]
+          [Details]
+      */
+      
+          json2html.component.add({
+            "pageHeader": {"<>":"div","id":"${id}","html":[
+              {"<>":"h2","html":"ISVTE Plugin Scan Results"},
+              {"<>":"div","html":[
+                  {"<>":"div","html":"Date:"},
+                  {"<>":"div","html":"${Date}"}
+                ]},
+              {"<>":"div","html":"Rules Version:"},
+              {"<>":"div","html":"${RulesVersion}"}
+            ]},
+            "sectionHeader" :  {"<>":"h2","html":"${name}"},
+            "enablementLink":{"<>":"a","href":"${url}","text":"${url}"},
+            "enablementComponents":{"<>":"p","html":"Impacted Components: ${value}"},
+            "enablementContent":{"<>":"li","html":[
+              {"<>":"p","html":"${label}"},
+              {"<>":"p","html":"${message}"},
+              {"[]":"enablementComponents","obj":function(){
+                if (this.exceptions != undefined && this.exceptions.length > 0)
+                  return(this.exceptions.join(', '));
+                else
+                  return null;
+              }},
+              {"[]":"enablementLink"},
+            ]},
+            "inventoryItem" :{"<>":"tr","html":[
+              {"<>":"td","html":"<pre>${label}<pre>"},
+              {"<>":"td","html":"${count}"}
+            ]},
+            "installationBlockingItems":{"<>":"li","text":"${label}"},
+            "installationWarnings":{"<>":"li","html":[
+              {"<>":"p","html":"Package Cannot be installed in ${edition} due to:"},
+              {"<>":"ul","html":[
+                {"[]":"installationBlockingItems","obj":function(){
+                  return(this.blockingItems);
+                }
+                }
+              ]}
+            ]},
+            "dependencies": {"<>":"li","html":[
+              {"html":"${label}"},
+              {"obj":function(){
+                if (this.items != undefined && this.items.length > 0)
+                  return(this.items.join(', '))
+                else
+                  return null
+              },
+              "html":"${value}"}
+            ]}
+          })
+      const templates= {
+        "pageTemplate": [
+          {"[]":"pageHeader","obj":function(){
+            return(this.Status);
+        }},
+        {"[]":"sectionHeader","obj":function(){
+            return({"name":"Metadata Inventory"});
+        }},
+        {"<>":"table","html":[
+          {"<>":"thead","html":[
+            {"<>":"tr","html":[
+              {"<>":"th","html":"Metadata Type"},
+              {"<>":"th","html":"Count"},
+            ]}
+          ]},
+          {"<>":"tbody","html":[
+            {"[]":"inventoryItem","obj":function(){
+              return(this.MonitoredItems);
+            }}
+          ]}
+         
+        ]},
+        {"[]":"sectionHeader","obj":function(){
+          return({"name":"Best Practices and Feature Recommendations"});
+        }},
+        {"<>":"ul","html":[
+          {"[]":"enablementContent","obj":function(){
+            return(this.Recommendations);
+          }}
+        ]},
+        {"[]":"sectionHeader","obj":function(){
+          return({"name":"Quality Rules"});
+        }},
+        {"<>":"ul","html":[
+          {"[]":"enablementContent","obj":function(){
+            return(this.CodeQualityNotes);
+          }}
+        ]},
+        {"[]":"sectionHeader","obj":function(){
+          return({"name":"Partner Alerts"});
+        }},
+        {"<>":"ul","html":[
+          {"[]":"enablementContent","obj":function(){
+            return(this.Alerts);
+          }}
+        ]},
+        {"[]":"sectionHeader","obj":function(){
+          return({"name":"Installation Warnings"});
+        }},
+        {"<>":"ul","html":[
+          {"<>":"h3","html":"Editions"},
+          {"[]":"installationWarnings","obj":function(){
+            return(this.InstallationWarnings);
+          }},
+          {"<>":"h3","html":"Dependencies"},
+          {"[]":"dependencies","obj":function(){
+            return(this.Dependencies);
+          }}
+        ]},
+
+        ]
+      }
+
+      htmlOut += json2html.render(this.packageInventory.getJSONOutput(),templates.pageTemplate);
+      
+      fs.writeFileSync('result.html',htmlOut);
+      cli.open('result.html');
+
+    }
+    //Text format
+    else {
       if (!this.suppressAllInv) {
         this.ux.styledHeader('Inventory of Package:');
         let inventoryArray = this.packageInventory.getMonitoredInvArray().filter(element => {
@@ -208,8 +356,6 @@ For more information, please connect in the ISV Technical Enablement Plugin
         this.ux.log('\n');
         
       }
-
-
       if (!this.suppressEnablement) {
         let recommendations = this.packageInventory.getEnablementMessages();
         if (recommendations.length > 0) {
