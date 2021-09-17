@@ -19,7 +19,6 @@ export CPPFLAGS="-I/usr/local/opt/ruby/include"
 https://jekyllrb.com/docs/
 
 ```
-cd docs
 gem install jekyll bundler
 bundle install
 ```
@@ -30,7 +29,7 @@ bundle install
 bundle exec jekyll serve
 ```
 
-Navigate to: http://127.0.0.1:4000/sfdx-scanner/
+Navigate to: http://127.0.0.1:4000/isvte-sfdx-plugin/
 
 
 ## Relative URLs

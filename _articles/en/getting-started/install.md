@@ -5,43 +5,38 @@ lang: en
 
 ## Install the plug-in
 
-Like all the Salesforce CLI plug-ins, you install the Scanner CLI plug-in with one simple step. NOTE: Be sure you've completed the [prerequisites](./en/getting-started/prerequisites/) before you install this plug-in.
+### **Install as a SalesforceDX Plugin**
 
-
-```bash
-$ sfdx plugins:install @salesforce/sfdx-scanner
-Installing plugin @salesforce/sfdx-scanner...
-installed v{{ site.data.versions.scanner }} 
+```  
+sfdx plugins:install isvte-sfdx-plugin
+```
+You will be prompted to confirm that you want to install an unsigned plugin. Choose yes
+```  
+This plugin is not digitally signed and its authenticity cannot be verified. Continue installation y/n?: y
 ```
 
-#### Check that the scanner plug-in is installed
+To prevent this message from appearing, you can add this to the Allow List by [adding an entry for it in $HOME/.config/sfdx/unsignedPluginAllowList.json](https://developer.salesforce.com/blogs/2017/10/salesforce-dx-cli-plugin-update.html).
+
+CI Users: As the plugin is not signed, to install it from a Dockerfile or a script:
+```
+    echo 'y' | sfdx plugins:install isvte-sfdx-plugin
+```
+
+### **Install from source**
+1. Clone the repository
+```  
+git clone https://github.com/forcedotcom/isvte-sfdx-plugin.git
+```
+2. Link the plugin:
+```
+sfdx plugins:link isvte-sfdx-plugin/
+```
+
+
+### **Check that the scanner plug-in is installed**
 ```bash
 $ sfdx plugins
-@salesforce/sfdx-scanner {{ site.data.versions.scanner }}
-```
-#### Install or upgrade to a specific version using the following command
-```bash
-$ sfdx plugins:install @salesforce/sfdx-scanner@{{ site.data.versions.scanner }}
-Installing plugin @salesforce/sfdx-scanner... 
-installed v{{ site.data.versions.scanner }}
-```
-
-#### Display the usage and help for the scanner commands
-```bash
-$ sfdx scanner --help
-Scan code to detect code quality issues and security vulnerabilities.
-
-USAGE
-  $ sfdx scanner:COMMAND
-
-COMMANDS
-  scanner:run  Evaluate a selection of rules against a codebase.
-
-TOPICS
-  Run help for each topic below to view subcommands
-
-  scanner:rule  View/add rules that are used to scan code.
-
+isvte-sfdx-plugin {{ site.data.versions.scanner }}
 ```
 
 ## Upgrade plug-in

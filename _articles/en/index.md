@@ -1,27 +1,47 @@
 ---
-title: Salesforce CLI Scanner Plug-In
+title: Salesforce ISVTE Plug-In
 permalink: /
 lang: en
 ---
-
+<!--
 <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-text-heading_small slds-text-align_center slds-theme_warning" role="alert">
   <span class="slds-assistive-text">warning</span>
-  	A new version (v{{ site.data.versions.scanner }}) of the Scanner Plug-in was released on {{ site.data.versions.releasedon }} &nbsp;&nbsp;<a href="./en/release-information/">Release Information</a>
+  	A new version (v{{ site.data.versions.scanner }}) of the ISVTE Plugin was released on {{ site.data.versions.releasedon }} 
 </div>
 <br>
+-->
 
-## Salesforce CLI Scanner Plug-in
 
-The Salesforce CLI Scanner plug-in is a unified tool for static analysis of source code, in multiple languages
-(including Apex), with a consistent command-line interface and report output. We currently support the
-[PMD rule engine](https://pmd.github.io/), [PMD Copy Paste Detector](https://pmd.github.io/latest/pmd_userdocs_cpd.html), [ESLint](https://eslint.org/), and [RetireJS](https://retirejs.github.io/retire.js/).
-We may add support for more rule engines in the future.
+## Salesforce ISV Technical Enablement Plug-in (ISVTE Plug-in)
 
-The Salesforce CLI Scanner Plug-in creates "Rule Violations" when the scanner identifies issues. Developers use this information as feedback to fix their code. 
+### Description
 
-You can integrate this plug-in into your CI/CD solution to enforce the rules and expect high-quality code.
+As the Salesforce ecosystem continues to rapidly expand, it can be very difficult for an app developer to stay on top of everything they need to know. You cannot always know when best practices evolve or when features emerge, let alone where to find the information. 
 
-## Additional Resources
+This is where the ISV Technical Enablement Plugin for SalesforceDX (ISVTE Plug-in) comes in. The ISVTE Plugin is designed to give enablement specific to the application you're building by looking at which technologies you are using surfacing only relevant information. It does this always with the ISV point of view in mind. Think of it as an automated Technical Evangelist available on demand.
+
+The ISVTE Plug-in provides several types of information to help you:
+- **Metadata Inventory** what metadata is being packaged?
+- **Recommended Enablement** guides and resources to help you take full advantage of the technolgy 
+- **Feature Recommendations** learn about relevant new platform features and how they can help
+- **Quality Notes** best practices to improve your app and your customers' experiences
+- **Partner Alerts** known issues or upcoming changes that impact you
+- **Installation Warnings** which Salesforce editions will support your app
+- **Dependencies** cloud, namespace, and feature dependencies
+- **Exclusive or Offensive Language checks**  identify text within your app that might not be appropriate
+- **Partner Program Technology Adoption Survey** identify technologies that contribute to the technology adoption score to help determine your ISV Partner Program tier
+
+### Quick Start
+
+It is very simple to start getting insight out of the plugin. If you're already using SalesforceDX, you can [get going in less than a minute](./getting-started/install).
+
+Once you have the ISVTE Plugin installed, you simply execute it against your package metadata and start benefitting.
+
+![Quick Start Demo](./assets/images/ISVTEQuickDemo.gif)
+
+See [Using the Plugin](./usage/usage) or the [Command Reference](./isvte-commands/mdscan) for more detailed information.
+
+## Additional SFDX Resources
 
 - Trailhead: [Get Started with Salesforce DX](https://trailhead.salesforce.com/trails/sfdx_get_started)
 - [Salesforce DX Setup Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup)
@@ -29,10 +49,10 @@ You can integrate this plug-in into your CI/CD solution to enforce the rules and
 
 ### Open Source
 
-- [Github Repository](https://github.com/forcedotcom/sfdx-scanner)
+- [Github Repository](https://github.com/forcedotcom/isvte-sfdx-plugin)
 
 ## Bugs and Feedback
 
-To report issues with Salesforce Scanner, open a [bug on GitHub](https://github.com/forcedotcom/sfdx-scanner/issues/new?template=Bug_report.md). If you want to suggest a feature, create a [feature request on GitHub](https://github.com/forcedotcom/sfdx-scanner/issues/new?template=Feature_request.md).
+To report issues with Salesforce Scanner, open a [bug on GitHub](https://github.com/forcedotcom/isvte-sfdx-plugin/issues/new)
 
 

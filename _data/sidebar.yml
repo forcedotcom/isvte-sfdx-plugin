@@ -1,5 +1,8 @@
 - title:
-    en: Get Started
+    en: Introduction
+  url: /../
+- title:
+    en: Getting Started
   baseUrl: /getting-started/
   children:
     - title:
@@ -9,70 +12,34 @@
         en: Installation/Upgrade
       url: /getting-started/install
 - title:
-    en: How to use the Plugin
-  baseUrl: /scanner-commands/
+    en: Using the Plugin
+  baseUrl: /usage/
   children:
     - title:
-        en: scanner:run
-      url: /scanner-commands/run
+        en: General Use
+      url: /usage/usage
     - title:
-        en: scanner:rule:list
-      url: /scanner-commands/list
+        en: Language Check
+      url: /usage/language
     - title:
-        en: scanner:rule:describe
-      url: /scanner-commands/describe
-    - title:
-        en: scanner:rule:add
-      url: /scanner-commands/add
-    - title:
-        en: scanner:rule:remove
-      url: /scanner-commands/remove
+        en: Tech Adoption
+      url: /usage/techadoption
 - title:
-    en: Custom Configuration
-  baseUrl: /custom-config/
+    en: Command Reference
+  baseUrl: /isvte-commands/
   children:
     - title:
-        en: PMD Configuration
-      url: /custom-config/pmd
+        en: isvte:mdscan
+      url: /isvte-commands/mdscan
     - title:
-        en: ESLint Configuration
-      url: /custom-config/eslint
+        en: isvte:listrules
+      url: /isvte-commands/listrules
 - title:
-    en: Custom Rules
-  baseUrl: /custom-rules/
-  children:
-    - title:
-        en: Authoring Custom Rules
-      url: /custom-rules/author
-    - title:
-        en: Managing Custom Rules
-      url: /custom-rules/manage
+    en: Extending the Plugin
+  url: /extending
 - title:
     en: Architecture
-  baseUrl: /architecture/
-  children:
-    - title:
-        en: Design
-      url: /architecture/architecture
-    - title:
-        en: RetireJS
-      url: /architecture/retire-js-engine
-    - title:
-        en: PMD
-      url: /architecture/pmd-engine
-    - title:
-        en: ESLint
-      url: /architecture/eslint-engine
-    - title:
-        en: CPD
-      url: /architecture/cpd-engine
-
+  url: /architecture
 - title:
     en: FAQ
   url: /faq
-- title:
-    en: Troubleshooting
-  url: /troubleshooting
-- title:
-    en: Release Information
-  url: /release-information/
