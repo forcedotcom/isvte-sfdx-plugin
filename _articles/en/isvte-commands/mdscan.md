@@ -1,5 +1,5 @@
 ---
-title: Salesforce CLI Scanner Plug-In Command Reference
+title: Salesforce CLI Scanner Plugin Command Reference
 lang: en
 ---
 

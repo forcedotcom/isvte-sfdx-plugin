@@ -1,5 +1,5 @@
 ---
-title: Salesforce ISVTE Plug-In
+title: Salesforce ISVTE Plugin
 permalink: /
 lang: en
 ---
@@ -12,15 +12,15 @@ lang: en
 -->
 
 
-## Salesforce ISV Technical Enablement Plug-in (ISVTE Plug-in)
+## Salesforce ISV Technical Enablement Plugin (ISVTE Plugin)
 
 ### Description
 
 As the Salesforce ecosystem continues to rapidly expand, it can be very difficult for an app developer to stay on top of everything they need to know. You cannot always know when best practices evolve or when features emerge, let alone where to find the information. 
 
-This is where the ISV Technical Enablement Plugin for SalesforceDX (ISVTE Plug-in) comes in. The ISVTE Plugin is designed to give enablement specific to the application you're building by looking at which technologies you are using surfacing only relevant information. It does this always with the ISV point of view in mind. Think of it as an automated Technical Evangelist available on demand.
+This is where the ISV Technical Enablement Plugin for SalesforceDX (ISVTE Plugin) comes in. The ISVTE Plugin is designed to give enablement specific to the application you're building by looking at which technologies you are using surfacing only relevant information. It does this always with the ISV point of view in mind. Think of it as an automated Technical Evangelist available on demand.
 
-The ISVTE Plug-in provides several types of information to help you:
+The ISVTE Plugin provides several types of information to help you:
 - **Metadata Inventory** what metadata is being packaged?
 - **Recommended Enablement** guides and resources to help you take full advantage of the technolgy 
 - **Feature Recommendations** learn about relevant new platform features and how they can help
@@ -33,13 +33,13 @@ The ISVTE Plug-in provides several types of information to help you:
 
 ### Quick Start
 
-It is very simple to start getting insight out of the plugin. If you're already using SalesforceDX, you can [get going in less than a minute](./getting-started/install).
+It is very simple to start getting insight out of the plugin. If you're already using SalesforceDX, you can [get going in less than a minute](./en/getting-started/install).
 
 Once you have the ISVTE Plugin installed, you simply execute it against your package metadata and start benefitting.
 
 ![Quick Start Demo](./assets/images/ISVTEQuickDemo.gif)
 
-See [Using the Plugin](./usage/usage) or the [Command Reference](./isvte-commands/mdscan) for more detailed information.
+See [Using the Plugin](./en/usage/usage) or the [Command Reference](./en/isvte-commands/mdscan) for more detailed information.
 
 ## Additional SFDX Resources
 

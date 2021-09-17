@@ -1,11 +1,11 @@
 ---
-title: Install Salesforce Scanner CLI Plugin
+title: Install ISVTE Plugin
 lang: en
 ---
 
-## Install the plug-in
+## Install the plugin
 
-### **Install as a SalesforceDX Plugin**
+### Install as a SalesforceDX Plugin
 
 ```  
 sfdx plugins:install isvte-sfdx-plugin
@@ -22,7 +22,7 @@ CI Users: As the plugin is not signed, to install it from a Dockerfile or a scri
     echo 'y' | sfdx plugins:install isvte-sfdx-plugin
 ```
 
-### **Install from source**
+### Install from source
 1. Clone the repository
 ```  
 git clone https://github.com/forcedotcom/isvte-sfdx-plugin.git
@@ -33,14 +33,14 @@ sfdx plugins:link isvte-sfdx-plugin/
 ```
 
 
-### **Check that the scanner plug-in is installed**
+### Check that the ISVTE plugin is installed
 ```bash
 $ sfdx plugins
 isvte-sfdx-plugin {{ site.data.versions.scanner }}
 ```
 
-## Upgrade plug-in
-To update the scanner plug-in to the latest version, you can follow the next step.
+## Upgrade plugin
+To update the ISVTE plugin to the latest version, you can follow the next step.
 
 ```bash
 $ sfdx plugins:update

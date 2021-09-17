@@ -1,5 +1,5 @@
 ---
-title: Salesforce ISVTE Plug-In Command Reference
+title: Salesforce ISVTE Plugin Command Reference
 lang: en
 ---
 

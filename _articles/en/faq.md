@@ -5,9 +5,9 @@ lang: en
 
 
 ## Q: What is Salesforce ISV Technical Enablment Plugin?
-A: Salesforce ISV Technical Enablment Plugin (ISVTE Plugin) is a [Salesforce CLI](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_plugins.meta/sfdx_cli_plugins/cli_plugins_architecture.htm) plug-in that helps developers take full advantage of the Salesforce Platform while avoiding potential pitfalls.
+A: Salesforce ISV Technical Enablment Plugin (ISVTE Plugin) is a [Salesforce CLI](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_plugins.meta/sfdx_cli_plugins/cli_plugins_architecture.htm) plugin that helps developers take full advantage of the Salesforce Platform while avoiding potential pitfalls.
 
-The plug-in generates a detailed inventory of your application metadata. Based on that, it identifies helpful resources, relevant alerts and other best practices.
+The plugin generates a detailed inventory of your application metadata. Based on that, it identifies helpful resources, relevant alerts and other best practices.
 You can run the plugin on-command in the CLI, or integrate it into your CI/CD framework so you can run it against every code change.
 
 ## Q: What else do I need before I can use ISVTE Plugin?
@@ -15,8 +15,7 @@ A: The ISVTE Plugin requires you to install the [Salesforce CLI](https://develop
 See [Getting Started](./en/getting-started/prerequsites) for more information.
 
 ## Q: How do I update the ISVTE Plugin?
-A: You must:
-- Update the plugin to the latest version by following the instructions listed [here](./en/getting-started/install/#upgrade-plug-in)
+A: Update the plugin to the latest version by following the instructions listed [here](./en/getting-started/install/#upgrade-plug-in)
 
 ## Q: Is ISVTE Plugin part of the App Exchange security review process?
 A: The ISVTE Plugin can help you with the security review process by guiding you toward security best practices, but it is not a part of the overall process
