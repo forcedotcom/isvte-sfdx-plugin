@@ -3,4 +3,4 @@ title: Tech Adoption Scorecard
 lang: en
 ---
 
-In Progress
+In Progress.
