@@ -1,5 +1,5 @@
 ---
-title: Salesforce CLI Scanner Plugin Command Reference
+title: Salesforce ISVTE Plugin Command Reference
 lang: en
 ---
 
