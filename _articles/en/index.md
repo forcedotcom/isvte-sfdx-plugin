@@ -11,7 +11,6 @@ lang: en
 <br>
 -->
 
-
 ## Salesforce ISV Technical Enablement Plugin (ISVTE Plugin)
 
 ### Description
