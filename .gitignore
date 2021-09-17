@@ -8,3 +8,6 @@
 node_modules
 out.json
 LabsScan/
+.jekyll-cache/
+_site/
+.DS_Store
