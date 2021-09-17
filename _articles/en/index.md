@@ -12,7 +12,7 @@ lang: en
 -->
 
 
-## Salesforce ISV Technical Enablement Plug-in (ISVTE Plug-in)
+## Salesforce ISV Technical Enablement Plug-in (ISVTE Plugin)
 
 ### Description
 
