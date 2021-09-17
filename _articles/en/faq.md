@@ -12,10 +12,10 @@ You can run the plugin on-command in the CLI, or integrate it into your CI/CD fr
 
 ## Q: What else do I need before I can use ISVTE Plugin?
 A: The ISVTE Plugin requires you to install the [Salesforce CLI](https://developer.salesforce.com/tools/sfdxcli) on your computer. Then you can install the ISVTE Plugin with the command `sfdx plugins:install isvte-sfdx-plugin`.
-See [Getting Started](./en/getting-started/prerequsites) for more information.
+See [Getting Started](./en/getting-started/prerequisites/) for more information.
 
 ## Q: How do I update the ISVTE Plugin?
-A: Update the plugin to the latest version by following the instructions listed [here](./en/getting-started/install/#upgrade-plug-in)
+A: Update the plugin to the latest version by following the instructions listed [here](./en/getting-started/install/#upgrade-plugin)
 
 ## Q: Is ISVTE Plugin part of the App Exchange security review process?
 A: The ISVTE Plugin can help you with the security review process by guiding you toward security best practices, but it is not a part of the overall process

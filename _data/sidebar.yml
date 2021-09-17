@@ -19,6 +19,9 @@
         en: General Use
       url: /usage/usage
     - title:
+        en: Output Report
+      url: /usage/report
+    - title:
         en: Language Check
       url: /usage/language
     - title:
