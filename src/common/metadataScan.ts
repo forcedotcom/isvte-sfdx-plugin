@@ -204,6 +204,11 @@ export function inventoryPackage(sourceDir, p, options = {}) {
               }
             }
             
+            for (var url of findHardcodedURLs(flowXml)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`Flow.${flowName}.hardcodedURLs.${escapedURL}`);
+            }
           
         }
         typeInv['FlowTypes'] = flowTypes;
@@ -343,6 +348,13 @@ export function inventoryPackage(sourceDir, p, options = {}) {
               addValue(componentProperties,`ApexClass.${className}.CharacterCount`,tmpCharCount);
             }
 
+            for (var url of findHardcodedURLs(classBody)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`ApexClass.${className}.hardcodedURLs.${escapedURL}`);
+            }
+            
+
             if (refersGuestTrivialReg.test(classBody)) {
               setValue(componentProperties,`ApexClass.${className}.RefersToGuest`,1);
             }
@@ -410,6 +422,11 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             triggerCharacterCount += tmpCharCount;
             addValue(componentProperties,`ApexTrigger.${triggerName}.CharacterCount`,tmpCharCount);
 
+            for (var url of findHardcodedURLs(triggerBody)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`ApexTrigger.${triggerName}.hardcodedURLs.${escapedURL}`);
+            }
             //Find Object References
             
             addObjectDependencies(dependencies, extractObjectsApex(triggerBody));
@@ -458,6 +475,17 @@ export function inventoryPackage(sourceDir, p, options = {}) {
                 }
               }
             }
+          }
+          for (var url of findHardcodedURLs(lwcHtmlFile)){
+            let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+          
+            incrementValue(componentProperties,`LightningComponentBundle.${lwcName}.hardcodedURLs.${escapedURL}`);
+          }
+
+          for (var url of findHardcodedURLs(lwcJsFile)){
+            let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+          
+            incrementValue(componentProperties,`LightningComponentBundle.${lwcName}.hardcodedURLs.${escapedURL}`);
           }
           if (scanLanguage && fs.existsSync(lwcHtmlFile)) {
             const lwcHTML = fs.readFileSync(lwcHtmlFile, 'utf8');
@@ -511,6 +539,12 @@ export function inventoryPackage(sourceDir, p, options = {}) {
               });
             }
 
+            for (var url of findHardcodedURLs(vfBody)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`ApexPage.${vfName}.hardcodedURLs.${escapedURL}`);
+            }
+
             if (referSiteReg.test(vfBody)) {
               setValue(componentProperties,`ApexPage.${vfName}.RefersToSite`,1);
             }
@@ -560,6 +594,19 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             }
             //Find Object References
             addObjectDependencies(dependencies,extractObjectsApex(auraBody));
+
+            for (var url of findHardcodedURLs(auraBody)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`AuraDefinitionBundle.${auraName}.hardcodedURLs.${escapedURL}`);
+            }
+
+            for (var url of findHardcodedURLs(auraBody)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`AuraDefinitionBundle.${auraName}.hardcodedURLs.${escapedURL}`);
+            }
+            
           }
         }
         break;
@@ -646,6 +693,11 @@ function getMembersFromFiles(folder, extension) {
   return members;
 }
 
+function findHardcodedURLs(textToScan: string) {
+  const urlReg = /((?:na|eu|ap|cs|gs)\d{1,3}\.salesforce\.com)/ig;
+
+  return getMatches(textToScan, urlReg);
+}
 
 function extractObjectsApex(apexBody: string)  {
   const findObjectsReg = /(?:(?<namespace>[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_)){0,14})__)?(?<component>(?<!___)[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_))+)(?:__(?<suffix>c|mdt|e|x|b|pc|pr|r|xo|latitude__s|longitude__s|history|ka|kav|feed|share))/g;

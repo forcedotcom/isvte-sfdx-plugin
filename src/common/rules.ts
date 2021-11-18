@@ -426,7 +426,24 @@ const enablementRules: IRule[] = [{
   },
 ];
 
-const qualityRules: IRule[] = [{
+const qualityRules: IRule[] = [
+  {
+    name: 'Hard-Coded URLs',
+    condition: {
+      metadataType: 'componentProperties.*.*.hardcodedURLs',
+      operator: 'exists',
+      showDetails: true
+
+    },
+    resultTrue: {
+      label: 'Do Not use Hard-Coded URLs to access Salesforce Orgs',
+      message: 'Hard-Coded URLs which reference instance names like https://na144.salesforce.com can cause customer org migrations to fail. Use <mydomain>.my.salesforce.com or login.salesforce.com instead',
+      url: 'https://help.salesforce.com/s/articleView?id=000335670&type=1',
+      showDetails: true
+
+    }
+  },
+  {
     name: 'Metadata API Version',
     condition: {
       metadataType: 'apiVersions.mdapi',
