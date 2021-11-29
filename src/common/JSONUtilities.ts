@@ -1,5 +1,5 @@
 export function addKeyToObject(destObject: Object, path: string) : any {
-  return _addKeyToObject(destObject, path.split('.'));
+  return _addKeyToObject(destObject, path.split(/(?<!\\)\./));   //This allows an escaped "." to exist in a key path.
 }
 
 function _addKeyToObject(destObject: Object, pathComponents: string[]) : any {
@@ -17,7 +17,7 @@ function _addKeyToObject(destObject: Object, pathComponents: string[]) : any {
 }
 
 export function setValue(destObject: Object, path: string, value: any) : any {
-  return _setValue(destObject,path.split('.'),value);
+  return _setValue(destObject,path.split(/(?<!\\)\./),value);
 
 }
 
@@ -60,7 +60,7 @@ export function incrementValue(destObject: Object, path: string) : number {
 }
 
 export function getValue(srcObject: Object, path: string, defaultValue: any = null) : any {
-  return _getValue(srcObject,path.split('.'),defaultValue);
+  return _getValue(srcObject,path.split(/(?<!\\)\./),defaultValue);
 }
 
 function _getValue(srcObject: Object, pathComponents: string[], defaultValue: any = null) : any {
@@ -77,3 +77,5 @@ function _getValue(srcObject: Object, pathComponents: string[], defaultValue: an
     return defaultValue;
   }
 }
+
+

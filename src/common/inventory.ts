@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
+import { incrementValue } from './JSONUtilities';
 import {
   mdTypes,
   editionWarningRules,
@@ -44,6 +45,8 @@ export class packageInventory {
 
   public setMetadata(md) {
     this._mdInv = md;
+    //Pre Calculate Dependencies
+    //this.getDependencies();
   };
 
 
@@ -262,6 +265,11 @@ export class packageInventory {
             metadataType: `ApexTrigger.objects.${objName}`,
             operator: 'exists'
           });
+          //create condition of triggers on the object
+          conditions.push({
+            metadataType: `dependencies.components.${objName}`,
+            operator: 'exists'
+          });
         }
         if (conditions.length > 0) {
           let conditionConstructed = conditions.pop();
@@ -286,6 +294,7 @@ export class packageInventory {
               name: dependencyRule.name,
               label: dependencyRule.label
             })
+            incrementValue(this._mdInv,`dependencies.${dependencyRule.name}`);
           };
         }
       }
@@ -391,20 +400,47 @@ export class packageInventory {
 
   public getTechAdoptionScore() {
     if (!this._techAdoption) {
-    this._techAdoption = [...techAdoptionRules];
-    for (var adoptionCategory of this._techAdoption) {
+    this._techAdoption = [];
+    for (var adoptionRule of techAdoptionRules) {
+      let categoryResult = {
+        categoryName: adoptionRule.categoryName,
+        categoryLabel: adoptionRule.categoryLabel,
+        technologies: [],
+        points: 0
+      };
+      for (var tech of adoptionRule.technologies) {
 
-      for (var item of adoptionCategory.items) {
-        item['isIncluded'] = false;
-        for (var counts of this.getCountByMetadataType(item.metadataType)) {
-          if (counts.value > 0) {
-            item['isIncluded'] = true;
-          }
+        let techResult = {
+          name: tech.name,
+          question: tech.question,
+          points: 0,
+          maxPoints: tech.points,
+          found: false,
+          levelUp: undefined,
+          detectable: tech.hasOwnProperty('condition')
+        };
+
+        if (techResult.detectable) {
+          let conditionResult = this.checkCondition(tech.condition);
+          techResult.found = conditionResult.conditionPass;
         }
-      }
+
+        techResult.points = techResult.found ? tech.points : 0; 
+        techResult.levelUp = tech.levelUp; 
+  /*      if (!techResult.found && tech.levelUp != undefined) {
+            techResult['levelUp'] = tech.levelUp;
+        }
+    */      
+        categoryResult.technologies.push(techResult);
+        categoryResult.points += techResult.points;
+        }
+
+        
+      this._techAdoption.push(categoryResult);
     }
-  }
+  }  
     return this._techAdoption;
+  
   }
 
   public getAlerts() {

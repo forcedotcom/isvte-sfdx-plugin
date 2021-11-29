@@ -20,6 +20,8 @@ import fs = require('fs-extra');
 
 import xml2js = require('xml2js');
 
+import {alexConfig} from './rules';
+
 
 export function inventoryPackage(sourceDir, p, options = {}) {
   let types = p.types;
@@ -202,6 +204,11 @@ export function inventoryPackage(sourceDir, p, options = {}) {
               }
             }
             
+            for (var url of findHardcodedURLs(flowXml)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`Flow.${flowName}.hardcodedURLs.${escapedURL}`);
+            }
           
         }
         typeInv['FlowTypes'] = flowTypes;
@@ -258,6 +265,18 @@ export function inventoryPackage(sourceDir, p, options = {}) {
           if (caJSON['ConnectedApp'] && caJSON['ConnectedApp']['canvasConfig']) {
             canvasCount += 1;
           }
+
+          if (fs.existsSync(caXml)) {
+            let caXmlBody = fs.readFileSync(caXml, 'utf8');
+            for (var url of findHardcodedURLs(caXmlBody)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`ConnectedApp.${caName}.hardcodedURLs.${escapedURL}`);
+            }
+        }
+      break;
+
+
         }
         typeInv['CanvasApp'] = canvasCount;
         break;
@@ -271,6 +290,7 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         let apexRestCount = 0;
         let apexSoapCount = 0;
         let characterCount = 0;
+        let remoteActionCount = 0;
 
 
         const apexPath = `${sourceDir}/classes`;
@@ -287,6 +307,7 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             
             const futureReg = /@future/i;
             const auraEnabledReg = /@AuraEnabled/i;
+            const remoteActionReg = /@remoteAction/i;
             const invocableReg = /@InvocableMethod|InvocableVariable/i;
             const batchReg = /implements\s+Database\.Batchable/i;
             const scheduleReg = /implements\s+Schedulable/i;
@@ -304,6 +325,9 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             }
             if (auraEnabledReg.test(classBody)) {
               auraEnabledCount += 1;
+            }
+            if (remoteActionReg.test(classBody)) {
+              remoteActionCount += 1;
             }
             if (invocableReg.test(classBody)) {
               invocableCount += 1;
@@ -336,6 +360,13 @@ export function inventoryPackage(sourceDir, p, options = {}) {
               addValue(componentProperties,`ApexClass.${className}.CharacterCount`,tmpCharCount);
             }
 
+            for (var url of findHardcodedURLs(classBody)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`ApexClass.${className}.hardcodedURLs.${escapedURL}`);
+            }
+            
+
             if (refersGuestTrivialReg.test(classBody)) {
               setValue(componentProperties,`ApexClass.${className}.RefersToGuest`,1);
             }
@@ -356,6 +387,7 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         }
         typeInv['FutureCalls'] = futureCount;
         typeInv['AuraEnabledCalls'] = auraEnabledCount;
+        typeInv['RemoteActionCalls'] = remoteActionCount;
         typeInv['InvocableCalls'] = invocableCount;
         typeInv['BatchApex'] = batchCount;
         typeInv['SchedulableApex'] = schedulableCount;
@@ -402,6 +434,11 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             triggerCharacterCount += tmpCharCount;
             addValue(componentProperties,`ApexTrigger.${triggerName}.CharacterCount`,tmpCharCount);
 
+            for (var url of findHardcodedURLs(triggerBody)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`ApexTrigger.${triggerName}.hardcodedURLs.${escapedURL}`);
+            }
             //Find Object References
             
             addObjectDependencies(dependencies, extractObjectsApex(triggerBody));
@@ -450,6 +487,17 @@ export function inventoryPackage(sourceDir, p, options = {}) {
                 }
               }
             }
+          }
+          for (var url of findHardcodedURLs(lwcHtmlFile)){
+            let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+          
+            incrementValue(componentProperties,`LightningComponentBundle.${lwcName}.hardcodedURLs.${escapedURL}`);
+          }
+
+          for (var url of findHardcodedURLs(lwcJsFile)){
+            let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+          
+            incrementValue(componentProperties,`LightningComponentBundle.${lwcName}.hardcodedURLs.${escapedURL}`);
           }
           if (scanLanguage && fs.existsSync(lwcHtmlFile)) {
             const lwcHTML = fs.readFileSync(lwcHtmlFile, 'utf8');
@@ -503,6 +551,12 @@ export function inventoryPackage(sourceDir, p, options = {}) {
               });
             }
 
+            for (var url of findHardcodedURLs(vfBody)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`ApexPage.${vfName}.hardcodedURLs.${escapedURL}`);
+            }
+
             if (referSiteReg.test(vfBody)) {
               setValue(componentProperties,`ApexPage.${vfName}.RefersToSite`,1);
             }
@@ -552,6 +606,19 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             }
             //Find Object References
             addObjectDependencies(dependencies,extractObjectsApex(auraBody));
+
+            for (var url of findHardcodedURLs(auraBody)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`AuraDefinitionBundle.${auraName}.hardcodedURLs.${escapedURL}`);
+            }
+
+            for (var url of findHardcodedURLs(auraBody)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`AuraDefinitionBundle.${auraName}.hardcodedURLs.${escapedURL}`);
+            }
+            
           }
         }
         break;
@@ -562,6 +629,68 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         }
         
         break;
+      case 'EmailTemplate' :
+        const emailPath = `${sourceDir}/email`;
+        for (var emailIdx in types[typeIdx]['members']) {
+          const emailName = types[typeIdx]['members'][emailIdx];
+          const emailXmlFile = `${emailPath}/${emailName}.email-meta.xml`;
+          const emailBodyFile = `${emailPath}/${emailName}.email`;
+          
+          if (fs.existsSync(emailXmlFile)) {
+            let emailXml = fs.readFileSync(emailXmlFile, 'utf8');
+            for (var url of findHardcodedURLs(emailXml)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`EmailTemplate.${emailName}.hardcodedURLs.${escapedURL}`);
+            }
+          }
+
+          if (fs.existsSync(emailBodyFile)) {
+            let emailBody = fs.readFileSync(emailBodyFile, 'utf8');
+            for (var url of findHardcodedURLs(emailBody)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`EmailTemplate.${emailName}.hardcodedURLs.${escapedURL}`);
+            }
+          }
+
+
+        }
+      break;
+
+      case 'RemoteSiteSetting' :
+        const rssPath = `${sourceDir}/remoteSiteSettings`;
+        for (var rssIdx in types[typeIdx]['members']) {
+          const rssName = types[typeIdx]['members'][rssIdx];
+          const rssFile = `${rssPath}/${rssName}.remoteSite`;
+          if (fs.existsSync(rssFile)) {
+            let rss = fs.readFileSync(rssFile, 'utf8');
+            for (var url of findHardcodedURLs(rss)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`RemoteSiteSetting.${rssName}.hardcodedURLs.${escapedURL}`);
+            }
+          }
+        }
+      break;
+
+      case 'NamedCredential' :
+        const ncPath = `${sourceDir}/namedCredentials`;
+        for (var ncIdx in types[typeIdx]['members']) {
+          const ncName = types[typeIdx]['members'][ncIdx];
+          const ncFile = `${ncPath}/${ncName}.namedCredential`;
+          if (fs.existsSync(ncFile)) {
+            let nc = fs.readFileSync(ncFile, 'utf8');
+            for (var url of findHardcodedURLs(nc)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`NamedCredential.${ncName}.hardcodedURLs.${escapedURL}`);
+            }
+        }
+      }
+      break;
+
+
     }
 
     inventory[metadataType] = typeInv;
@@ -638,6 +767,11 @@ function getMembersFromFiles(folder, extension) {
   return members;
 }
 
+function findHardcodedURLs(textToScan: string) {
+  const urlReg = /((?:na|eu|ap|cs|gs)\d{1,3}\.salesforce\.com)/ig;
+
+  return getMatches(textToScan, urlReg);
+}
 
 function extractObjectsApex(apexBody: string)  {
   const findObjectsReg = /(?:(?<namespace>[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_)){0,14})__)?(?<component>(?<!___)[a-zA-Z](?:[a-z]|[A-Z]|[0-9]|_(?!_))+)(?:__(?<suffix>c|mdt|e|x|b|pc|pr|r|xo|latitude__s|longitude__s|history|ka|kav|feed|share))/g;
@@ -688,8 +822,6 @@ function getMatches(searchString, regex) {
   while (match = regex.exec(searchString)) {
     matches.push(match[1]);
   }
- // logLine(`Found ${matches.length} matches`);
- // logJSON(matches);
   return matches;
 }
 
@@ -704,7 +836,6 @@ function getNameSpaceAndType(fullComponentName) {
   CustomField__location__s
   Namespace__CustomField__location__s
   */
- // logLine('Breaking down component name:' + fullComponentName);
   
   const retVal = {
     type:null,
@@ -715,7 +846,6 @@ function getNameSpaceAndType(fullComponentName) {
   };
 
   let breakdown = fullComponentName.split("__");
- // logLine('Component Breakdown: ' + JSON.stringify(breakdown));
   if (breakdown.length == 1) {
       //Standard Object
       retVal.type = 'Standard';
@@ -723,9 +853,7 @@ function getNameSpaceAndType(fullComponentName) {
   }
   else {
     //Check for and fixup locations
- //   logLine('Proposed Suffix:' + breakdown[breakdown.length -1]);
     if (breakdown[breakdown.length -1] == 's'  && breakdown.length > 2 && (breakdown[breakdown.length-2] == 'latitude' || breakdown[breakdown.length-2] == 'longitude' )) {
-   //   logLine('This appears to be a location field with an extra __ in the suffix. Adjusting expectations'); 
         breakdown.pop();
         breakdown[breakdown.length -1] = breakdown[breakdown.length -1] + '__s';
       
@@ -743,8 +871,7 @@ function getNameSpaceAndType(fullComponentName) {
       retVal.namespace = breakdown[0];
     }
     else {
-      //WE probably shouldn't end up here.
-  //    logLine('Unsure how to parse ' + fullComponentName);
+      //We probably shouldn't end up here.
       retVal.name = fullComponentName;
     }
     switch (retVal.extension) {
@@ -819,7 +946,6 @@ function getNameSpaceAndType(fullComponentName) {
     }
 
   }
-//  logLine('Parsed component: ' + JSON.stringify(retVal));
   return retVal;
 }
 
@@ -912,21 +1038,17 @@ function languageScan(text: string, type : string = 'text') : any {
     return false;
   }
   let scanResult = {};
-  let config= {
-    "noBinary": true,
-    "profanitySureness": 1,
-    "allow": ["simple","invalid","special","just","fires","host-hostess","gross","period","executes","execution"]
-  };
+  //let config= alexConfig;
 
   switch (type) {
     case 'text':
-      scanResult = alex.text(text,config);
+      scanResult = alex.text(text, alexConfig);
     break;
     case 'html':
-      scanResult = alex.html(text),config;
+      scanResult = alex.html(text, alexConfig);
     break;
     case 'markdown':
-      scanResult = alex(text,config)
+      scanResult = alex(text, alexConfig);
     break;
   }
   if (scanResult['messages'].length > 0) {
