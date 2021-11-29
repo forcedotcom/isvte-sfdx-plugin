@@ -265,6 +265,18 @@ export function inventoryPackage(sourceDir, p, options = {}) {
           if (caJSON['ConnectedApp'] && caJSON['ConnectedApp']['canvasConfig']) {
             canvasCount += 1;
           }
+
+          if (fs.existsSync(caXml)) {
+            let caXmlBody = fs.readFileSync(caXml, 'utf8');
+            for (var url of findHardcodedURLs(caXmlBody)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`ConnectedApp.${caName}.hardcodedURLs.${escapedURL}`);
+            }
+        }
+      break;
+
+
         }
         typeInv['CanvasApp'] = canvasCount;
         break;
@@ -617,6 +629,68 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         }
         
         break;
+      case 'EmailTemplate' :
+        const emailPath = `${sourceDir}/email`;
+        for (var emailIdx in types[typeIdx]['members']) {
+          const emailName = types[typeIdx]['members'][emailIdx];
+          const emailXmlFile = `${emailPath}/${emailName}.email-meta.xml`;
+          const emailBodyFile = `${emailPath}/${emailName}.email`;
+          
+          if (fs.existsSync(emailXmlFile)) {
+            let emailXml = fs.readFileSync(emailXmlFile, 'utf8');
+            for (var url of findHardcodedURLs(emailXml)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`EmailTemplate.${emailName}.hardcodedURLs.${escapedURL}`);
+            }
+          }
+
+          if (fs.existsSync(emailBodyFile)) {
+            let emailBody = fs.readFileSync(emailBodyFile, 'utf8');
+            for (var url of findHardcodedURLs(emailBody)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`EmailTemplate.${emailName}.hardcodedURLs.${escapedURL}`);
+            }
+          }
+
+
+        }
+      break;
+
+      case 'RemoteSiteSetting' :
+        const rssPath = `${sourceDir}/remoteSiteSettings`;
+        for (var rssIdx in types[typeIdx]['members']) {
+          const rssName = types[typeIdx]['members'][rssIdx];
+          const rssFile = `${rssPath}/${rssName}.remoteSite`;
+          if (fs.existsSync(rssFile)) {
+            let rss = fs.readFileSync(rssFile, 'utf8');
+            for (var url of findHardcodedURLs(rss)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`RemoteSiteSetting.${rssName}.hardcodedURLs.${escapedURL}`);
+            }
+          }
+        }
+      break;
+
+      case 'NamedCredential' :
+        const ncPath = `${sourceDir}/namedCredentials`;
+        for (var ncIdx in types[typeIdx]['members']) {
+          const ncName = types[typeIdx]['members'][ncIdx];
+          const ncFile = `${ncPath}/${ncName}.namedCredential`;
+          if (fs.existsSync(ncFile)) {
+            let nc = fs.readFileSync(ncFile, 'utf8');
+            for (var url of findHardcodedURLs(nc)){
+              let escapedURL = url.replace(/(?<!\\)\./g,'\\.');
+            
+              incrementValue(componentProperties,`NamedCredential.${ncName}.hardcodedURLs.${escapedURL}`);
+            }
+        }
+      }
+      break;
+
+
     }
 
     inventory[metadataType] = typeInv;

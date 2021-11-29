@@ -7,7 +7,7 @@
 
 const minAPI = 48;
 
-const rulesVersion = '20210324';
+const rulesVersion = '20211124';
 
 const standardNamespaces = [
   'c',
