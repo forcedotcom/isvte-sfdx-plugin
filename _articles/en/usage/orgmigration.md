@@ -6,7 +6,9 @@ lang: en
 
 ## Customer Org Migrations
 
-The ISVTE Plugin can and will identify exceptions to best practices that impact [Org Migrations](https://help.salesforce.com/s/articleView?language=en_US&type=1&id=000334938). In particular, [Hyperforce](https://help.salesforce.com/s/articleView?id=000356459&type=1) has strick requirements against having Hard-coded URLs within your application and a Hyperforce migration will fail if a HardCoded URL exists within your package.
+The ISVTE Plugin can and will identify exceptions to best practices that impact [Org Migrations](https://help.salesforce.com/s/articleView?language=en_US&type=1&id=000334938). 
+
+In particular, [Hyperforce](https://help.salesforce.com/s/articleView?id=000356459&type=1) has strict requirements against having Hard-coded URLs within your application. A Hyperforce migration will fail if a HardCoded URL exists within your package.
 
 When you run the ISVTE Plugin against your package, pay close attention to the best practice alert "Do Not use Hard-Coded URLs to access Salesforce Orgs."
 
