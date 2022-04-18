@@ -7,7 +7,7 @@
 
 const minAPI = 48;
 
-const rulesVersion = '20211124';
+const rulesVersion = '20220418';
 
 const standardNamespaces = [
   'c',
@@ -428,6 +428,34 @@ const enablementRules: IRule[] = [{
 
 const qualityRules: IRule[] = [
   {
+    name: "PB Workflow Disablement",
+    condition: {
+      metadataType: "Flow.FlowTypes.Workflow",
+      operator: 'exists',
+      conditionOr: {
+        metadataType: "Workflow",
+        operator: 'exists',
+        conditionOr: {
+          metadataType: "WorkflowFieldUpdate",
+          operator: 'exists',
+          conditionOr: {
+            metadataType: "WorkflowAlert",
+            operator: 'exists',
+            conditionOr: {
+              metadataType: "WorkflowRule",
+              operator: 'exists'
+            }
+          }
+        }
+      }
+    },
+    resultTrue: {
+      label: 'Process Builder and Workflow Rules being retired', 
+      message: 'Process Builders and Workflow Rules are being retired in favour of Flow. Read the information here for more details on the disablement timeline.',
+      url: 'https://admin.salesforce.com/blog/2021/go-with-the-flow-whats-happening-with-workflow-rules-and-process-builder',
+    }
+  },
+  {
     name: 'Hard-Coded URLs',
     condition: {
       metadataType: 'componentProperties.*.*.hardcodedURLs',
@@ -673,6 +701,41 @@ const qualityRules: IRule[] = [
     resultTrue: {
       label: 'Large amounts of Apex',
       message: 'Total Apex Character count not counting tests and comments is close to the 6M character limit'
+    }
+  },
+  {
+    name: 'PackagedConsumerKey',
+    condition: {
+      metadataType: 'componentProperties.AuthProvider.*.packagedSecret',
+      operator: 'gte',
+      operand: 1,
+      showDetails: true
+    },
+    resultTrue: {
+      label: 'Sensitive value cannot be packaged',
+      message: 'Starting **RELEASE*** an AuthProvider can no longer be packaged with a consumer key. The key must be configured post installation. See here for more information:',
+      url: 'https://help.salesforce.com/THELINK',
+      showDetails: true
+    }
+  },
+  {
+    name: 'OverloadedAuraEnabled',
+    condition: {
+      metadataType: 'componentProperties.ApexClass.*.AuraEnabledMethods',
+      operator: 'exists',
+      showDetails: true,
+      conditionAnd: {
+        metadataType: 'apiVersions.ApexClass.*',
+        operator: 'gte',
+        operand: 55,
+        conditionPerItem: true,
+        showDetails: true   
+      }
+    },
+    resultTrue: {
+      label: 'Overloaded AuraEnabled Calls',
+      message: 'Starting with API Version 55, @AuraEnabled methods cannot be overloaded',
+      showDetails: true
     }
   }
 ];
@@ -1180,20 +1243,6 @@ const techAdoptionRules: ITechAdoptionRule[] = [
         }
       },
       {
-        name: 'In-App Guidance',
-        question: 'Does your application metadata contain In-App Guidance for walkthroughs?',
-        points: 10,
-        condition: {
-            metadataType: 'Prompt',
-            operator: 'exists'
-          },
-        levelUp: {
-          label: 'Take Advantage of In-App Prompts',
-          message: 'For more information about how to use In-App Prompts to keep your users informed, see this blog.',
-          url: 'https://medium.com/inside-the-salesforce-ecosystem/in-app-prompts-for-isvs-e9b013969016'
-        }
-      },
-      {
         name: 'Lightning Flow',
         question: 'Does your application metadata contain Lightning Flows?',
         points: 10,
@@ -1216,7 +1265,7 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'Reports and Dashboards',
         question: 'Does your application metadata contain custom reports or dashboards?',
-        points: 5,
+        points: 7,
         condition: {
             metadataType: 'Report',
             operator: 'exists',
@@ -1268,7 +1317,7 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'Einstein Predictions',
         question: 'Does your application metadata contain predictions using Einstein Prediction Builder or Einstein Discovery?',
-        points: 7,
+        points: 9,
         levelUp: {
           label: 'Einstein Prediction Builder on Trailhead',
           message: 'Start here to learn how to use Einstein Prediction Builder and Einstein Discovery in your application',
@@ -1290,7 +1339,7 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'Next Best Action',
         question: 'Does your application metadata contain Next Best Actions to surface recommendations to end users?',
-        points: 5,
+        points: 7,
         levelUp: {
           label: 'Next Best Action on Trailhead',
           message: 'Start here to learn how to use Einstein Next Best Actions in your application',
@@ -1306,12 +1355,12 @@ const techAdoptionRules: ITechAdoptionRule[] = [
   },
   {
     categoryName: 'Processing and Platform',
-    categoryLabel: 'Processing & Platform Adoption',
+    categoryLabel: 'Data Storage & Processing',
     technologies: [
       {
         name: 'Experience Cloud',
         question: 'Does your application metadata contain Lightning Web Components which are rendered on Experience Cloud?',
-        points: 5,
+        points: 7,
         levelUp: {
           label: 'Learn more about Experience Cloud',
           message: 'Start here to learn more about how to use Experience Cloud in your applicatin',
@@ -1329,7 +1378,7 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'Apex',
         question: 'Does your application metadata contain Apex?',
-        points: 5,
+        points: 7,
         condition: {
           metadataType: 'ApexClass',
           operator: 'exists',
@@ -1342,7 +1391,7 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'Custom Objects',
         question: 'Does your application metadata contain Custom Objects?',
-        points: 5,
+        points: 7,
         condition: {
             metadataType: 'CustomObject',
             operator: 'exists'
@@ -1351,7 +1400,7 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'Platform Cache',
         question: 'Does your application metadata contain the free Platform Cache for ISVs?',
-        points: 7,
+        points: 9,
         condition: {
           metadataType: 'PlatformCachePartition',
           operator: 'exists'
@@ -1365,7 +1414,7 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'Shield',
         question: 'Is your application compatible with Shield Platform Encryption?',
-        points: 5,
+        points: 7,
         levelUp: {
           label: 'Platform Encryption for ISVs',
           message: 'Learn how to test your app against Shield Plaftorm Encryption',
@@ -1391,16 +1440,6 @@ const techAdoptionRules: ITechAdoptionRule[] = [
         }
       },
       {
-        name: 'ISV Debugger',
-        question: 'Have you used the ISV Debugger to troubleshoot an issue in a subscriber\'s org?',
-        points: 7,
-        levelUp: {
-          label: 'Debug subscriber issues',
-          message: 'Learn how to use the ISV Debugger to troubleshoot issues in subscriber orgs',
-          url: 'https://sfdc.co/ISVTEDebugger'
-        }
-      },
-      {
         name: '2GP Packaging',
         question: 'Is your metadata stored in a second-generation managed package (2GP)?',
         points: 10,
@@ -1413,7 +1452,7 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'LDV/Enterprise Scale Testing',
         question: 'Have you requested an LDV (Large Data Volume) test org and executed performance testing by opening up a case?',
-        points: 7,
+        points: 10,
         levelUp: {
           label: 'Test for Scale',
           message: 'Test your app for large data volumes to when your potential customers include large enterprises',
@@ -1443,7 +1482,7 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'DX/Scratch Orgs',
         question: 'Do you use scratch orgs when developing code or features for your managed packages?',
-        points: 7,
+        points: 10,
         levelUp: {
           label: 'SalesforceDX for ISVs',
           message: 'Learn how ISVs can leverage Salesforce DX to build apps faster and with more agility than ever.',
@@ -1469,23 +1508,6 @@ const techAdoptionRules: ITechAdoptionRule[] = [
           metadataType: 'CustomApplication.LightningConsoleCount',
           operator: 'gt',
           operand: 0
-        }
-      },
-      {
-        name: 'Surveys',
-        question: 'Does your application metadata contain Survey templates?',
-        points: 5,
-        condition: {
-          metadataType: 'Flow.FlowTypes.Survey',
-          operator: 'exists',
-          conditionOr: {
-            metadataType: 'Flow.FlowTypes.SurveyEnrich',
-            operator: 'exists',
-            conditionOr: {
-              metadataType : 'Flow.FlowTypes.CustomerLifecycle',
-              operator: 'exists'
-            }
-          }
         }
       },
       {
@@ -1520,7 +1542,48 @@ const techAdoptionRules: ITechAdoptionRule[] = [
           message: 'Learn more about making your app Mobile',
           url: 'https://sfdc.co/ISVTEMobile'
         }
+      },
+      {
+        name: 'User Accessibility - Navigation',
+        question: 'Can the page interactions be accessed via keyboard for people with limited ability to use a mouse?',
+        points: 7,
+        
+        levelUp: {
+          label: 'Get Started with Accessibility for Salesforce',
+          message: 'Take this Trail to learn more about building accessible apps',
+          url: 'https://sfdc.co/ISVTEAccessibilityTrail'
+        }
+      },
+      {
+        name: 'User Accessibility - Readability',
+        question: 'Is the content robust enough that it can be interpreted by a wide variety of user agents, including assistive technologies?',
+        points: 7,
+        
+        levelUp: {
+          label: 'Learn more about Automated Accessibility Testing',
+          message: 'Read more here about how to use sa11y to perform automated accessibility testing',
+          url: 'https://sfdc.co/ISVTEsa11y'
+        }
       }
+    ]
+  },
+  {
+    categoryName: 'Secondary Tech Analytics',
+    categoryLabel: 'Secondary Technology: Analytics & Einstein',
+    technologies: [
+      {
+        name: 'Einstein Recommendation Builder',
+        question: 'Does your application contain metadata to surface recommendations based on intelligence built upon org historical data?',
+        points: 5,
+        condition: {
+          metadataType: 'AIApplication',
+          operator: 'exists',
+          conditionOr: {
+            metadataType: 'AIApplicationConfig',
+            operator: 'exists'
+          }
+        }
+      },
     ]
   },
   {
@@ -1577,6 +1640,17 @@ const techAdoptionRules: ITechAdoptionRule[] = [
     ]
   },
   {
+    categoryName: 'Secondary Tech Development',
+    categoryLabel: 'Secondary Technology: Development & Deployment',
+    technologies: [
+      {
+        name: 'ISV Debugger',
+        question: 'Have you used the ISV Debugger to troubleshoot an issue in a subscriber\'s org?',
+        points: 7
+      },
+    ]
+  },
+  {
     categoryName: 'Secondary Tech Industry',
     categoryLabel: 'Secondary Technology: Cloud and Industry Adoption',
     technologies: [
@@ -1596,12 +1670,13 @@ const techAdoptionRules: ITechAdoptionRule[] = [
         points: 5
       },
       {
-        name: 'Work.com',
-        question: 'Does your application have a technical dependency on Work.com features that can only be accessed via user Permission Set Licenses (PSL) assignment?',
+        name: 'Pardot',
+        question: 'Does your application have a technical dependency on Pardot features that can only be accessed via user Permission Set Licenses (PSL) assignment?',
         points: 5,
-        condition: {
-          metadataType: 'dependencies.workcom',
-          operator: 'exists'
+        levelUp: {
+          url: 'https://sfdc.co/ISVTEPardot',
+          label: 'Pardot for ISVs',
+          message: 'Learn more about how ISV partners can leverage Pardot for B2B Marketing Automation'
         }
       },
       {
@@ -1625,22 +1700,12 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'Marketing Cloud - Exact Target',
         question: 'Are you distributing your application via the install URL to customers (vs. sever-to-server)?',
-        points: 15
+        points: 20
       },
       {
         name: 'Marketing Cloud - Exact Target',
         question: 'Are you using Lightning Design Systems for a fluid user experience?',
-        points: 15
-      },
-      {
-        name: 'Pardot',
-        question: 'Does your application have a technical dependency on Pardot features that can only be accessed via user Permission Set Licenses (PSL) assignment?',
-        points: 5,
-        levelUp: {
-          url: 'https://sfdc.co/ISVTEPardot',
-          label: 'Pardot for ISVs',
-          message: 'Learn more about how ISV partners can leverage Pardot for B2B Marketing Automation'
-        }
+        points: 20
       },
       {
         name: 'Consumer Goods Cloud',
@@ -1682,6 +1747,21 @@ const techAdoptionRules: ITechAdoptionRule[] = [
       {
         name: 'Field Service',
         question: 'Does your application have a technical dependency on Field Service features that can only be accessed via user Permission Set Licenses (PSL) assignment?',
+        points: 5
+      },
+      {
+        name: 'Commerce Cloud - Salesforce Commerce for B2B and/or B2C',
+        question: 'Does your application have a technical dependency on the Salesforce Lightning B2B Commerce or Salesforce Lightning B2B2C Commerce that can only be accessed via user Permission Set Licenses (PSL) assignment?',
+        points: 10
+      },
+      {
+        name: 'Commerce Cloud - Salesforce Order Management',
+        question: 'Does your application have a technical dependency on the Salesforce Lightning Order Management that can only be accessed via user Permission Set Licenses (PSL) assignment?',
+        points: 10
+      },
+      {
+        name: 'CDP',
+        question: 'Does your application have a technical dependency on CDP features that can only be accessed via user Permission Set Licenses (PSL) assignment?',
         points: 5
       }
     ]
@@ -1764,6 +1844,23 @@ const dataModels: IDataModel[] = [{
   namespaces: ['wkcc'],
   objects: ['Employee','EmployeeCrisisAssessment','InternalOrganizationUnit','Crisis'],
   fields: ['Location.Status__c']
+},
+{
+  name: '1C',
+  label: 'One Commerce',
+  namespaces: ['CommercePayments','sfdc_checkout'],
+  objects: []
+},
+{
+  name: 'SOM',
+  label: 'Order Management',
+  objects: ['FulfillmentOrder','FulfillmentOrderItemAdjustment','FulfillmentOrderItemTax','FulfillmentOrderLineItem','OrderAdjustmentGroupSummary','OrderDeliveryGroupSummary','OrderItemAdjustmentLineSummary','OrderItemSummary','OrderItemSummaryChange','OrderItemTaxLineItemSummary','OrderPaymentSummary','OrderSummary','ProcessException','ReturnOrder','ReturnOrderItemAdjustment','ReturnOrderItemTax','ReturnOrderLineItem','SalesChannel']
+},
+{
+  name: 'B2B2C',
+  label: 'B2B2C Commerce',
+  namespaces: ['commerce'],
+  objects:[]
 },
 {
   name: 'CGCloud',

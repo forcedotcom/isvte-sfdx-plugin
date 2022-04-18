@@ -12,3 +12,4 @@ LabsScan/
 _site/
 .DS_Store
 result.html
+result.json
