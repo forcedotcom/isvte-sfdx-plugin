@@ -41,7 +41,7 @@ export function inventoryPackage(sourceDir, p, options = {}) {
     
     let typeInv = {};
 
-    typeInv['index'] = typeIdx;
+    //typeInv['index'] = typeIdx;
 
   
     //Check for wildcard members
@@ -114,11 +114,11 @@ export function inventoryPackage(sourceDir, p, options = {}) {
           let object = getNameSpaceAndType(types[typeIdx]['members'][objIdx]);
           addObjectDependencies(dependencies,[object]);
           //Check external Objects
-          if (object.extension == 'e') {
+          if (object.extension == 'x') {
             xoCount += 1;
           }
           //Check Big Objects
-          if (object.extension == 'Big Object') {
+          if (object.extension == 'b') {
             boCount += 1;
           }
 
@@ -322,24 +322,40 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             
             if (futureReg.test(classBody)) {
               futureCount += 1;
+              incrementValue(componentProperties,`ApexClass.${className}.FutureMethods`);
+
             }
             if (auraEnabledReg.test(classBody)) {
               auraEnabledCount += 1;
+              incrementValue(componentProperties,`ApexClass.${className}.AuraEnabledMethods`);
+
+            }
+            if (remoteActionReg.test(classBody)) {
+              remoteActionCount += 1;
+              incrementValue(componentProperties,`ApexClass.${className}.RemoteActionMethods`);
+
             }
             if (remoteActionReg.test(classBody)) {
               remoteActionCount += 1;
             }
             if (invocableReg.test(classBody)) {
               invocableCount += 1;
+              incrementValue(componentProperties,`ApexClass.${className}.InvokableMethods`);
+
             }
             if (restReg.test(classBody)) {
               apexRestCount += 1;
+              incrementValue(componentProperties,`ApexClass.${className}.RestResources`);
+
             }
             if (soapReg.test(classBody)) {
               apexSoapCount += 1;
+              incrementValue(componentProperties,`ApexClass.${className}.SoapResources`);
+
             }
             if (scheduleReg.test(classBody)) {
               schedulableCount += 1;
+
             }
             if (batchReg.test(classBody)) {
               batchCount += 1;
@@ -352,6 +368,8 @@ export function inventoryPackage(sourceDir, p, options = {}) {
             }
             if (isTestClass(classBody)) {
               testCount += 1;
+              incrementValue(componentProperties,`ApexClass.${className}.TestMethods`);
+
             }
             else {
               //Count Apex Characters
@@ -679,6 +697,11 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         for (var ncIdx in types[typeIdx]['members']) {
           const ncName = types[typeIdx]['members'][ncIdx];
           const ncFile = `${ncPath}/${ncName}.namedCredential`;
+          const ncJSON = parseXML(ncFile);
+          var authProviderName = getValue(ncJSON,'NamedCredential.authProvider.0','');
+          if (authProviderName.length > 0) {
+            incrementValue(componentProperties,`AuthProvider.${authProviderName}.NamedCredential.${ncName}`);
+          }
           if (fs.existsSync(ncFile)) {
             let nc = fs.readFileSync(ncFile, 'utf8');
             for (var url of findHardcodedURLs(nc)){
@@ -690,7 +713,23 @@ export function inventoryPackage(sourceDir, p, options = {}) {
       }
       break;
 
-
+      case 'AuthProvider' :
+        let apTypes = {};
+        const apPath = `${sourceDir}/authproviders`;
+        for (var apIdx in types[typeIdx]['members']) {
+          const apName = types[typeIdx]['members'][apIdx];
+          const apXml = `${apPath}/${apName}.authprovider`;
+          const apJSON = parseXML(apXml);
+          let apType = getValue(apJSON,'AuthProvider.providerType','Custom');
+          incrementValue(apTypes,`${apType}.count`);
+          //Check for packaged Secrets
+          if (getValue(apJSON,'AuthProvider.consumerSecret.0','').length > 0) {
+            setValue(componentProperties,`AuthProvider.${apName}.packagedSecret`,1);
+          }
+          typeInv['ProviderTypes'] = apTypes;
+ 
+        }
+      break;
     }
 
     inventory[metadataType] = typeInv;
