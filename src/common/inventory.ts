@@ -248,6 +248,12 @@ export class packageInventory {
           }
   
         }
+        //Check Additional Metadata Types
+        if (dataModel.metadataTypes) {
+          for (var mdt of dataModel.metadataTypes) {
+            conditions.push({metadataType: `${mdt}`,operator:'exists'});
+          }
+        }
         //Check Objects
         for (var objName of dataModel.objects) {
           //create condition for Object references in custom fields

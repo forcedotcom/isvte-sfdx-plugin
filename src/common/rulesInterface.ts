@@ -179,4 +179,5 @@ interface IDataModel {
   fields?: string[], //Array of fields (in Object.Field format) included in this datamodel
   objects?: string[], //Array of objects included in this data model
   namespaces?: string[], //Array of namespaces included in this data model
+  metadataTypes?: string[], //Array of additional metadata components 
 }

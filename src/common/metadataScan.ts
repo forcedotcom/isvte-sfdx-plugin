@@ -318,8 +318,16 @@ export function inventoryPackage(sourceDir, p, options = {}) {
           //  const refersGuestSimpleReg = /UserType(?:\(\))?\s*=\s*(['"])Guest\1/ig;
           //  const refersGuestComplexReg = /(\w+)\s*=.*getUserType\(\)(?:.*)\1\s*=\s*(["'])Guest\2/is;
             const refersGuestTrivialReg = /(["'])Guest\1/i;
+            const checkoutReg = /sfdc_checkout\.\w+/i;
+            const omReg = /ConnectAPI\.(?:FulfillmentOrder|OrderPaymentSummary|OrderSummary|OrderSummaryCreation)/i;
+
+            if (omReg.test(classBody)) {
+              setValue(dependencies,'OrderManagementApex',1);
+            }
            
-            
+            if (checkoutReg.test(classBody)) {
+              setValue(dependencies,'namespaces.sfdc_checkout',1);
+            }
             if (futureReg.test(classBody)) {
               futureCount += 1;
               incrementValue(componentProperties,`ApexClass.${className}.FutureMethods`);

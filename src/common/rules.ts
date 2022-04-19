@@ -1807,6 +1807,18 @@ const dependencyRules: IDependecyRule[] = [{
     }
 },
 {
+  name: 'CDP',
+  label: 'CDP',
+  condition: {
+    metadataType: 'DataStreamDefinition',
+    operator: 'exists',
+    conditionOr: {
+      metadataType: 'ExternalDataConnector',
+      operator: 'exists'
+    }
+  }
+},
+{
   name: 'EinsteinAnalytics',
   label: 'Einstein Analytics',
   condition: {
@@ -1855,12 +1867,14 @@ const dataModels: IDataModel[] = [{
   name: '1C',
   label: 'One Commerce',
   namespaces: ['CommercePayments','sfdc_checkout'],
-  objects: []
+  objects: ['Wishlist','WebStorePricebook','WebStoreCatalog','WebStoreBuyerGroup','WebStore','WebCart'],
+  metadataTypes: ['Flow.FlowTypes.CheckoutFlow']
 },
 {
   name: 'SOM',
   label: 'Order Management',
-  objects: ['FulfillmentOrder','FulfillmentOrderItemAdjustment','FulfillmentOrderItemTax','FulfillmentOrderLineItem','OrderAdjustmentGroupSummary','OrderDeliveryGroupSummary','OrderItemAdjustmentLineSummary','OrderItemSummary','OrderItemSummaryChange','OrderItemTaxLineItemSummary','OrderPaymentSummary','OrderSummary','ProcessException','ReturnOrder','ReturnOrderItemAdjustment','ReturnOrderItemTax','ReturnOrderLineItem','SalesChannel']
+  objects: ['FulfillmentOrder','FulfillmentOrderItemAdjustment','FulfillmentOrderItemTax','FulfillmentOrderLineItem','OrderAdjustmentGroupSummary','OrderDeliveryGroupSummary','OrderItemAdjustmentLineSummary','OrderItemSummary','OrderItemSummaryChange','OrderItemTaxLineItemSummary','OrderPaymentSummary','OrderSummary','ProcessException','ReturnOrder','ReturnOrderItemAdjustment','ReturnOrderItemTax','ReturnOrderLineItem','SalesChannel'],
+  metadataTypes: ['dependencies.OrderManagementApex']
 },
 {
   name: 'B2B2C',
