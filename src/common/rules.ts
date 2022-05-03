@@ -1063,7 +1063,24 @@ const alertRules: IRule[] = [
       message: 'We are planning to retire the Health Cloud “Candidate Patient” data entity with the Spring ‘22* release and we recommend that you use the Lead object by that time.',
       url: 'https://sfdc.co/ISVTEAlertCandidatePatient'
     }
+ },
+ {
+ name: 'Alerts Signup',
+ condition: {
+  metadataType: 'Aura notexist',
+  operator: 'notexists',
+  conditionAnd: {
+    processAlways: false,
+    metadataType: 'lightning exist',
+    operator: 'exists'
+  }
+},
+ resultTrue: {
+   label: 'Lighting Web Security is generally available for Lighting web components',
+   message: 'Lightning Web Security is a new client-side security architecture for Lightning web components. This new architecture is defined by fewer restrictions and more functionality while providing strong sandboxing and a security posture to enforce namespace isolation',
+   url: 'https://partners.salesforce.com/_ui/core/chatter/groups/GroupProfilePage?g=0F9300000001s8O&fId=0D54V000062z8QZ'
  }
+},
 ];
 
 const editionWarningRules: IInstallRule[] = [{
