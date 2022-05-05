@@ -1081,7 +1081,19 @@ const alertRules: IRule[] = [
    url: 'https://partners.salesforce.com/_ui/core/chatter/groups/GroupProfilePage?g=0F9300000001s8O&fId=0D54V000062z8QZ'
  }
 },
-];
+ {
+    name: 'production- and/or development- hostnames.',
+    condition: {
+      expiration: '2022-03-1T00:00:00.000Z',
+      metadataType: 'any',
+      operator: 'always'
+    },
+    resultTrue: {
+      label: 'Security Impacting Changes',
+      message: 'Salesforce is implementing a change to ensure that all B2C Commerce traffic flows through customer-specific CDN configurations with proper rules and restrictions in place. If customers or partners are using *production-* and/or *development-* hostnames to access OCAPI or Storefront, this must be changed to leverage their vanity hostname in order not to be impacted by this change.',
+      url: 'https://partners.salesforce.com/_ui/core/chatter/groups/GroupProfilePage?g=0F9300000001s8O&fId=0D54V000060QbEX'
+    }
+ };
 
 const editionWarningRules: IInstallRule[] = [{
   name: 'Essentials',
