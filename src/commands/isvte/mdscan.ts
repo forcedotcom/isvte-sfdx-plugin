@@ -7,13 +7,11 @@
 
 import {
   flags,
-  SfdxCommand,
-  TableOptions
+  SfdxCommand
 } from '@salesforce/command';
 import {
-  SfdxError
+  SfdxError,
 } from '@salesforce/core';
-import cli from 'cli-ux';
 
 import {
   Loggit
@@ -59,8 +57,9 @@ export default class mdscan extends SfdxCommand {
   // private suppressAdoptionScore = false;
   private loggit;
   private packageInventory;
-  private sfdxConvertFolder = './tmp/mdapi';
-  private sfdxConvertFolderFilter = './tmp/mdapiFiltered';
+  private tmpParentFolder = '.isvtetmp_' + Math.random().toString(36).substring(2, 15);
+  private sfdxConvertFolder = this.tmpParentFolder + '/mdapi' ;
+  private sfdxConvertFolderFilter = this.tmpParentFolder + '/mdapiFiltered';
 
   public static description = 'scan a package and provide recommendations based on package inventory';
 
@@ -153,33 +152,43 @@ For more information, please connect in the ISV Technical Enablement Plugin
       throw new SfdxError(`Source Folder ${this.sourceFolder} does not exist`, 'SourceNotExistError');
     }
 
-    // If argument packageXml is sent, convert SFDX project into metadatas folder then filter it 
-    if (this.sfdxPackageXml) {
+      
+    // If this is source formatted, convert it to MDAPI Format
+    
+    if (fs.existsSync(this.sourceFolder + '/sfdx-project.json')) {
       const exec = util.promisify(require('child_process').exec);
 
       try {
+        
         // force:source:convert in a temporary folder
-        const sfdxConvertCommand = `sfdx force:source:convert -d ${this.sfdxConvertFolder} -r ${(this.sourceFolder != mdscan.flagsConfig.sourcefolder.default) ? this.sourceFolder : '.'}`;
+        const sfdxConvertCommand = `sfdx force:source:convert -d ${this.sfdxConvertFolder} -r ${(this.sourceFolder != mdscan.flagsConfig.sourcefolder.default) ? this.sourceFolder : './'}`;
         const { stderr } = await exec(sfdxConvertCommand);
         if (stderr) {
-          throw new SfdxError(`Unable to convert ${this.sourceFolder} to metadatas`, 'ConversionToMetadataError');
+          throw new SfdxError(`Unable to convert ${this.sourceFolder} to MDAPI Format`, 'ConversionToMetadataError');
         }
 
-        // Filter metadatas folder using package.xml
-        await MetadataFilterFromPackageXml.run([
-          '-i', this.sfdxConvertFolder,
-          '-o', this.sfdxConvertFolderFilter,
-          '-p', this.sfdxPackageXml,
-          '-s']);
-        this.sourceFolder = this.sfdxConvertFolderFilter; // Set filtered mdapi folder as sourceFolder 
+        // If argument packageXml is sent, convert SFDX project into metadatas folder then filter it 
+        if (this.sfdxPackageXml) {
+          // Filter metadatas folder using package.xml
+          await MetadataFilterFromPackageXml.run([
+            '-i', this.sfdxConvertFolder,
+            '-o', this.sfdxConvertFolderFilter,
+            '-p', this.sfdxPackageXml,
+            '-s']);
+          this.sourceFolder = this.sfdxConvertFolderFilter; // Set filtered mdapi folder as sourceFolder 
+          // Remove filtered metadata folder if existing
+          if (fs.existsSync(this.sfdxConvertFolder)) {
+            fs.removeSync(this.sfdxConvertFolder);
+          }
+        }
+        else {
+          this.sourceFolder = this.sfdxConvertFolder;
+        }
       }
       catch (e) {
         throw e;
       }
-      // Remove filtered metadata folder if existing
-      if (fs.existsSync(this.sfdxConvertFolder)) {
-        fs.removeSync(this.sfdxConvertFolder);
-      }
+      
     }
 
     // Process MD Scan
@@ -201,7 +210,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
     if (this.flags.minapi) {
       this.packageInventory.setMinAPI(this.flags.minapi);
     }
-    this.packageInventory.setMetadata(inventoryPackage(this.flags.sourcefolder, packageJSON, {scanLanguage: this.languageScan}));
+    this.packageInventory.setMetadata(inventoryPackage(this.sourceFolder, packageJSON, {scanLanguage: this.languageScan}));
    // Generate Report
 
    //Just show inventory
@@ -210,8 +219,9 @@ For more information, please connect in the ISV Technical Enablement Plugin
       this.ux.table(this.packageInventory.getFullInvArray(), ['metadataType', 'count']);
     }
     //HTML Format
+    /*
     else if (this.formatHTML) {
-      let htmlOut = '';
+      let htmlOut = 'Comming Soon';
 
       /*
       Header
@@ -225,7 +235,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
         [Items]
           [Details]
       */
-      
+    /*  
           json2html.component.add({
             "pageHeader": {"<>":"div","id":"${id}","html":[
               {"<>":"h2","html":"ISVTE Plugin Scan Results"},
@@ -343,7 +353,7 @@ For more information, please connect in the ISV Technical Enablement Plugin
       fs.writeFileSync('result.html',htmlOut);
       cli.open('result.html');
 
-    }
+    }*/
     //Text format
     else {
       if (!this.suppressAllInv) {
@@ -351,8 +361,11 @@ For more information, please connect in the ISV Technical Enablement Plugin
         let inventoryArray = this.packageInventory.getMonitoredInvArray().filter(element => {
           return (!this.suppressZeroInv || element.count > 0);
         });
-        const inventoryTableoptions: TableOptions = { columns: [{ key: 'label', label: 'Metadata Type' }, { key: 'count', label: 'Count' }] };
-        this.ux.table(inventoryArray, inventoryTableoptions);
+
+        this.ux.table(inventoryArray,{
+          label: {header:"Metadata Type"},
+          count: {header:"Count"}
+        });
         this.ux.log('\n');
         
       }
@@ -492,9 +505,10 @@ For more information, please connect in the ISV Technical Enablement Plugin
     // Get MdScan JSON Output
     const outputRes = this.packageInventory.getJSONOutput();
 
-    // Remove filtered metadata folder if existing
-    if (fs.existsSync(this.sfdxConvertFolderFilter)) {
-      fs.removeSync(this.sfdxConvertFolderFilter);
+    // Remove temp folders if existing
+    if (fs.existsSync(this.tmpParentFolder)) {
+      fs.removeSync(this.tmpParentFolder);
+
     }
 
     return outputRes;
@@ -520,4 +534,6 @@ For more information, please connect in the ISV Technical Enablement Plugin
       },[]);
     }
   }
+
+  
 }
