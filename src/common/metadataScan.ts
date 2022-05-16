@@ -110,6 +110,9 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         let fmType = {
           count: 0
         };
+        let cmType = {
+          count:0
+        };
         for (var objIdx in types[typeIdx]['members']) {
           let object = getNameSpaceAndType(types[typeIdx]['members'][objIdx]);
           addObjectDependencies(dependencies,[object]);
@@ -125,11 +128,17 @@ export function inventoryPackage(sourceDir, p, options = {}) {
           //Check Platform Events
           if (object.extension == 'e') {
             peType['count'] += 1;
+            typeInv['count'] -= 1;
           }
-
+          //Check CustomMetadata Events
+          if (object.extension == 'mdt') {
+            cmType['count'] += 1;
+            typeInv['count'] -= 1;
+          }
           //Check Feature Management Parameters
           if (String(object.fullName).includes('FeatureParameter')) {
             fmType['count'] += 1;
+            typeInv['count'] -= 1;
           }
 
           let objectXml = `${objectPath}/${object.fullName}.object`;
@@ -138,7 +147,8 @@ export function inventoryPackage(sourceDir, p, options = {}) {
           if (objectJSON['CustomObject']) {
             //Check Custom Settings
             if (objectJSON['CustomObject']['customSettingsType']) {
-              csType['count'] + 1;
+              csType['count'] += 1;
+              typeInv['count'] -= 1;
             }
 
             //Check for Descriptions
@@ -164,6 +174,8 @@ export function inventoryPackage(sourceDir, p, options = {}) {
         inventory['CustomSetting__c'] = csType;
         inventory['PlatformEvent__c'] = peType;
         inventory['FeatureManagement__c'] = fmType;
+        inventory['CustomMetadata'] = cmType;
+
 
         break;
       case 'PlatformEventChannel':
@@ -318,8 +330,16 @@ export function inventoryPackage(sourceDir, p, options = {}) {
           //  const refersGuestSimpleReg = /UserType(?:\(\))?\s*=\s*(['"])Guest\1/ig;
           //  const refersGuestComplexReg = /(\w+)\s*=.*getUserType\(\)(?:.*)\1\s*=\s*(["'])Guest\2/is;
             const refersGuestTrivialReg = /(["'])Guest\1/i;
+            const checkoutReg = /sfdc_checkout\.\w+/i;
+            const omReg = /ConnectAPI\.(?:FulfillmentOrder|OrderPaymentSummary|OrderSummary|OrderSummaryCreation)/i;
+
+            if (omReg.test(classBody)) {
+              setValue(dependencies,'OrderManagementApex',1);
+            }
            
-            
+            if (checkoutReg.test(classBody)) {
+              setValue(dependencies,'namespaces.sfdc_checkout',1);
+            }
             if (futureReg.test(classBody)) {
               futureCount += 1;
               incrementValue(componentProperties,`ApexClass.${className}.FutureMethods`);

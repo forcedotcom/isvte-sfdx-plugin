@@ -7,7 +7,7 @@
 
 const minAPI = 48;
 
-const rulesVersion = '20220418';
+const rulesVersion = '20220520';
 
 const standardNamespaces = [
   'c',
@@ -56,7 +56,7 @@ const mdTypes: IMetadataType[] = [{
 },
 {
   label: 'Custom Labels',
-  metadataType: 'CustomLabel'
+  metadataType: 'CustomLabels'
 },
 {
   label: 'Tabs',
@@ -115,14 +115,6 @@ const mdTypes: IMetadataType[] = [{
   metadataType: 'PlatformEventChannel'
 },
 {
-  label: 'Territory Management',
-  metadataType: 'Territory'
-},
-{
-  label: 'Territory Management 2.0',
-  metadataType: 'Territory2'
-},
-{
   label: 'Visualforce Pages',
   metadataType: 'ApexPage'
 },
@@ -135,31 +127,31 @@ const mdTypes: IMetadataType[] = [{
   metadataType: 'LightningComponentBundle'
 },
 {
-  label: 'Einstein Analytics Applications',
+  label: 'CRM Analytics Applications',
   metadataType: 'WaveApplication'
 },
 {
-  label: 'Einstein Analytics Dashboards',
+  label: 'CRM Analytics Dashboards',
   metadataType: 'WaveDashboard'
 },
 {
-  label: 'Einstein Analytics Dataflows',
+  label: 'CRM Analytics Dataflows',
   metadataType: 'WaveDataflow'
 },
 {
-  label: 'Einstein Analytics Datasets',
+  label: 'CRM Analytics Datasets',
   metadataType: 'WaveDataset'
 },
 {
-  label: 'Einstein Analytics Lenses',
+  label: 'CRM Analytics Lenses',
   metadataType: 'WaveLens'
 },
 {
-  label: 'Einstein Analytics Template Bundles',
+  label: 'CRM Analytics Template Bundles',
   metadataType: 'WaveTemplateBundle'
 },
 {
-  label: 'Einstein Analytics Dashboards',
+  label: 'CRM Analytics Dashboards',
   metadataType: 'WaveDashboard'
 },
 {
@@ -210,7 +202,7 @@ const enablementRules: IRule[] = [{
     },
     resultTrue: {
       label: 'Scan your code for vulnerabilities',
-      message: 'Scan your Apex, Javascript, and Visualforce code for vulnerabilities and violations using the sfdx-scanner plugin. Learn more about sfdx-scanner here.',
+      message: 'Scan your Apex, Javascript, and Visualforce code for vulnerabilities and violations using the Salesforce Code Analyzer.\nNew in Spring \'22: Salesforce Code Analyzer will detect CRUD and FLS Violations!\n Learn more about sfdx-scanner here.',
       url: 'https://forcedotcom.github.io/sfdx-scanner/'
     },
   },
@@ -839,7 +831,7 @@ const alertRules: IRule[] = [
     name: 'Lightning Platform API Versions 7-20',
     condition: {
       metadataType: 'apiVersions.*.*',
-      expiration: '2021-08-1T00:00:00.000Z',
+      expiration: '2021-08-01T00:00:00.000Z',
       operator: 'between',
       operand: [7,20],
     },
@@ -853,7 +845,7 @@ const alertRules: IRule[] = [
   name: 'Salesforce Platform API Versions 21.0 thru 30.0 in Summer 22',
   condition: {
     metadataType: 'apiVersions.*.*',
-    expiration: '2022-008-1T00:00:00.000Z',
+    expiration: '2022-08-01T00:00:00.000Z',
     operator: 'between',
     operand: [5,30],
   },
@@ -879,7 +871,7 @@ const alertRules: IRule[] = [
  {
    name: 'Enhancement to Guest User Sharing Policy',
    condition: {
-    expiration: '2021-05-1T00:00:00.000Z',
+    expiration: '2022-10-1T00:00:00.000Z',
     metadataType: 'LightningComponentBundle.targets.lightningCommunity__Page',
     operator: 'exists',
     conditionOr: {
@@ -917,47 +909,6 @@ const alertRules: IRule[] = [
     url: 'https://sfdc.co/ISVTEAlert20200414'
   }
  },
- {
-  name: 'Enhancement to Guest User Sharing Policy',
-  condition: {
-   expiration: '2021-05-1T00:00:00.000Z',
-   metadataType: 'LightningComponentBundle.targets.lightningCommunity__Page',
-   operator: 'exists',
-   conditionOr: {
-     metadataType: 'LightningComponentBundle.targets.lightningCommunity__Default',
-     operator: 'exists',
-     conditionOr: {
-       metadataType: 'ExperienceBundle',
-       operator: 'exists',
-       conditionOr: {
-         metadataType: 'CommunityTemplateDefinition',
-         operator: 'exists',
-         conditionOr: {
-           metadataType: 'componentProperties.AuraDefinitionBundle.*.interfaces.forceCommunity:availableForAllPageTypes',
-           operator: 'exists',
-           conditionOr: {
-             metadataType: 'componentProperties.ApexPage.*.RefersToSite',
-             operator: 'exists',
-             conditionOr: {
-               metadataType: 'componentProperties.ApexTrigger.*.RefersToGuest',
-               operator: 'exists',
-               conditionOr: {
-                 metadataType:  'componentProperties.ApexClass.*.RefersToGuest',
-                 operator: 'exists'
-               }
-             }
-           }
-         }
-       }
-     }
-   }
- },
- resultTrue: {
-   label: 'Upcoming Enforcing Changes Affecting Guest User Object Permissions',
-   message: 'As part of the new Guest User Security Policy for Salesforce public sites, Salesforce will permanently remove several guest user object permissions with the Spring 21 release. The object permissions due to be removed are: Edit, Delete, Modify All, & View All. These permissions will be permanently removed for custom objects and standard objects. Major impact will be seen on standard objects - Order, Survey Response, Contract, ProfileSkillUser, and ProfileSkillEndorsement, and all custom objects.',
-   url: 'https://sfdc.co/ISVTEAlert20201215'
- }
-},
 {
   name: 'Work.com Search',
   condition: {
@@ -1018,7 +969,7 @@ const alertRules: IRule[] = [
   {
     name: 'MFA Mandate',
     condition: {
-      expiration: '2022-03-1T00:00:00.000Z',
+      expiration: '2023-03-1T00:00:00.000Z',
       metadataType: 'any',
       operator: 'always'
     },
@@ -1030,7 +981,7 @@ const alertRules: IRule[] = [
  },
  {name: 'Stricter Validation in Visualforce Remoting API',
  condition: {
-   expiration: '2021-12-1T00:00:00.000Z',
+   expiration: '2022-12-1T00:00:00.000Z',
    metadataType: 'ApexClass.RemoteActionCalls',
    operator: 'exists'
  },
@@ -1042,7 +993,7 @@ const alertRules: IRule[] = [
  {
    name: 'Candidate Patient Entity Retirement',
    condition: {
-     expiration: '2022-08-1T00:00:00.000Z',
+     expiration: '2023-08-1T00:00:00.000Z',
      metadataType: 'dependencies.components.HealthCloudGA__CandidatePatient__c',
     operator: 'exists',
     conditionOr: {
@@ -1063,8 +1014,37 @@ const alertRules: IRule[] = [
       message: 'We are planning to retire the Health Cloud “Candidate Patient” data entity with the Spring ‘22* release and we recommend that you use the Lead object by that time.',
       url: 'https://sfdc.co/ISVTEAlertCandidatePatient'
     }
+ },
+ {
+ name: 'Alerts Signup',
+ condition: {
+  metadataType: 'AuraDefinitionBundle',
+  operator: 'exists',
+  conditionOr: {
+    processAlways: false,
+    metadataType: 'LightningComponentBundle',
+    operator: 'exists'
+  }
+},
+ resultTrue: {
+   label: 'Lighting Web Security is generally available for Lighting web components',
+   message: 'Lightning Web Security is a new client-side security architecture for Lightning web components. This new architecture is defined by fewer restrictions and more functionality while providing strong sandboxing and a security posture to enforce namespace isolation.',
+   url: 'https://partners.salesforce.com/_ui/core/chatter/groups/GroupProfilePage?g=0F9300000001s8O&fId=0D54V000062z8QZ'
  }
-];
+},
+ {
+    name: 'Demandware Security Impacting Change',
+    condition: {
+      expiration: '2023-05-1T00:00:00.000Z',
+      metadataType: 'any',
+      operator: 'always'
+    },
+    resultTrue: {
+      label: 'Security Impacting Changes',
+      message: 'Salesforce is implementing a change to ensure that all B2C Commerce traffic flows through customer-specific CDN configurations with proper rules and restrictions in place. If customers or partners are using *production-* and/or *development-* hostnames to access OCAPI or Storefront, this must be changed to leverage their vanity hostname in order not to be impacted by this change.',
+      url: 'https://partners.salesforce.com/_ui/core/chatter/groups/GroupProfilePage?g=0F9300000001s8O&fId=0D54V000060QbEX'
+    }
+ }];
 
 const editionWarningRules: IInstallRule[] = [{
   name: 'Essentials',
@@ -1807,6 +1787,18 @@ const dependencyRules: IDependecyRule[] = [{
     }
 },
 {
+  name: 'CDP',
+  label: 'CDP',
+  condition: {
+    metadataType: 'DataStreamDefinition',
+    operator: 'exists',
+    conditionOr: {
+      metadataType: 'ExternalDataConnector',
+      operator: 'exists'
+    }
+  }
+},
+{
   name: 'EinsteinAnalytics',
   label: 'Einstein Analytics',
   condition: {
@@ -1855,12 +1847,14 @@ const dataModels: IDataModel[] = [{
   name: '1C',
   label: 'One Commerce',
   namespaces: ['CommercePayments','sfdc_checkout'],
-  objects: []
+  objects: ['Wishlist','WebStorePricebook','WebStoreCatalog','WebStoreBuyerGroup','WebStore','WebCart'],
+  metadataTypes: ['Flow.FlowTypes.CheckoutFlow']
 },
 {
   name: 'SOM',
   label: 'Order Management',
-  objects: ['FulfillmentOrder','FulfillmentOrderItemAdjustment','FulfillmentOrderItemTax','FulfillmentOrderLineItem','OrderAdjustmentGroupSummary','OrderDeliveryGroupSummary','OrderItemAdjustmentLineSummary','OrderItemSummary','OrderItemSummaryChange','OrderItemTaxLineItemSummary','OrderPaymentSummary','OrderSummary','ProcessException','ReturnOrder','ReturnOrderItemAdjustment','ReturnOrderItemTax','ReturnOrderLineItem','SalesChannel']
+  objects: ['FulfillmentOrder','FulfillmentOrderItemAdjustment','FulfillmentOrderItemTax','FulfillmentOrderLineItem','OrderAdjustmentGroupSummary','OrderDeliveryGroupSummary','OrderItemAdjustmentLineSummary','OrderItemSummary','OrderItemSummaryChange','OrderItemTaxLineItemSummary','OrderPaymentSummary','OrderSummary','ProcessException','ReturnOrder','ReturnOrderItemAdjustment','ReturnOrderItemTax','ReturnOrderLineItem','SalesChannel'],
+  metadataTypes: ['dependencies.OrderManagementApex']
 },
 {
   name: 'B2B2C',
