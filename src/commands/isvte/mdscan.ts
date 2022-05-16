@@ -17,7 +17,7 @@ import {
   Loggit
 } from '../../common/logger';
 import fs = require('fs-extra');
-import json2html = require('node-json2html');
+//import json2html = require('node-json2html');
 
 import {
   packageInventory
@@ -219,10 +219,10 @@ For more information, please connect in the ISV Technical Enablement Plugin
       this.ux.table(this.packageInventory.getFullInvArray(), ['metadataType', 'count']);
     }
     //HTML Format
-    /*
+    
     else if (this.formatHTML) {
-      let htmlOut = 'Comming Soon';
-
+      this.ux.log('Comming Soon');
+    }
       /*
       Header
         Title

@@ -11,4 +11,4 @@ More information on the plugin is available in this [blog post](https://medium.c
 
 
 For support with this plugin or to provide feedback, please log an issue here or connect with us in the [ISV Technical Enablement Plugin
- Chatter group](https://partners.salesforce.com/0F93A0000004mWj) (Salesforce Partner Community login required) 
+ Chatter group](https://partners.salesforce.com/0F93A0000004mWj) (Salesforce Partner Community login required)
