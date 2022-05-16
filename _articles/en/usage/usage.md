@@ -4,7 +4,7 @@ lang: en
 ---
 
 ## Running the Plugin
-At its simplest, to run the ISVTE Plugin you point it to a folder containing a package.xml file plus the associated metadata.
+At its simplest, to run the ISVTE Plugin you point it to a folder containing an sfdx project or a package.xml file plus the associated metadata.
 
 ```
 jhaydraude:demo>ls mdout
@@ -19,26 +19,7 @@ email			permissionsets
 jhaydraude:demo>sfdx isvte:mdscan -d mdout
 ```
 
-## sfdx Source format
 
-Packages can be delivered in one of 2 formats: traditional metadata format or SalesforceDX source format. Ultimately, all packages end up in Metadata format regardless of how they are created and this is the format that the ISVTE Plugin uses.
-
-If you're developing your code with VSCode and SalesforceDX you still have 2 ways to use the ISVTE Plugin.
-
-1. Supply a package.xml
-Using a generated package.xml, you can use the `-p` flag on the `isvte:mdscan` command to pass your package.xml and let the tool know which metadata components you're interested in scanning.
-```
-sfdx isvte:mdscan -p source/package.xml -d force-app
-```
-
-2. Convert the source to metadata format
-Using native sfdx functionality, you can easily convert your source to metadata format then execute the plugin against it.
-
-```
-jhaydraude:demo>sfdx force:source:convert -d mdconverted
-Source was successfully converted to Metadata API format and written to the location: /Users/jhaydraude/Development/Projects/ISVTEPluginDemo/mdconverted
-jhaydraude:demo>sfdx isvte:mdscan -d mdconverted
-```
 
 ## Modifying the Report
 

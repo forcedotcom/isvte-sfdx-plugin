@@ -3,13 +3,13 @@ title: Salesforce ISVTE Plugin
 permalink: /
 lang: en
 ---
-<!--
+
 <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-text-heading_small slds-text-align_center slds-theme_warning" role="alert">
   <span class="slds-assistive-text">warning</span>
-  	A new version (v{{ site.data.versions.scanner }}) of the ISVTE Plugin was released on {{ site.data.versions.releasedon }} 
+  	A May '22 version of the ISVTE Plugin has been released. [Check out what's new](https://github.com/forcedotcom/isvte-sfdx-plugin/blob/master/RELEASENOTES.md) 
 </div>
 <br>
--->
+
 
 ## Salesforce ISV Technical Enablement Plugin (ISVTE Plugin)
 
