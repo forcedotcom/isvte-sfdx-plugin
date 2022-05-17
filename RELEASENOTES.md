@@ -10,6 +10,7 @@ Starting in April 2022 with Verision 1.15, the ISV Technical Enablement Plugin f
 
 
 Support for sfdx projects. `force:source:convert is not longer required`
+
 Partner Alerts Refresh
 
 Fix issue with dependency check failing
