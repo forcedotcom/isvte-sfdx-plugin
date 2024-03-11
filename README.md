@@ -1,14 +1,13 @@
 isvte-sfdx-plugin
 ==============
 
-isvte-sfdx-plugin is a SalesforceDX plugin which will scan the metadata of your package and provide technical enablement advice as well as warnings related to best practices and installations limitations by Salesforce Org Edition. It will also help identify features which contribute to your Trailblazer score for partner program benefits.
+isvte-sfdx-plugin is a SalesforceDX plugin which will scan the metadata of your package and provide technical enablement advice as well as warnings related to best practices and installation limitations by Salesforce Org Edition. It will also help identify features that contribute to your Trailblazer score for partner program benefits.
 
 More information on the plugin and how to use it is available in this [introductory blog post](https://medium.com/inside-the-salesforce-ecosystem/build-better-apps-for-your-customers-with-this-new-dx-plug-in-4877fa0fc305)
 
-For support with this plugin or to provide feedback, please log an issue here or connect with us in the [ISV Technical Enablement Plugin
- Chatter group](https://partners.salesforce.com/0F93A0000004mWj) (Salesforce Partner Community login required) 
-
 See [this document](EXTENDING.md) for details on how to extend the tool by adding your own rules.
+
+IMPORTANT Update: As of March 11th, 2024, this tool will no longer be actively developed or supported. We will be archiving the repository. We want to thank every one of you. Without, our partners, this tool would not have been a reality. We will continue the development of our products and tools to make integrations with our platform more efficient. Thank you!
 
 ## Setup
 ### **Install as a SalesforceDX Plugin**
