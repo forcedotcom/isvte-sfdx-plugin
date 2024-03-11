@@ -7,7 +7,7 @@ More information on the plugin and how to use it is available in this [introduct
 
 See [this document](EXTENDING.md) for details on how to extend the tool by adding your own rules.
 
-IMPORTANT Update: As of March 11th, 2024, this tool will no longer be actively developed or supported. We will be archiving the repository. We want to thank every one of you. Without, our partners, this tool would not have been a reality. We will continue the development of our products and tools to make integrations with our platform more efficient. Thank you!
+IMPORTANT UPDATE: As of March 11th, 2024, this tool will no longer be actively developed or supported. We will be archiving the repository. We want to thank every one of you. Without, our partners, this tool would not have been a reality. We will continue the development of our products and tools to make integrations with our platform more efficient. Thank you!
 
 ## Setup
 ### **Install as a SalesforceDX Plugin**
