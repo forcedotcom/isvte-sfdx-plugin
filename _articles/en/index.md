@@ -6,7 +6,7 @@ lang: en
 
 <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-text-heading_small slds-text-align_center slds-theme_warning" role="alert">
   <span class="slds-assistive-text">warning</span>
-  	The May '22 version of the ISVTE Plugin has been released. https://github.com/forcedotcom/isvte-sfdx-plugin/blob/master/RELEASENOTES.md 
+  	With a shift in our priorities, we regret to announce that the ISVTE Plugin will no longer receive active maintenance and updates. Consequently, we will be archiving the repository to concentrate our efforts on enhancing our existing suite of products and crafting innovative tools tailored for our valued ISV partners. We extend our heartfelt appreciation for the unwavering support you've shown us throughout this journey.
 </div>
 <br>
 
